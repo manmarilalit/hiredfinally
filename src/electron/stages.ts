@@ -6,7 +6,7 @@ function detectApplicationStage(url: string, bodyText: string): string {
         return "COMPLETED";
     }
 
-    if (urlLower.includes("resume") || urlLower.includes("form")) {
+    if (urlLower.includes("resume") || urlLower.includes("form") || urlLower.includes("apply")) {
         return "IN_PROGRESS";
     }
     if (bodyTextLower.includes("resume") || bodyTextLower.includes("authorized to work")) {

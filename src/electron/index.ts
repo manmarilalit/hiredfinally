@@ -1,6 +1,7 @@
 const { app, BrowserWindow } = require('electron');
 
 const { detectApplicationStage } = require('./stages');
+const { addInProgress } = require('./storage')
 
 app.on('ready', () => { 
 
@@ -10,8 +11,11 @@ app.on('ready', () => {
     window.setMenuBarVisibility(null); // hide the default menu bar that comes with the browser window
 
     let lastLoggedURL = '';
+    let prevURL = "";
+    let prevStage = "";  
 
     window.loadURL('https://www.indeed.com/');
+
 
     window.webContents.on('did-start-navigation', async () => {
         setTimeout(async () => {
@@ -31,16 +35,29 @@ app.on('ready', () => {
                 // map() transforms each element
                 
                 const stage = detectApplicationStage(currentURL, bodyText);
+                
+
+                // 2 var, currentURL, stage
+                if (prevStage == "NOT_STARTED" && stage == "IN_PROGRESS")
+                {
+                    addInProgress(prevURL);
+                }
+                
+                prevURL = currentURL;
+                prevStage = stage;
 
                 console.log('==== PAGE LOADED ====');
                 console.log('URL:', currentURL);
                 console.log('Detected Stage', stage);
                 console.log('==================');
+
             } catch (error) {
                 console.error('Error retrieving page content:', error);
             }
         }, 2000); // wait 3 seconds after navigation starts to give the ;page time to load ; might replace with mutation observer later
     });
+
+    
 
     // This does not initally load the page. It is used to handle links that would open in a new window.
     window.webContents.setWindowOpenHandler(({ url }: { url: string }) => {
