@@ -1,7 +1,7 @@
 const { app, BrowserWindow } = require('electron');
 
-const { detectApplicationStage } = require('./stages');
-const { addInProgress } = require('./storage')
+const { detectApplicationStatus } = require('./status');
+const { addInProgress, updateCompleted, getStatus } = require('./storage')
 
 app.on('ready', () => { 
 
@@ -12,7 +12,9 @@ app.on('ready', () => {
 
     let lastLoggedURL = '';
     let prevURL = "";
-    let prevStage = "";  
+    let prevStatus = "";  
+    let currentStatus = ""
+    let startingURL = ""
 
     window.loadURL('https://www.indeed.com/');
 
@@ -21,34 +23,46 @@ app.on('ready', () => {
         setTimeout(async () => {
             try {
                 const currentURL = window.webContents.getURL();
-
                 if (currentURL === lastLoggedURL) {
                     return; // Skip logging if the URL hasn't changed
                 }   
-
                 lastLoggedURL = currentURL;
 
                 const bodyText = await window.webContents.executeJavaScript(`
                     document.body.innerText
                 `); 
+                
+                const hasFrom = await window.webContents.executeJavaScript(`
+                    document.querySelector('form') !== null
+                `);
                 // Array.from(...) converts and array like object [query selcetor return a NodeList(an array like object)] into a real array. We need this because NodeList's don't have map().
                 // map() transforms each element
                 
-                const stage = detectApplicationStage(currentURL, bodyText);
+                const currentStatus = detectApplicationStatus(currentURL, bodyText);
                 
 
-                // 2 var, currentURL, stage
-                if (prevStage == "NOT_STARTED" && stage == "IN_PROGRESS")
+                // 2 var, currentURL, Status
+                if (prevStatus == "NOT_STARTED" && currentStatus == "IN_PROGRESS")
                 {
                     addInProgress(prevURL);
+                    startingURL = prevURL;
                 }
+
+                if (getStatus(currentURL) == "IN_PROGRESS") {
+                    startingURL = currentURL;
+                }
+
+                if (currentStatus == "COMPLETED") {
+                    updateCompleted(startingURL);
+                }
+
                 
                 prevURL = currentURL;
-                prevStage = stage;
+                prevStatus = currentStatus;
 
                 console.log('==== PAGE LOADED ====');
                 console.log('URL:', currentURL);
-                console.log('Detected Stage', stage);
+                console.log('Detected Status', currentStatus);
                 console.log('==================');
 
             } catch (error) {
