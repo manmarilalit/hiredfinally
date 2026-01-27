@@ -1,6 +1,6 @@
 const { app, BrowserWindow } = require('electron');
 
-const { detectApplicationStatus } = require('./status');
+const { detectApplicationStatus, gatherPageSignals } = require('./status');
 const { addInProgress, updateCompleted, getStatus } = require('./storage')
 
 app.on('ready', () => { 
@@ -15,6 +15,10 @@ app.on('ready', () => {
     let prevStatus = "";  
     let currentStatus = ""
     let startingURL = ""
+    let underlyingStatus = "";
+    let displayStatus = "";
+    let lastNotStartedURL = ""; // Track the last NOT_STARTED page
+    let hasStartedApplication = false; // Track if we've already recorded the start
 
     window.loadURL('https://www.indeed.com/');
 
@@ -30,30 +34,52 @@ app.on('ready', () => {
 
                 const bodyText = await window.webContents.executeJavaScript(`
                     document.body.innerText
-                `); 
-                
-                const hasFrom = await window.webContents.executeJavaScript(`
-                    document.querySelector('form') !== null
                 `);
-                // Array.from(...) converts and array like object [query selcetor return a NodeList(an array like object)] into a real array. We need this because NodeList's don't have map().
-                // map() transforms each element
                 
-                const currentStatus = detectApplicationStatus(currentURL, bodyText);
+                const signals = await gatherPageSignals(window.webContents, currentURL, bodyText);
                 
-
-                // 2 var, currentURL, Status
-                if (prevStatus == "NOT_STARTED" && currentStatus == "IN_PROGRESS")
-                {
-                    addInProgress(prevURL);
-                    startingURL = prevURL;
+                const result = detectApplicationStatus(signals);
+                underlyingStatus = result.status;
+                
+                // Display status logic: once we hit IN_PROGRESS, keep it until COMPLETED
+                if (underlyingStatus === "COMPLETED") {
+                    displayStatus = "COMPLETED";
+                } else if (underlyingStatus === "IN_PROGRESS") {
+                    displayStatus = "IN_PROGRESS";
+                } else if (underlyingStatus === "UNKNOWN" && displayStatus === "IN_PROGRESS") {
+                    displayStatus = "IN_PROGRESS";
+                } else {
+                    displayStatus = underlyingStatus;
+                }
+                
+                currentStatus = displayStatus;
+                
+                // Track the last NOT_STARTED page
+                if (underlyingStatus === "NOT_STARTED") {
+                    lastNotStartedURL = currentURL;
+                    hasStartedApplication = false; // Reset when we see a new job listing
                 }
 
+                // When we first hit IN_PROGRESS (underlying or display), record the application start
+                if ((underlyingStatus === "IN_PROGRESS" || displayStatus === "IN_PROGRESS") && !hasStartedApplication) {
+                    if (lastNotStartedURL) {
+                        console.log(`[DB] Adding IN_PROGRESS: ${lastNotStartedURL}`);
+                        addInProgress(lastNotStartedURL);
+                        startingURL = lastNotStartedURL;
+                        hasStartedApplication = true;
+                    }
+                }
+
+                // Check if this URL is already marked IN_PROGRESS in the database
                 if (getStatus(currentURL) == "IN_PROGRESS") {
                     startingURL = currentURL;
                 }
 
                 if (currentStatus == "COMPLETED") {
+                    console.log(`[DB] Updating to COMPLETED: ${startingURL}`);
                     updateCompleted(startingURL);
+                    hasStartedApplication = false; // Reset for next application
+                    lastNotStartedURL = ""; // Clear the stored URL
                 }
 
                 
@@ -62,8 +88,23 @@ app.on('ready', () => {
 
                 console.log('==== PAGE LOADED ====');
                 console.log('URL:', currentURL);
-                console.log('Detected Status', currentStatus);
-                console.log('==================');
+                console.log('Underlying Status:', underlyingStatus);
+                console.log('Display Status:', displayStatus);
+                console.log('Last NOT_STARTED URL:', lastNotStartedURL);
+                console.log('Has Started Application:', hasStartedApplication);
+                console.log('Starting URL:', startingURL);
+                console.log('\n--- PAGE SIGNALS ---');
+                console.log('Forms:', signals.formCount);
+                console.log('Inputs:', signals.inputCount);
+                console.log('File Inputs:', signals.fileInputCount);
+                console.log('Selects:', signals.selectCount);
+                console.log('Textareas:', signals.textareaCount);
+                console.log('Required Fields:', signals.requiredFieldCount);
+                console.log('Progress Indicator:', signals.hasProgressIndicator);
+                console.log('Button Texts:', signals.buttonTexts);
+                console.log('\n--- REASONING ---');
+                console.log(result.reasoning.join('\n'));
+                console.log('==================\n');
 
             } catch (error) {
                 console.error('Error retrieving page content:', error);
@@ -85,4 +126,3 @@ app.on('ready', () => {
 
 
 });
-

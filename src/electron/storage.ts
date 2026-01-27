@@ -18,7 +18,7 @@ function addInProgress(url: Text) {
 }
 
 function updateCompleted(url: Text) {
-    db.prepare("UPDATE job_apps SET status = 'COMPLETED' WHERE url = ?").get(url);
+    db.prepare("UPDATE job_apps SET status = 'COMPLETED' WHERE url = ?").run(url);
 }
 
 function getStatus(url: Text) {
