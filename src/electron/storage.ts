@@ -36,4 +36,4 @@ function getStatus(url: Text) {
     return result ? result.status : null;
 }
 
-module.exports = { addInProgress, getStatus, updateCompleted };
+module.exports = { addInProgress, updateCompleted, getStatus };

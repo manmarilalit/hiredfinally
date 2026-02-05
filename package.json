@@ -9,9 +9,10 @@
   "private": true,
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "copy-html": "node -e \"require('fs').copyFileSync('src/electron/home.html', 'out/electron/home.html')\"",
     "start": "electron ./out/electron/index.js",
-    "build": "tsc",
-    "build:watch": "npm run build -- --watch",
+    "build": "tsc && npm run copy-html",
+    "build:watch": "tsc --watch & npm run copy-html",
     "postinstall": "electron-rebuild",
     "dist": "npm run build && electron-builder",
     "dist:win": "npm run build && electron-builder --win",

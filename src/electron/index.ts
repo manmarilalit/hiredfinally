@@ -1,128 +1,122 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
+const path = require('path');
+const { detectApplicationStatus } = require('./status');
+const { addInProgress, updateCompleted, getStatus } = require('./storage');
 
-const { detectApplicationStatus, gatherPageSignals } = require('./status');
-const { addInProgress, updateCompleted, getStatus } = require('./storage')
+type BrowserWindowType = typeof BrowserWindow.prototype;
+type Status = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'UNKNOWN';
 
-app.on('ready', () => { 
+let mainWindow: BrowserWindowType | null = null;
 
-    const window = new BrowserWindow({ width: 800, height: 600 }); //Figure out width and height if window size changes
-    
-    
-    window.setMenuBarVisibility(null); // hide the default menu bar that comes with the browser window
+app.on('ready', () => {
+    mainWindow = new BrowserWindow({
+        width: 1400,
+        height: 900,
+        webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false,
+            webviewTag: true,
+            webSecurity: false  // Allow reading from webview
+        }
+    });
+
+    mainWindow.setMenuBarVisibility(false);
+    mainWindow.loadFile(path.join(__dirname, 'home.html'));
 
     let lastLoggedURL = '';
-    let prevURL = "";
-    let prevStatus = "";  
-    let currentStatus = ""
-    let startingURL = ""
-    let underlyingStatus = "";
-    let displayStatus = "";
-    let lastNotStartedURL = ""; // Track the last NOT_STARTED page
-    let hasStartedApplication = false; // Track if we've already recorded the start
+    let prevStatus: Status = 'UNKNOWN';
+    let currentStatus: Status = 'UNKNOWN';
+    let startingURL = '';
+    let underlyingStatus: Status = 'UNKNOWN';
+    let displayStatus: Status = 'UNKNOWN';
+    let lastNotStartedURL = '';
+    let hasStartedApplication = false;
 
-    window.loadURL('https://www.indeed.com/');
+    // Intercept popups from webviews
+    app.on('web-contents-created', (_event: any, contents: any) => {
+        if (contents.getType() === 'webview') {
+            contents.setWindowOpenHandler(({ url }: { url: string }) => {
+                console.log('[POPUP]', url);
+                mainWindow?.webContents.send('load-in-webview', url);
+                return { action: 'deny' };
+            });
+        }
+    });
 
+    // Receive full page data from renderer (which gets it from preload script)
+    ipcMain.on('webview-data', async (_event: any, data: any) => {
+        await processPageStatus(data);
+    });
 
-    window.webContents.on('did-start-navigation', async () => {
-        setTimeout(async () => {
-            try {
-                const currentURL = window.webContents.getURL();
-                if (currentURL === lastLoggedURL) {
-                    return; // Skip logging if the URL hasn't changed
-                }   
-                lastLoggedURL = currentURL;
+    function updateStatusBadge(status: Status) {
+        const statusMap: Record<Status, { label: string; className: string }> = {
+            NOT_STARTED: { label: 'Not Started', className: 'status-not-started' },
+            IN_PROGRESS: { label: 'In Progress', className: 'status-in-progress' },
+            COMPLETED: { label: 'Completed', className: 'status-completed' },
+            UNKNOWN: { label: 'Unknown', className: 'status-not-started' }
+        };
 
-                const bodyText = await window.webContents.executeJavaScript(`
-                    document.body.innerText
-                `);
-                
-                const signals = await gatherPageSignals(window.webContents, currentURL, bodyText);
-                
-                const result = detectApplicationStatus(signals);
-                underlyingStatus = result.status;
-                
-                // Display status logic: once we hit IN_PROGRESS, keep it until COMPLETED
-                if (underlyingStatus === "COMPLETED") {
-                    displayStatus = "COMPLETED";
-                } else if (underlyingStatus === "IN_PROGRESS") {
-                    displayStatus = "IN_PROGRESS";
-                } else if (underlyingStatus === "UNKNOWN" && displayStatus === "IN_PROGRESS") {
-                    displayStatus = "IN_PROGRESS";
-                } else {
-                    displayStatus = underlyingStatus;
-                }
-                
-                currentStatus = displayStatus;
-                
-                // Track the last NOT_STARTED page
-                if (underlyingStatus === "NOT_STARTED") {
-                    lastNotStartedURL = currentURL;
-                    hasStartedApplication = false; // Reset when we see a new job listing
-                }
+        const info = statusMap[status];
+        
+        // Send to renderer process via IPC instead of executeJavaScript
+        console.log('[MAIN] Updating status badge to:', info.label);
+        mainWindow?.webContents.send('update-status-badge', info.label, info.className);
+    }
 
-                // When we first hit IN_PROGRESS (underlying or display), record the application start
-                if ((underlyingStatus === "IN_PROGRESS" || displayStatus === "IN_PROGRESS") && !hasStartedApplication) {
-                    if (lastNotStartedURL) {
-                        console.log(`[DB] Adding IN_PROGRESS: ${lastNotStartedURL}`);
-                        addInProgress(lastNotStartedURL);
-                        startingURL = lastNotStartedURL;
-                        hasStartedApplication = true;
-                    }
-                }
+    async function processPageStatus(signals: any) {
+        try {
+            const url = signals.url;
+            const bodyText = signals.bodyText;
+            
+            if (!url || url.startsWith('file://')) return;
+            if (url === lastLoggedURL) return;
 
-                // Check if this URL is already marked IN_PROGRESS in the database
-                if (getStatus(currentURL) == "IN_PROGRESS") {
-                    startingURL = currentURL;
-                }
+            lastLoggedURL = url;
 
-                if (currentStatus == "COMPLETED") {
-                    console.log(`[DB] Updating to COMPLETED: ${startingURL}`);
-                    updateCompleted(startingURL);
-                    hasStartedApplication = false; // Reset for next application
-                    lastNotStartedURL = ""; // Clear the stored URL
-                }
+            console.log('[PAGE]', url);
+            console.log('[BODY]', bodyText.length, 'characters');
+            console.log('[FORMS]', signals.formCount, 'forms,', signals.inputCount, 'inputs');
 
-                
-                prevURL = currentURL;
-                prevStatus = currentStatus;
+            const result = detectApplicationStatus(signals);
+            underlyingStatus = result.status as Status;
 
-                console.log('==== PAGE LOADED ====');
-                console.log('URL:', currentURL);
-                console.log('Underlying Status:', underlyingStatus);
-                console.log('Display Status:', displayStatus);
-                console.log('Last NOT_STARTED URL:', lastNotStartedURL);
-                console.log('Has Started Application:', hasStartedApplication);
-                console.log('Starting URL:', startingURL);
-                console.log('\n--- PAGE SIGNALS ---');
-                console.log('Forms:', signals.formCount);
-                console.log('Inputs:', signals.inputCount);
-                console.log('File Inputs:', signals.fileInputCount);
-                console.log('Selects:', signals.selectCount);
-                console.log('Textareas:', signals.textareaCount);
-                console.log('Required Fields:', signals.requiredFieldCount);
-                console.log('Progress Indicator:', signals.hasProgressIndicator);
-                console.log('Button Texts:', signals.buttonTexts);
-                console.log('\n--- REASONING ---');
-                console.log(result.reasoning.join('\n'));
-                console.log('==================\n');
+            if (underlyingStatus === 'COMPLETED') displayStatus = 'COMPLETED';
+            else if (underlyingStatus === 'IN_PROGRESS') displayStatus = 'IN_PROGRESS';
+            else if (underlyingStatus === 'UNKNOWN' && displayStatus === 'IN_PROGRESS') displayStatus = 'IN_PROGRESS';
+            else displayStatus = underlyingStatus;
 
-            } catch (error) {
-                console.error('Error retrieving page content:', error);
+            currentStatus = displayStatus;
+
+            if (underlyingStatus === 'NOT_STARTED') {
+                lastNotStartedURL = url;
+                hasStartedApplication = false;
             }
-        }, 2000); // wait 3 seconds after navigation starts to give the ;page time to load ; might replace with mutation observer later
-    });
 
-    
+            if (displayStatus === 'IN_PROGRESS' && !hasStartedApplication && lastNotStartedURL) {
+                console.log('[DB] IN_PROGRESS:', lastNotStartedURL);
+                addInProgress(lastNotStartedURL);
+                startingURL = lastNotStartedURL;
+                hasStartedApplication = true;
+            }
 
-    // This does not initally load the page. It is used to handle links that would open in a new window.
-    window.webContents.setWindowOpenHandler(({ url }: { url: string }) => {
-        window.loadURL(url);
-        return {action: 'deny'}
-    });
-    // Notes: 
-    // - There need to be some kind of visual loading indicator'
-    // - There is no back button yet
-    // -the close button does not work
+            if (getStatus(url) === 'IN_PROGRESS') startingURL = url;
 
+            if (currentStatus === 'COMPLETED' && startingURL) {
+                console.log('[DB] COMPLETED:', startingURL);
+                updateCompleted(startingURL);
+                hasStartedApplication = false;
+                lastNotStartedURL = '';
+            }
 
+            prevStatus = currentStatus;
+            updateStatusBadge(displayStatus);
+
+            console.log('[STATUS]', displayStatus);
+            console.log('[REASONING]', result.reasoning.join('\n'));
+            console.log('---');
+
+        } catch (err) {
+            console.error('[ERROR]', err);
+        }
+    }
 });

@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HiredFinally</title>
+
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { 
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+    background: #1a1a24; 
+    overflow: hidden; 
+    color: #e0e0e0;
+}
+.app-container { display: flex; width: 100vw; height: 100vh; }
+
+/* Sidebar */
+.sidebar { 
+    width: 250px; 
+    background: #0f0f17; 
+    color: #9090a0; 
+    display: flex; 
+    flex-direction: column; 
+    border-right: 1px solid #2a2a3a;
+}
+.sidebar-header { 
+    padding: 32px 24px; 
+    border-bottom: 1px solid #2a2a3a; 
+}
+.sidebar-header h1 { 
+    color: #b794f6; 
+    font-size: 24px; 
+    font-weight: 600; 
+    letter-spacing: -0.5px;
+}
+
+.nav-section {
+    flex: 1;
+    padding: 16px 0;
+}
+
+.nav-item { 
+    padding: 14px 24px; 
+    cursor: pointer; 
+    font-size: 15px; 
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+}
+.nav-item:hover { 
+    background: rgba(183, 148, 246, 0.1); 
+    color: #b794f6; 
+}
+.nav-item.active { 
+    background: rgba(183, 148, 246, 0.15); 
+    color: #b794f6; 
+    border-left: 3px solid #b794f6;
+    padding-left: 21px;
+}
+
+.nav-bottom {
+    padding: 16px 0;
+    border-top: 1px solid #2a2a3a;
+}
+
+/* Main */
+.main-content { 
+    flex: 1; 
+    display: flex; 
+    flex-direction: column; 
+}
+
+.top-bar { 
+    height: 60px; 
+    background: #0f0f17; 
+    border-bottom: 1px solid #2a2a3a; 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between; 
+    padding: 0 32px; 
+    font-size: 14px; 
+}
+
+#statusSection {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.status-badge { 
+    padding: 6px 16px; 
+    border-radius: 20px; 
+    font-weight: 600; 
+    font-size: 11px; 
+    text-transform: uppercase; 
+    letter-spacing: 0.5px;
+}
+.status-not-started { 
+    background: rgba(96, 165, 250, 0.15); 
+    color: #60a5fa; 
+    border: 1px solid rgba(96, 165, 250, 0.3);
+}
+.status-in-progress { 
+    background: rgba(251, 191, 36, 0.15); 
+    color: #fbbf24; 
+    border: 1px solid rgba(251, 191, 36, 0.3);
+}
+.status-completed { 
+    background: rgba(52, 211, 153, 0.15); 
+    color: #34d399; 
+    border: 1px solid rgba(52, 211, 153, 0.3);
+}
+
+.content-area { 
+    flex: 1; 
+    position: relative; 
+}
+
+/* Job board grid */
+.job-boards-view { 
+    padding: 48px; 
+}
+
+.page-title {
+    color: #e0e0e0;
+    font-size: 28px;
+    font-weight: 600;
+    margin-bottom: 32px;
+    letter-spacing: -0.5px;
+}
+
+.job-boards-grid { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); 
+    gap: 24px; 
+}
+
+.job-card { 
+    background: #0f0f17; 
+    border-radius: 16px; 
+    padding: 40px 24px; 
+    cursor: pointer; 
+    border: 2px solid #2a2a3a; 
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    min-height: 180px;
+}
+
+.job-card:hover { 
+    border-color: #b794f6; 
+    transform: translateY(-6px); 
+    box-shadow: 0 12px 24px rgba(183, 148, 246, 0.15);
+}
+
+.job-card-logo {
+    width: 120px;
+    height: 60px;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+.job-card-name {
+    color: #e0e0e0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+/* Webview */
+#webview-container { 
+    display: none; 
+    position: absolute; 
+    inset: 0; 
+    background: #1a1a24;
+}
+#webview-container.active { 
+    display: block; 
+}
+webview { 
+    width: 100%; 
+    height: 100%; 
+}
+.back-button { 
+    position: absolute; 
+    top: 20px; 
+    left: 20px; 
+    z-index: 1000; 
+    background: #0f0f17; 
+    border: 2px solid #2a2a3a; 
+    padding: 10px 18px; 
+    border-radius: 12px; 
+    cursor: pointer; 
+    font-weight: 600; 
+    color: #b794f6;
+    transition: all 0.2s;
+}
+.back-button:hover {
+    background: #2a2a3a;
+    transform: translateX(-2px);
+}
+</style>
+</head>
+
+<body>
+<div class="app-container">
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h1>HiredFinally</h1>
+        </div>
+        
+        <div class="nav-section">
+            <div class="nav-item active">
+                <span>Job Boards</span>
+            </div>
+            <div class="nav-item">
+                <span>Applied</span>
+            </div>
+            <div class="nav-item">
+                <span>In Progress</span>
+            </div>
+            <div class="nav-item">
+                <span>Interviews</span>
+            </div>
+            <div class="nav-item">
+                <span>Offers</span>
+            </div>
+        </div>
+
+        <div class="nav-bottom">
+            <div class="nav-item">
+                <span>Settings</span>
+            </div>
+            <div class="nav-item">
+                <span>Account</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="top-bar">
+            <div id="statusSection" style="display: none;">
+                Status: <span id="statusBadge" class="status-badge status-not-started">Not Started</span>
+            </div>
+            <div id="currentUrl" style="color: #666; font-size: 13px; max-width: 600px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></div>
+        </div>
+
+        <div class="content-area">
+            <div class="job-boards-view" id="jobBoardsView">
+                <h2 class="page-title">Job Boards</h2>
+                <div class="job-boards-grid" id="jobBoardsGrid"></div>
+            </div>
+
+            <div id="webview-container">
+                <button class="back-button" id="backButton">← Back</button>
+                <webview id="jobWebview" partition="persist:jobtracker" allowpopups></webview>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+console.log('=================================');
+console.log('[RENDERER] HiredFinally starting');
+console.log('=================================');
+
+const { ipcRenderer } = require('electron');
+const path = require('path');
+
+const jobBoards = [
+    { 
+        name: 'Indeed', 
+        url: 'https://www.indeed.com/',
+        logo: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzI1NTdBNyIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJ3aGl0ZSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjQwIiBmb250LXdlaWdodD0iYm9sZCI+aW5kZWVkPC90ZXh0Pjwvc3ZnPg=='
+    },
+    { 
+        name: 'LinkedIn', 
+        url: 'https://www.linkedin.com/jobs/',
+        logo: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzAwNzdCNSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJ3aGl0ZSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjMwIiBmb250LXdlaWdodD0iYm9sZCI+TGlua2VkSW48L3RleHQ+PC9zdmc+'
+    },
+    { 
+        name: 'Glassdoor', 
+        url: 'https://www.glassdoor.com/Job/',
+        logo: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzBDQUE0MSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJ3aGl0ZSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjI4IiBmb250LXdlaWdodD0iYm9sZCI+R2xhc3Nkb29yPC90ZXh0Pjwvc3ZnPg=='
+    },
+    { 
+        name: 'Handshake', 
+        url: 'https://www.joinhandshake.com/',
+        logo: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzAwMzk0RCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjRkZEQjU5IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjgiIGZvbnQtd2VpZ2h0PSJib2xkIiBmb250LXN0eWxlPSJpdGFsaWMiPkhhbmRzaGFrZTwvdGV4dD48L3N2Zz4='
+    },
+    { 
+        name: 'ZipRecruiter', 
+        url: 'https://www.ziprecruiter.com/',
+        logo: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzEzNzlCRiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJ3aGl0ZSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjIyIiBmb250LXdlaWdodD0iYm9sZCI+WmlwUmVjcnVpdGVyPC90ZXh0Pjwvc3ZnPg=='
+    }
+];
+
+const grid = document.getElementById('jobBoardsGrid');
+const webview = document.getElementById('jobWebview');
+const webviewContainer = document.getElementById('webview-container');
+const jobBoardsView = document.getElementById('jobBoardsView');
+const backButton = document.getElementById('backButton');
+const statusSection = document.getElementById('statusSection');
+
+// IMPORTANT: Try multiple possible paths for preload
+const possiblePaths = [
+    path.join(__dirname, 'preload.js'),
+    path.join(__dirname, 'preload-debug.js'),
+    path.join(__dirname, '..', 'preload.js'),
+    path.join(__dirname, '..', 'preload-debug.js'),
+    path.join(process.cwd(), 'out', 'electron', 'preload.js'),
+    path.join(process.cwd(), 'out', 'electron', 'preload-debug.js')
+];
+
+// Check which file exists
+const fs = require('fs');
+let preloadPath = null;
+
+for (const testPath of possiblePaths) {
+    console.log('[RENDERER] Testing path:', testPath);
+    try {
+        if (fs.existsSync(testPath)) {
+            preloadPath = testPath;
+            console.log('[RENDERER] ✓ Found preload at:', preloadPath);
+            break;
+        }
+    } catch (err) {
+        console.log('[RENDERER] Path check failed:', err.message);
+    }
+}
+
+if (preloadPath) {
+    webview.setAttribute('preload', preloadPath);
+    console.log('[RENDERER] ✓ Preload path set:', preloadPath);
+} else {
+    console.error('[RENDERER] ✗ COULD NOT FIND PRELOAD SCRIPT!');
+    console.error('[RENDERER] Tried these paths:', possiblePaths);
+    console.error('[RENDERER] Current __dirname:', __dirname);
+    console.error('[RENDERER] Current process.cwd():', process.cwd());
+}
+
+// Render job boards with logos
+grid.innerHTML = jobBoards.map(b => `
+    <div class="job-card" data-url="${b.url}">
+        <img src="${b.logo}" alt="${b.name}" class="job-card-logo">
+        <div class="job-card-name">${b.name}</div>
+    </div>
+`).join('');
+
+document.querySelectorAll('.job-card').forEach(card => {
+    card.onclick = () => openJobBoard(card.dataset.url);
+});
+
+function openJobBoard(url) {
+    console.log('[RENDERER] Opening job board:', url);
+    jobBoardsView.style.display = 'none';
+    webviewContainer.classList.add('active');
+    statusSection.style.display = 'block';
+    webview.src = url;
+    document.getElementById('currentUrl').textContent = url;
+}
+
+backButton.onclick = () => {
+    webview.src = '';
+    webviewContainer.classList.remove('active');
+    jobBoardsView.style.display = 'block';
+    statusSection.style.display = 'none';
+    document.getElementById('currentUrl').textContent = '';
+};
+
+// Listen for URLs to load from main process
+ipcRenderer.on('load-in-webview', (_event, url) => {
+    console.log('[RENDERER] Loading URL from main:', url);
+    webview.src = url;
+    document.getElementById('currentUrl').textContent = url;
+    jobBoardsView.style.display = 'none';
+    webviewContainer.classList.add('active');
+    statusSection.style.display = 'block';
+});
+
+// Listen for status badge updates from main process
+ipcRenderer.on('update-status-badge', (_event, label, className) => {
+    console.log('[RENDERER] ✓ Status update received:', label);
+    const badge = document.getElementById('statusBadge');
+    if (badge) {
+        badge.textContent = label;
+        badge.className = 'status-badge ' + className;
+        console.log('[RENDERER] ✓ Badge updated to:', label, 'with class:', className);
+    } else {
+        console.error('[RENDERER] ✗ Badge element not found!');
+    }
+});
+
+// Listen for test messages from preload
+webview.addEventListener('ipc-message', (event) => {
+    console.log('[RENDERER] Received IPC message:', event.channel, event.args);
+    
+    if (event.channel === 'test-message') {
+        console.log('[RENDERER] ✓ Preload test message received!');
+    }
+    
+    if (event.channel === 'page-data') {
+        const data = event.args[0];
+        console.log('[RENDERER] ✓ Received page data from preload:', data.url);
+        console.log('[RENDERER] Forms:', data.formCount, 'Inputs:', data.inputCount, 'File inputs:', data.fileInputCount);
+        
+        // Update current URL display
+        document.getElementById('currentUrl').textContent = data.url;
+        
+        // Forward to main process for status detection
+        console.log('[RENDERER] Forwarding to main process...');
+        ipcRenderer.send('webview-data', data);
+    }
+});
+
+// Intercept popups
+webview.addEventListener('new-window', e => {
+    e.preventDefault();
+    console.log('[RENDERER] New window blocked, loading in webview:', e.url);
+    webview.src = e.url;
+    document.getElementById('currentUrl').textContent = e.url;
+});
+
+// Log ALL webview events for debugging
+webview.addEventListener('did-start-loading', () => {
+    console.log('[RENDERER] Webview: did-start-loading');
+});
+
+webview.addEventListener('did-finish-load', () => {
+    console.log('[RENDERER] Webview: did-finish-load');
+    console.log('[RENDERER] Current URL:', webview.getURL());
+});
+
+webview.addEventListener('did-fail-load', (event) => {
+    console.error('[RENDERER] Webview: did-fail-load -', event.errorDescription, 'Code:', event.errorCode);
+});
+
+webview.addEventListener('dom-ready', () => {
+    console.log('[RENDERER] Webview: dom-ready');
+});
+
+webview.addEventListener('console-message', (e) => {
+    console.log('[WEBVIEW CONSOLE]', e.message);
+});
+
+webview.addEventListener('did-attach', () => {
+    console.log('[RENDERER] Webview: did-attach');
+});
+
+webview.addEventListener('crashed', () => {
+    console.error('[RENDERER] Webview: CRASHED!');
+});
+
+console.log('[RENDERER] ✓ All event listeners registered');
+console.log('=================================');
+</script>
+</body>
+</html>
