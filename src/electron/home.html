@@ -117,6 +117,124 @@ body {
     position: relative; 
 }
 
+/* Confirmation Dialog */
+.confirmation-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+}
+
+.confirmation-overlay.active {
+    display: flex;
+}
+
+.confirmation-dialog {
+    background: #0f0f17;
+    border: 2px solid #b794f6;
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 550px;
+    box-shadow: 0 20px 60px rgba(183, 148, 246, 0.3);
+}
+
+.confirmation-title {
+    color: #b794f6;
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 16px;
+}
+
+.confirmation-message {
+    color: #e0e0e0;
+    font-size: 15px;
+    line-height: 1.6;
+    margin-bottom: 8px;
+}
+
+.confirmation-url {
+    color: #9090a0;
+    font-size: 13px;
+    margin-bottom: 24px;
+    word-break: break-all;
+    padding: 12px;
+    background: rgba(183, 148, 246, 0.05);
+    border-radius: 8px;
+    border-left: 3px solid #b794f6;
+}
+
+.confirmation-buttons {
+    display: flex;
+    gap: 12px;
+}
+
+.confirmation-btn {
+    flex: 1;
+    padding: 14px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    border: 2px solid;
+    transition: all 0.2s;
+}
+
+.confirm-yes {
+    background: rgba(52, 211, 153, 0.15);
+    color: #34d399;
+    border-color: rgba(52, 211, 153, 0.3);
+}
+
+.confirm-yes:hover {
+    background: rgba(52, 211, 153, 0.25);
+    transform: translateY(-2px);
+}
+
+.confirm-no {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.confirm-no:hover {
+    background: rgba(239, 68, 68, 0.25);
+    transform: translateY(-2px);
+}
+
+.confidence-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-left: 8px;
+}
+
+.confidence-high {
+    background: rgba(52, 211, 153, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(52, 211, 153, 0.3);
+}
+
+.confidence-medium {
+    background: rgba(251, 191, 36, 0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.confidence-low {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
 /* Job board grid */
 .job-boards-view { 
     padding: 48px; 
@@ -263,6 +381,19 @@ webview {
     </div>
 </div>
 
+<!-- Confirmation Dialog -->
+<div class="confirmation-overlay" id="confirmationOverlay">
+    <div class="confirmation-dialog">
+        <div class="confirmation-title">🔍 Status Detection</div>
+        <div class="confirmation-message" id="confirmationMessage"></div>
+        <div class="confirmation-url" id="confirmationUrl"></div>
+        <div class="confirmation-buttons">
+            <button class="confirmation-btn confirm-yes" id="confirmYes">✓ Yes, Correct</button>
+            <button class="confirmation-btn confirm-no" id="confirmNo">✗ No, Wrong</button>
+        </div>
+    </div>
+</div>
+
 <script>
 console.log('=================================');
 console.log('[RENDERER] HiredFinally starting');
@@ -305,6 +436,9 @@ const webviewContainer = document.getElementById('webview-container');
 const jobBoardsView = document.getElementById('jobBoardsView');
 const backButton = document.getElementById('backButton');
 const statusSection = document.getElementById('statusSection');
+const confirmationOverlay = document.getElementById('confirmationOverlay');
+const confirmYesBtn = document.getElementById('confirmYes');
+const confirmNoBtn = document.getElementById('confirmNo');
 
 // IMPORTANT: Try multiple possible paths for preload
 const possiblePaths = [
@@ -394,6 +528,55 @@ ipcRenderer.on('update-status-badge', (_event, label, className) => {
         console.error('[RENDERER] ✗ Badge element not found!');
     }
 });
+
+// Listen for confirmation dialog requests
+ipcRenderer.on('show-confirmation-dialog', (_event, data) => {
+    console.log('[RENDERER] Showing confirmation dialog:', data);
+    
+    const statusNames = {
+        'NOT_STARTED': 'Not Started',
+        'IN_PROGRESS': 'In Progress',
+        'COMPLETED': 'Completed',
+        'UNKNOWN': 'Unknown'
+    };
+    
+    const confidenceClass = 'confidence-' + data.confidence;
+    
+    let triggerReason = '';
+    if (data.urlChanged) {
+        triggerReason = '<br><small style="color: #fbbf24;">⚠ URL changed</small>';
+    } else if (data.wasPopup) {
+        triggerReason = '<br><small style="color: #fbbf24;">⚠ Popup detected</small>';
+    }
+    
+    document.getElementById('confirmationMessage').innerHTML = `
+        Current detected status: <strong>${statusNames[data.newStatus]}</strong>
+        <span class="confidence-badge ${confidenceClass}">${data.confidence}</span>
+        ${triggerReason}
+        <br><br>
+        Is this status correct?
+    `;
+    
+    document.getElementById('confirmationUrl').textContent = data.url;
+    confirmationOverlay.classList.add('active');
+});
+
+// Listen for hide confirmation dialog
+ipcRenderer.on('hide-confirmation-dialog', () => {
+    console.log('[RENDERER] Hiding confirmation dialog');
+    confirmationOverlay.classList.remove('active');
+});
+
+// Handle confirmation button clicks
+confirmYesBtn.onclick = () => {
+    console.log('[RENDERER] User clicked YES');
+    ipcRenderer.send('status-confirmation', true);
+};
+
+confirmNoBtn.onclick = () => {
+    console.log('[RENDERER] User clicked NO');
+    ipcRenderer.send('status-confirmation', false);
+};
 
 // Listen for test messages from preload
 webview.addEventListener('ipc-message', (event) => {
