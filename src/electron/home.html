@@ -21,7 +21,6 @@
     --sp-xl:   calc(20px * var(--ui-scale));
     --sp-2xl:  calc(28px * var(--ui-scale));
 }
-/* Scale tiers — set via data-scale attribute on <html> */
 [data-scale="sm"] { --ui-scale: 0.88; }
 [data-scale="md"] { --ui-scale: 1;    }
 [data-scale="lg"] { --ui-scale: 1.18; }
@@ -71,12 +70,29 @@
 * { margin:0; padding:0; box-sizing:border-box; -webkit-user-select:none; user-select:none; }
 input, textarea { -webkit-user-select:text; user-select:text; }
 
+body, .sidebar, .sidebar-header, .top-bar, .nav-item, .nav-group-label,
+.settings-block, .block-header, .setting-row, .setting-name, .setting-desc,
+.job-card, .job-card-name, .add-board-card, .page-title, .settings-label,
+.settings-tabs, .settings-tab, .btn, .modal-box, .modal-input,
+.toggle-track, .num-input, .time-input-field, .theme-label, .content-area,
+.main-content, .app-container, #currentUrl, #statusSection, .status-badge,
+.nav-bottom, .nav-dot, .back-button, .topbar-sep {
+    transition:
+        background-color 0.25s ease,
+        border-color     0.25s ease,
+        color            0.25s ease,
+        box-shadow       0.25s ease,
+        width            0.25s ease,
+        padding          0.25s ease,
+        font-size        0.25s ease,
+        height           0.25s ease;
+}
+
 body {
     font-family: 'DM Sans', sans-serif;
     background: var(--bg);
     overflow: hidden;
     color: var(--text);
-    transition: background 0.2s, color 0.2s;
 }
 
 .app-container { display:flex; width:100vw; height:100vh; }
@@ -90,21 +106,24 @@ body {
     overflow:hidden;
 }
 .sidebar-header {
-    height:52px; display:flex; align-items:center;
+    height:calc(52px * var(--ui-scale));
+    display:flex; align-items:center;
     padding:0 20px; border-bottom:1px solid var(--border);
     white-space:nowrap; overflow:hidden;
+    transition:padding 0.22s ease;
 }
 .sidebar-header h1 {
     font-family:'DM Mono',monospace; color:var(--accent);
     font-size:var(--fs-xs); font-weight:500; letter-spacing:0.1em; text-transform:uppercase;
-    transition:opacity 0.15s;
+    transition:opacity 0.15s, width 0.15s;
+    white-space:nowrap; overflow:hidden;
 }
 .nav-group-label {
     font-family:'DM Mono',monospace; font-size:var(--fs-xs); font-weight:500;
     letter-spacing:0.16em; text-transform:uppercase;
     color:var(--text-mute); padding:var(--sp-lg) var(--sp-xl) var(--sp-sm);
     white-space:nowrap; overflow:hidden;
-    transition:opacity 0.15s, padding 0.15s;
+    transition:opacity 0.15s, padding 0.15s, height 0.15s;
 }
 .nav-section { flex:1; padding:var(--sp-sm) 0; }
 .nav-item {
@@ -127,15 +146,17 @@ body {
 .nav-item.active .nav-dot { background:var(--accent); }
 .nav-bottom { padding:6px 0; border-top:1px solid var(--border); }
 
-/* ── Responsive sidebar — narrows when window is small ── */
+@media (max-width: 1000px) {
+    .sidebar { width: 160px; }
+    .sidebar-header { padding: 0 14px; }
+    .nav-group-label { padding-left: 14px; padding-right: 14px; }
+    .nav-item { padding-left: 14px; padding-right: 14px; }
+}
 @media (max-width: 700px) {
-    .sidebar { width: 52px; }
-    .sidebar-header { padding:0; justify-content:center; }
-    .sidebar-header h1 { opacity:0; width:0; overflow:hidden; }
-    .nav-group-label { opacity:0; padding:8px 0; }
-    .nav-item { padding:10px 0; justify-content:center; gap:0; }
-    .nav-item span:last-child { opacity:0; width:0; overflow:hidden; }
-    .nav-dot { margin:0; }
+    .sidebar { width: 130px; }
+    .sidebar-header { padding: 0 10px; }
+    .nav-group-label { padding-left: 10px; padding-right: 10px; }
+    .nav-item { padding-left: 10px; padding-right: 10px; }
 }
 
 /* ── Main ── */
@@ -203,7 +224,6 @@ body {
     box-shadow:0 0 0 1px var(--accent), 0 6px 20px var(--accent-md);
     transform:translateY(-2px);
 }
-/* Ghost (the one being dragged) — fades out in place */
 .job-card.dragging {
     opacity:0.18;
     transform:none !important;
@@ -217,7 +237,20 @@ body {
 }
 .job-card:hover .job-card-name { color:var(--text); }
 
-/* Drop placeholder — shown instead of highlighting another card */
+.job-card { position:relative; }
+.card-delete-btn {
+    position:absolute; top:6px; right:6px;
+    width:20px; height:20px; border-radius:4px;
+    background:var(--red-lo); border:1px solid rgba(239,90,90,0.2);
+    color:var(--red); font-size:11px; font-weight:700;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; opacity:0;
+    transition:opacity 0.15s, background 0.15s;
+    line-height:1;
+}
+.job-card:hover .card-delete-btn { opacity:1; }
+.card-delete-btn:hover { background:rgba(239,90,90,0.25); }
+
 .drop-placeholder {
     border-radius:8px; min-height:76px;
     border:2px dashed var(--accent);
@@ -229,7 +262,6 @@ body {
     to   { opacity:1; }
 }
 
-/* Floating drag ghost (the tilted card that follows the cursor) */
 #drag-ghost {
     position:fixed; pointer-events:none; z-index:9000;
     background:var(--surface); border:1.5px solid var(--accent);
@@ -293,19 +325,18 @@ body {
 .modal-btn-cancel  { background:transparent; color:var(--text-dim); border-color:var(--border-hi); }
 .modal-btn-cancel:hover { color:var(--text); background:var(--accent-lo); border-color:var(--accent); }
 
-/* ── Webview — rounded corners ── */
+/* ── Webview ── */
 #webview-container {
-    display:none; position:absolute; inset:0; background:var(--bg);
+    display:none; position:absolute; inset:0; background:#ffffff;
     border-radius:16px; overflow:hidden;
 }
 #webview-container.active { display:block; }
 webview { width:100%; height:100%; }
 
-/* ── Settings view — centered ── */
+/* ── Settings view ── */
 #settingsView {
     display:none; position:absolute; inset:0;
     overflow-y:auto; background:var(--bg);
-    /* center the inner content */
     display:none; flex-direction:column; align-items:center; padding:32px 24px;
 }
 #settingsView.active { display:flex; }
@@ -394,7 +425,7 @@ webview { width:100%; height:100%; }
     background:var(--blue-lo); color:var(--blue); border:1px solid rgba(90,176,240,0.2);
 }
 
-/* ── Scale grid (Appearance tab) ── */
+/* ── Scale grid ── */
 .scale-grid {
     display:grid; grid-template-columns:repeat(4,1fr); gap:6px;
     padding:var(--sp-md) var(--sp-lg) var(--sp-lg);
@@ -410,64 +441,25 @@ webview { width:100%; height:100%; }
 .scale-main { font-size:var(--fs-sm); font-weight:600; }
 .scale-sub  { font-size:var(--fs-xs); opacity:0.6; }
 
-/* ── In-app notification panel ── */
-.notif-bell-wrap {
-    position:relative; flex-shrink:0;
+/* ── Accent color swatches ── */
+.color-grid {
+    display:flex; flex-wrap:wrap; gap:10px;
+    padding:var(--sp-md) var(--sp-lg) var(--sp-lg);
 }
-.notif-bell {
-    width:30px; height:30px; border-radius:6px; border:1px solid var(--border-hi);
-    background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center;
-    transition:all 0.15s; color:var(--text-dim); font-size:14px;
+.color-swatch {
+    width:32px; height:32px; border-radius:50%; cursor:pointer;
+    border:2px solid transparent;
+    box-shadow:0 0 0 2px transparent;
+    transition:transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+    flex-shrink:0;
 }
-.notif-bell:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-lo); }
-.notif-badge {
-    position:absolute; top:-4px; right:-4px;
-    width:14px; height:14px; border-radius:50%;
-    background:var(--accent); color:#fff;
-    font-family:'DM Mono',monospace; font-size:8px; font-weight:600;
-    display:none; align-items:center; justify-content:center;
-    border:2px solid var(--surface);
+.color-swatch:hover { transform:scale(1.15); }
+.color-swatch.active {
+    border-color:#fff;
+    box-shadow:0 0 0 3px var(--accent);
+    transform:scale(1.1);
 }
-.notif-badge.visible { display:flex; }
-.notif-panel {
-    display:none; position:absolute; top:calc(100% + 8px); right:0;
-    width:300px; background:var(--surface); border:1px solid var(--border-hi);
-    border-radius:10px; box-shadow:0 12px 40px rgba(0,0,0,0.3);
-    z-index:8000; overflow:hidden;
-    animation:pop-in 0.15s ease;
-}
-.notif-panel.open { display:block; }
-.notif-panel-header {
-    padding:10px 14px; border-bottom:1px solid var(--border);
-    font-family:'DM Mono',monospace; font-size:var(--fs-xs);
-    letter-spacing:0.12em; text-transform:uppercase; color:var(--text-mute);
-    display:flex; align-items:center; justify-content:space-between;
-}
-.notif-clear-btn {
-    font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.08em;
-    text-transform:uppercase; cursor:pointer; color:var(--text-mute);
-    background:none; border:none; transition:color 0.15s;
-}
-.notif-clear-btn:hover { color:var(--accent); }
-.notif-list { max-height:320px; overflow-y:auto; }
-.notif-empty {
-    padding:24px 14px; text-align:center;
-    font-size:var(--fs-sm); color:var(--text-mute);
-}
-.notif-item {
-    padding:10px 14px; border-bottom:1px solid var(--border);
-    display:flex; gap:10px; align-items:flex-start;
-}
-.notif-item:last-child { border-bottom:none; }
-.notif-dot {
-    width:7px; height:7px; border-radius:50%; background:var(--accent);
-    flex-shrink:0; margin-top:5px;
-}
-.notif-dot.read { background:var(--border-hi); }
-.notif-text { flex:1; min-width:0; }
-.notif-title { font-size:var(--fs-sm); font-weight:500; color:var(--text); margin-bottom:2px; }
-.notif-body  { font-size:var(--fs-xs); color:var(--text-dim); line-height:1.4; }
-.notif-time  { font-family:'DM Mono',monospace; font-size:8px; color:var(--text-mute); margin-top:3px; }
+[data-theme="light"] .color-swatch.active { border-color:#1a1a2e; }
 
 .theme-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:16px; }
 .theme-card {
@@ -526,6 +518,15 @@ webview { width:100%; height:100%; }
     font-weight:500; letter-spacing:0.14em; text-transform:uppercase; margin-bottom:14px;
 }
 .confirmation-message { color:var(--text); font-size:13px; line-height:1.6; margin-bottom:10px; }
+.confirm-meta {
+    display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+    font-family:'DM Mono',monospace; font-size:9px; color:var(--text-mute);
+    margin-top:6px;
+}
+.confirm-meta span {
+    padding:2px 6px; border-radius:3px;
+    background:var(--bg); border:1px solid var(--border);
+}
 .confirmation-url {
     font-family:'DM Mono',monospace; color:var(--text-mute); font-size:9px;
     margin-bottom:20px; word-break:break-all; padding:10px 12px;
@@ -549,6 +550,49 @@ webview { width:100%; height:100%; }
 .confidence-high   { background:var(--green-lo); color:var(--green); border-color:rgba(62,207,142,0.3); }
 .confidence-medium { background:var(--amber-lo); color:var(--amber); border-color:rgba(240,160,90,0.3); }
 .confidence-low    { background:var(--red-lo);   color:var(--red);   border-color:rgba(239,90,90,0.3); }
+
+.source-badge {
+    font-family:'DM Mono',monospace; font-size:8px; padding:2px 5px;
+    border-radius:3px; border:1px solid; text-transform:uppercase; letter-spacing:0.06em;
+}
+.source-dom { background:var(--blue-lo); color:var(--blue); border-color:rgba(90,176,240,0.25); }
+
+.debug-toggle {
+    font-family:'DM Mono',monospace; font-size:9px; letter-spacing:0.08em;
+    text-transform:uppercase; color:var(--text-mute); cursor:pointer;
+    background:none; border:none; padding:0; margin-top:10px;
+    display:flex; align-items:center; gap:6px;
+    transition:color 0.15s;
+}
+.debug-toggle:hover { color:var(--text-dim); }
+.debug-toggle::before { content:'▶'; font-size:7px; transition:transform 0.15s; }
+.debug-toggle.open::before { transform:rotate(90deg); }
+.debug-log {
+    display:none; margin-top:8px; padding:10px 12px;
+    background:var(--bg); border-radius:6px; border:1px solid var(--border);
+    max-height:200px; overflow-y:auto;
+    font-family:'DM Mono',monospace; font-size:9px; line-height:1.7;
+    color:var(--text-dim); white-space:pre-wrap; word-break:break-word;
+}
+.debug-log.open { display:block; }
+.debug-log .log-high   { color:var(--green); }
+.debug-log .log-medium { color:var(--amber); }
+.debug-log .log-warn   { color:var(--red); }
+.debug-log .log-phase  { color:var(--accent); font-weight:600; }
+
+.confirm-from-to {
+    font-size:11px; color:var(--text-dim); margin-bottom:12px;
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+}
+.confirm-from-to .arrow { color:var(--text-mute); }
+.confirm-from-to .status-pill {
+    font-family:'DM Mono',monospace; font-size:9px; padding:2px 7px;
+    border-radius:3px; border:1px solid; text-transform:uppercase; letter-spacing:0.05em;
+}
+.pill-NOT_STARTED { background:var(--blue-lo); color:var(--blue); border-color:rgba(90,176,240,0.25); }
+.pill-IN_PROGRESS { background:var(--amber-lo); color:var(--amber); border-color:rgba(240,160,90,0.25); }
+.pill-COMPLETED   { background:var(--green-lo); color:var(--green); border-color:rgba(62,207,142,0.25); }
+.pill-UNKNOWN     { background:var(--accent-lo); color:var(--text-mute); border-color:var(--border); }
 </style>
 </head>
 
@@ -578,20 +622,6 @@ webview { width:100%; height:100%; }
             <div id="currentUrl"></div>
             <div id="statusSection">
                 Status <span id="statusBadge" class="status-badge status-not-started">Not Started</span>
-            </div>
-            <!-- Notification bell -->
-            <div class="notif-bell-wrap" id="notifBellWrap">
-                <button class="notif-bell" id="notifBell" title="Notifications">🔔</button>
-                <div class="notif-badge" id="notifBadge"></div>
-                <div class="notif-panel" id="notifPanel">
-                    <div class="notif-panel-header">
-                        Notifications
-                        <button class="notif-clear-btn" id="notifClear">Clear all</button>
-                    </div>
-                    <div class="notif-list" id="notifList">
-                        <div class="notif-empty">No notifications yet</div>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -683,6 +713,25 @@ webview { width:100%; height:100%; }
 
                     <div class="settings-panel" data-panel="appearance">
                         <div class="settings-block">
+                            <div class="block-header">Accent Color</div>
+                            <div class="setting-row" style="border-bottom:none;">
+                                <div class="setting-info">
+                                    <div class="setting-name">Interface Accent</div>
+                                    <div class="setting-desc">Sets the highlight color used throughout the app.</div>
+                                </div>
+                            </div>
+                            <div class="color-grid" id="colorGrid">
+                                <div class="color-swatch active" data-color="purple"  style="background:#8b6ef5;" title="Purple"></div>
+                                <div class="color-swatch"        data-color="blue"    style="background:#5ab0f0;" title="Blue"></div>
+                                <div class="color-swatch"        data-color="cyan"    style="background:#3ecfcf;" title="Cyan"></div>
+                                <div class="color-swatch"        data-color="green"   style="background:#3ecf8e;" title="Green"></div>
+                                <div class="color-swatch"        data-color="amber"   style="background:#f0a05a;" title="Amber"></div>
+                                <div class="color-swatch"        data-color="rose"    style="background:#f05a8b;" title="Rose"></div>
+                                <div class="color-swatch"        data-color="red"     style="background:#ef5a5a;" title="Red"></div>
+                                <div class="color-swatch"        data-color="slate"   style="background:#8890a8;" title="Slate"></div>
+                            </div>
+                        </div>
+                        <div class="settings-block">
                             <div class="block-header">Color Theme</div>
                             <div class="theme-grid">
                                 <div class="theme-card selected" data-pick="dark" id="themeDark">
@@ -765,11 +814,15 @@ webview { width:100%; height:100%; }
 <div class="confirmation-overlay" id="confirmationOverlay">
     <div class="confirmation-dialog">
         <div class="confirmation-title">Status Detection</div>
+        <div class="confirm-from-to" id="confirmFromTo"></div>
         <div class="confirmation-message" id="confirmationMessage"></div>
+        <div class="confirm-meta" id="confirmMeta"></div>
         <div class="confirmation-url" id="confirmationUrl"></div>
-        <div class="confirmation-buttons">
-            <button class="confirmation-btn confirm-yes" id="confirmYes">Confirm</button>
-            <button class="confirmation-btn confirm-no"  id="confirmNo">Incorrect</button>
+        <button class="debug-toggle" id="debugToggle">Show reasoning</button>
+        <div class="debug-log" id="debugLog"></div>
+        <div class="confirmation-buttons" style="margin-top:14px;">
+            <button class="confirmation-btn confirm-yes" id="confirmYes">✓ Correct</button>
+            <button class="confirmation-btn confirm-no"  id="confirmNo">✗ Wrong</button>
         </div>
     </div>
 </div>
@@ -781,6 +834,41 @@ const { ipcRenderer } = require('electron');
 const path = require('path');
 const fs   = require('fs');
 
+// ── Accent Color ──────────────────────────────────────────────────────────────
+const ACCENT_COLORS = {
+    purple: { dark:  { accent:'#8b6ef5', lo:'rgba(139,110,245,0.08)', md:'rgba(139,110,245,0.18)' },
+               light: { accent:'#6b4fe0', lo:'rgba(107,79,224,0.07)',  md:'rgba(107,79,224,0.15)' } },
+    blue:   { dark:  { accent:'#5ab0f0', lo:'rgba(90,176,240,0.08)',  md:'rgba(90,176,240,0.18)'  },
+               light: { accent:'#2a7abf', lo:'rgba(42,122,191,0.07)',  md:'rgba(42,122,191,0.15)'  } },
+    cyan:   { dark:  { accent:'#3ecfcf', lo:'rgba(62,207,207,0.08)',  md:'rgba(62,207,207,0.18)'  },
+               light: { accent:'#1a9e9e', lo:'rgba(26,158,158,0.07)',  md:'rgba(26,158,158,0.15)'  } },
+    green:  { dark:  { accent:'#3ecf8e', lo:'rgba(62,207,142,0.08)',  md:'rgba(62,207,142,0.18)'  },
+               light: { accent:'#1a9e6a', lo:'rgba(26,158,106,0.07)',  md:'rgba(26,158,106,0.15)'  } },
+    amber:  { dark:  { accent:'#f0a05a', lo:'rgba(240,160,90,0.08)',  md:'rgba(240,160,90,0.18)'  },
+               light: { accent:'#c47a20', lo:'rgba(196,122,32,0.07)',  md:'rgba(196,122,32,0.15)'  } },
+    rose:   { dark:  { accent:'#f05a8b', lo:'rgba(240,90,139,0.08)',  md:'rgba(240,90,139,0.18)'  },
+               light: { accent:'#c4205a', lo:'rgba(196,32,90,0.07)',   md:'rgba(196,32,90,0.15)'   } },
+    red:    { dark:  { accent:'#ef5a5a', lo:'rgba(239,90,90,0.08)',   md:'rgba(239,90,90,0.18)'   },
+               light: { accent:'#c94040', lo:'rgba(201,64,64,0.07)',   md:'rgba(201,64,64,0.15)'   } },
+    slate:  { dark:  { accent:'#8890a8', lo:'rgba(136,144,168,0.08)', md:'rgba(136,144,168,0.18)' },
+               light: { accent:'#5a6278', lo:'rgba(90,98,120,0.07)',   md:'rgba(90,98,120,0.15)'   } },
+};
+function applyAccent(colorKey) {
+    const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+    const c = ACCENT_COLORS[colorKey]?.[theme] || ACCENT_COLORS.purple[theme];
+    document.documentElement.style.setProperty('--accent',    c.accent);
+    document.documentElement.style.setProperty('--accent-lo', c.lo);
+    document.documentElement.style.setProperty('--accent-md', c.md);
+    localStorage.setItem('hf-accent', colorKey);
+    document.querySelectorAll('.color-swatch').forEach(s =>
+        s.classList.toggle('active', s.dataset.color === colorKey)
+    );
+}
+document.getElementById('colorGrid').addEventListener('click', e => {
+    const swatch = e.target.closest('.color-swatch');
+    if (swatch) applyAccent(swatch.dataset.color);
+});
+
 // ── Theme ─────────────────────────────────────────────────────────────────────
 function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
@@ -789,10 +877,11 @@ function applyTheme(theme) {
     document.getElementById('themeLight').classList.toggle('selected', theme === 'light');
 }
 applyTheme(localStorage.getItem('hf-theme') || 'dark');
-document.getElementById('themeDark').addEventListener('click',  () => applyTheme('dark'));
-document.getElementById('themeLight').addEventListener('click', () => applyTheme('light'));
+applyAccent(localStorage.getItem('hf-accent') || 'purple');
+document.getElementById('themeDark').addEventListener('click',  () => { applyTheme('dark');  applyAccent(localStorage.getItem('hf-accent') || 'purple'); });
+document.getElementById('themeLight').addEventListener('click', () => { applyTheme('light'); applyAccent(localStorage.getItem('hf-accent') || 'purple'); });
 
-// ── UI Scale — data-scale attribute drives CSS vars ────────────────────────────
+// ── UI Scale ──────────────────────────────────────────────────────────────────
 function applyScale(scale) {
     document.documentElement.setAttribute('data-scale', scale);
     localStorage.setItem('hf-scale', scale);
@@ -804,74 +893,6 @@ applyScale(localStorage.getItem('hf-scale') || 'md');
 document.querySelectorAll('.scale-opt').forEach(btn =>
     btn.addEventListener('click', () => applyScale(btn.dataset.scale))
 );
-
-// ── In-app notifications ───────────────────────────────────────────────────────
-const notifBell  = document.getElementById('notifBell');
-const notifPanel = document.getElementById('notifPanel');
-const notifBadge = document.getElementById('notifBadge');
-const notifList  = document.getElementById('notifList');
-let notifications = [];
-
-function renderNotifs() {
-    const unread = notifications.filter(n => !n.read).length;
-    notifBadge.textContent = unread > 9 ? '9+' : unread;
-    notifBadge.classList.toggle('visible', unread > 0);
-
-    if (notifications.length === 0) {
-        notifList.innerHTML = '<div class="notif-empty">No notifications yet</div>';
-        return;
-    }
-    notifList.innerHTML = notifications.map((n, i) => `
-        <div class="notif-item">
-            <div class="notif-dot ${n.read ? 'read' : ''}"></div>
-            <div class="notif-text">
-                <div class="notif-title">${n.title}</div>
-                <div class="notif-body">${n.body}</div>
-                <div class="notif-time">${n.time}</div>
-            </div>
-        </div>
-    `).join('');
-}
-
-function addNotif(title, body) {
-    const now = new Date();
-    const time = now.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
-    notifications.unshift({ title, body, time, read: false });
-    if (notifications.length > 20) notifications.pop();
-    renderNotifs();
-}
-
-notifBell.addEventListener('click', e => {
-    e.stopPropagation();
-    const isOpen = notifPanel.classList.toggle('open');
-    if (isOpen) {
-        // Mark all as read when opened
-        notifications.forEach(n => n.read = true);
-        renderNotifs();
-    }
-});
-document.addEventListener('click', e => {
-    if (!document.getElementById('notifBellWrap').contains(e.target)) {
-        notifPanel.classList.remove('open');
-    }
-});
-document.getElementById('notifClear').addEventListener('click', () => {
-    notifications = [];
-    renderNotifs();
-});
-
-// Listen for OS notifications and mirror them in-app
-ipcRenderer.on('show-notification', (_e, data) => {
-    addNotif(data.title || 'HiredFinally', data.body || '');
-});
-// Also intercept outbound notification requests to mirror them
-const _origSend = ipcRenderer.send.bind(ipcRenderer);
-ipcRenderer.send = function(channel, ...args) {
-    if (channel === 'show-notification' && args[0]) {
-        addNotif(args[0].title || 'HiredFinally', args[0].body || '');
-    }
-    return _origSend(channel, ...args);
-};
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
 function showToast(msg, error = false) {
@@ -947,15 +968,15 @@ for (const p of [
 if (preloadPath) webview.setAttribute('preload', preloadPath);
 
 // ── Drag state ────────────────────────────────────────────────────────────────
-let dragCard        = null;   // the card element being dragged
-let placeholder     = null;   // the dashed placeholder div
-let dragOffX        = 0;
-let dragOffY        = 0;
-let dragMoved       = false;  // true once mouse moves > threshold after mousedown
-let mouseDownCard   = null;   // card that got mousedown (for click vs drag)
-let mouseDownPos    = null;   // {x,y} at mousedown
+let dragCard      = null;
+let placeholder   = null;
+let dragOffX      = 0;
+let dragOffY      = 0;
+let dragMoved     = false;
+let mouseDownCard = null;
+let mouseDownPos  = null;
 
-const DRAG_THRESHOLD = 6;     // px before drag activates
+const DRAG_THRESHOLD = 6;
 
 // ── Build initial grid ────────────────────────────────────────────────────────
 const DEFAULT_BOARDS = [
@@ -976,7 +997,18 @@ grid.appendChild(makeAddCard());
 function makeCard(name, url) {
     const card = document.createElement('div');
     card.className = 'job-card';
-    card.innerHTML = `<div class="job-card-name">${name}</div>`;
+    card.innerHTML = `<div class="job-card-name">${name}</div><button class="card-delete-btn" title="Remove board">✕</button>`;
+
+    const delBtn = card.querySelector('.card-delete-btn');
+    delBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        card.style.transition = 'opacity 0.15s, transform 0.15s';
+        card.style.opacity = '0';
+        card.style.transform = 'scale(0.9)';
+        setTimeout(() => card.remove(), 150);
+        showToast(`${name} removed`);
+    });
+    delBtn.addEventListener('mousedown', e => e.stopPropagation());
 
     card.addEventListener('mousedown', e => {
         if (e.button !== 0) return;
@@ -991,10 +1023,9 @@ function makeCard(name, url) {
         dragGhostEl.style.width  = rect.width  + 'px';
         dragGhostEl.style.height = rect.height + 'px';
 
-        e.preventDefault(); // prevent text selection while dragging
+        e.preventDefault();
     });
 
-    // Click fires only when mouse didn't move enough to start a drag
     card.addEventListener('click', () => {
         if (!dragMoved) openJobBoard(url);
     });
@@ -1010,7 +1041,7 @@ function makeAddCard() {
     return card;
 }
 
-// ── Global mouse move — activates drag once threshold exceeded ────────────────
+// ── Global mouse move ─────────────────────────────────────────────────────────
 document.addEventListener('mousemove', e => {
     if (!mouseDownCard) return;
 
@@ -1018,71 +1049,56 @@ document.addEventListener('mousemove', e => {
     const dy = e.clientY - mouseDownPos.y;
 
     if (!dragMoved && Math.sqrt(dx*dx + dy*dy) > DRAG_THRESHOLD) {
-        // Threshold crossed — begin drag
         dragMoved = true;
         dragCard  = mouseDownCard;
         dragCard.classList.add('dragging');
 
-        // Create placeholder same size as card
         placeholder = document.createElement('div');
         placeholder.className = 'drop-placeholder';
         const r = dragCard.getBoundingClientRect();
         placeholder.style.height = r.height + 'px';
 
-        // Insert placeholder right where the card is, then leave card in DOM (faded)
         dragCard.after(placeholder);
-
-        // Show ghost
         dragGhostEl.classList.add('visible');
     }
 
     if (dragMoved) {
-        // Move ghost
         dragGhostEl.style.left = (e.clientX - dragOffX) + 'px';
         dragGhostEl.style.top  = (e.clientY - dragOffY) + 'px';
-
-        // Find which grid cell the cursor is over and move placeholder there
         movePlaceholder(e.clientX, e.clientY);
     }
 });
 
-// ── Drop on mouseup ───────────────────────────────────────────────────────────
 document.addEventListener('mouseup', e => {
     if (!mouseDownCard) return;
 
     if (dragMoved && dragCard && placeholder) {
-        // Drop: insert dragged card where placeholder is
         placeholder.replaceWith(dragCard);
         dragCard.classList.remove('dragging');
     }
 
-    // Hide ghost and clean up
     dragGhostEl.classList.remove('visible');
     if (placeholder && placeholder.parentNode) placeholder.remove();
     dragCard      = null;
     placeholder   = null;
     mouseDownCard = null;
     mouseDownPos  = null;
-    // dragMoved stays true briefly so the click handler above doesn't fire
     setTimeout(() => { dragMoved = false; }, 0);
 });
 
-// ── Move placeholder to correct position during drag ─────────────────────────
 function movePlaceholder(cx, cy) {
     if (!placeholder) return;
 
-    // Get all cards except the dragging one and the placeholder
     const items = [...grid.children].filter(el =>
         el !== dragCard && el !== placeholder && !el.classList.contains('add-board-card')
     );
 
-    let target = null;
+    let target      = null;
     let insertBefore = true;
 
     for (const item of items) {
         const r = item.getBoundingClientRect();
         if (cy >= r.top && cy <= r.bottom && cx >= r.left && cx <= r.right) {
-            // Cursor is over this item — decide left half vs right half
             insertBefore = cx < r.left + r.width / 2;
             target = item;
             break;
@@ -1090,11 +1106,8 @@ function movePlaceholder(cx, cy) {
     }
 
     if (target) {
-        if (insertBefore) {
-            target.before(placeholder);
-        } else {
-            target.after(placeholder);
-        }
+        if (insertBefore) target.before(placeholder);
+        else              target.after(placeholder);
     }
 }
 
@@ -1169,34 +1182,92 @@ function openSettings() {
     ipcRenderer.send('get-settings');
 }
 
-navBoards.addEventListener('click',   () => showBoards());
+navBoards.addEventListener('click',   () => { showBoards(); ipcRenderer.send('reset-status'); });
 navSettings.addEventListener('click', () => openSettings());
-backButton.addEventListener('click',  () => showBoards());
+backButton.addEventListener('click',  () => { showBoards(); ipcRenderer.send('reset-status'); });
 
 // ── IPC ───────────────────────────────────────────────────────────────────────
 ipcRenderer.on('load-in-webview', (_e, url) => openJobBoard(url));
-ipcRenderer.on('navigate-home',   () => showBoards());
+ipcRenderer.on('navigate-home',   () => { showBoards(); ipcRenderer.send('reset-status'); });
 ipcRenderer.on('update-status-badge', (_e, label, cls) => {
     const badge = document.getElementById('statusBadge');
     if (badge) { badge.textContent = label; badge.className = 'status-badge status-' + cls; }
 });
+
+// ── Confirmation dialog ───────────────────────────────────────────────────────
+let _pendingDebugData = null;
+
+function colorizeReasoning(lines) {
+    return lines.map(line => {
+        if (!line) return '';
+        const esc = line.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        if (/===/.test(line))                         return `<span class="log-phase">${esc}</span>`;
+        if (/\[✓✓✓\]|\[✓✓\]|\[✓\]/.test(line))      return `<span class="log-high">${esc}</span>`;
+        if (/\[\+\+\+\]|\[\+\+\]|\[\+\]/.test(line)) return `<span class="log-medium">${esc}</span>`;
+        if (/\[-\]|\[⚠\]/.test(line))                return `<span class="log-warn">${esc}</span>`;
+        return esc;
+    }).join('\n');
+}
+
+const STATUS_NAMES = { NOT_STARTED:'Not Started', IN_PROGRESS:'In Progress', COMPLETED:'Completed', UNKNOWN:'Unknown' };
+
 ipcRenderer.on('show-confirmation-dialog', (_e, data) => {
-    const names = { NOT_STARTED:'Not Started', IN_PROGRESS:'In Progress', COMPLETED:'Completed', UNKNOWN:'Unknown' };
-    let trigger = '';
-    if (data.urlChanged) trigger = '<br><small style="color:var(--amber)">URL changed</small>';
-    if (data.wasPopup)   trigger = '<br><small style="color:var(--amber)">Popup detected</small>';
+    _pendingDebugData = data;
+
+    const fromTo = document.getElementById('confirmFromTo');
+    fromTo.innerHTML =
+        `<span class="status-pill pill-${data.currentStatus}">${STATUS_NAMES[data.currentStatus] || data.currentStatus}</span>
+         <span class="arrow">→</span>
+         <span class="status-pill pill-${data.newStatus}">${STATUS_NAMES[data.newStatus]}</span>`;
+
     document.getElementById('confirmationMessage').innerHTML =
-        `Detected: <strong>${names[data.newStatus]}</strong>
+        `Detected <strong>${STATUS_NAMES[data.newStatus]}</strong>
          <span class="confidence-badge confidence-${data.confidence}">${data.confidence}</span>
-         ${trigger}<br><br>Is this correct?`;
+         <span class="source-badge source-dom">dom</span>
+         — is this right?`;
+
+    const meta = document.getElementById('confirmMeta');
+    const tags = [];
+    if (data.urlChanged) tags.push(`<span style="color:var(--amber)">url changed</span>`);
+    if (data.wasPopup)   tags.push(`<span style="color:var(--amber)">popup</span>`);
+    if (data.signals) {
+        tags.push(`<span>${data.signals.formCount} forms</span>`);
+        tags.push(`<span>${data.signals.inputCount} inputs</span>`);
+        tags.push(`<span>${data.signals.fileInputCount} files</span>`);
+        tags.push(`<span>${data.signals.requiredFieldCount} required</span>`);
+        if (data.signals.hasProgressIndicator) tags.push(`<span style="color:var(--green)">progress bar</span>`);
+    }
+    meta.innerHTML = tags.join('');
+
     document.getElementById('confirmationUrl').textContent = data.url;
+
+    const logEl = document.getElementById('debugLog');
+    logEl.innerHTML = colorizeReasoning(data.reasoning || []);
+
     document.getElementById('confirmationOverlay').classList.add('active');
 });
-ipcRenderer.on('hide-confirmation-dialog', () =>
-    document.getElementById('confirmationOverlay').classList.remove('active')
-);
-document.getElementById('confirmYes').addEventListener('click', () => ipcRenderer.send('status-confirmation', true));
-document.getElementById('confirmNo').addEventListener('click',  () => ipcRenderer.send('status-confirmation', false));
+
+ipcRenderer.on('hide-confirmation-dialog', () => {
+    document.getElementById('confirmationOverlay').classList.remove('active');
+    document.getElementById('debugLog').classList.remove('open');
+    document.getElementById('debugToggle').classList.remove('open');
+    _pendingDebugData = null;
+});
+
+document.getElementById('debugToggle').addEventListener('click', () => {
+    const log = document.getElementById('debugLog');
+    const btn = document.getElementById('debugToggle');
+    const isOpen = log.classList.toggle('open');
+    btn.classList.toggle('open', isOpen);
+    btn.textContent = isOpen ? 'Hide reasoning' : 'Show reasoning';
+});
+
+document.getElementById('confirmYes').addEventListener('click', () => {
+    ipcRenderer.send('status-confirmation', { correct: true, data: _pendingDebugData });
+});
+document.getElementById('confirmNo').addEventListener('click', () => {
+    ipcRenderer.send('status-confirmation', { correct: false, data: _pendingDebugData });
+});
 
 // ── Webview events ────────────────────────────────────────────────────────────
 webview.addEventListener('ipc-message', e => {
