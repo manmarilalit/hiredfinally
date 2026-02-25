@@ -9,7 +9,7 @@
   "private": true,
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "copy-html": "node -e \"require('fs').copyFileSync('src/electron/home.html', 'out/electron/home.html')\"",
+    "copy-html": "node -e \"['home','settings'].forEach(f=>require('fs').copyFileSync('src/electron/'+f+'.html','out/electron/'+f+'.html'))\"",
     "start": "electron ./out/electron/index.js",
     "build": "tsc && npm run copy-html",
     "build:watch": "tsc --watch & npm run copy-html",

@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "followUpEnabled": true,
+  "followUpDelay": 24,
+  "dailyReminderEnabled": true,
+  "dailyReminderTime": "10:00",
+  "emailCheckEnabled": false,
+  "emailCheckInterval": 30,
+  "inactivityReminderEnabled": true,
+  "inactivityDelay": 3,
+  "weeklyGoalEnabled": true,
+  "weeklyGoal": 5,
+  "soundEnabled": true
+}
