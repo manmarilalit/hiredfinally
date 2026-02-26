@@ -1,4 +1,5 @@
 const { app, BrowserWindow, ipcMain, dialog, Notification } = require('electron');
+const { autoUpdater } = require('electron-updater'); 
 const path = require('path');
 const fs   = require('fs');
 const Database = require('better-sqlite3');
@@ -61,6 +62,8 @@ function sendNativeNotification(title: string, body: string): void {
     n.show();
 }
 
+
+
 app.on('ready', async () => {
     if (process.platform === 'win32') app.setAppUserModelId(app.name);
 
@@ -76,6 +79,17 @@ app.on('ready', async () => {
 
     mainWindow.setMenuBarVisibility(false);
     mainWindow.loadFile(path.join(__dirname, 'home.html'));
+
+    autoUpdater.checkForUpdatesAndNotify();
+
+    autoUpdater.on('update-available', () => {
+        sendNativeNotification('HiredFinally', 'Update available! Downloading now...');
+    });
+
+    autoUpdater.on('update-downloaded', () => {
+        sendNativeNotification('HiredFinally', 'Update downloaded! Restart the app to apply.');
+    });
+
 
     const dbPath = app.isPackaged
         ? path.join(app.getPath('userData'), 'job_apps.db')

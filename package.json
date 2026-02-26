@@ -1,5 +1,5 @@
 {
-  "name": "jobtracker",
+  "name": "hiredfinally",
   "version": "1.0.0",
   "description": "A job application tracker",
   "license": "ISC",
@@ -7,30 +7,53 @@
   "type": "commonjs",
   "main": "out/electron/index.js",
   "private": true,
+
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+
     "copy-html": "node -e \"['home','settings','pipeline'].forEach(f=>require('fs').copyFileSync('src/electron/'+f+'.html','out/electron/'+f+'.html'))\"",
+
     "start": "electron ./out/electron/index.js",
+
     "build": "tsc && npm run copy-html",
+
     "build:watch": "tsc --watch & npm run copy-html",
+
     "postinstall": "electron-rebuild",
+
     "dist": "npm run build && electron-builder",
+
     "dist:win": "npm run build && electron-builder --win",
+
     "dist:mac": "npm run build && electron-builder --mac",
+
     "dist:linux": "npm run build && electron-builder --linux",
+
     "git:auto": "bash git-auto.sh"
   },
+
   "build": {
-    "appId": "com.lalitmanmari.jobtracker",
-    "productName": "JobTracker",
+    "appId": "com.lalitmanmari.hiredfinally",
+    "productName": "HiredFinally",
+
+    "asar": true,
+
     "directories": {
       "output": "dist"
     },
+
     "files": [
       "out/**/*",
-      "node_modules/**/*",
-      "package.json"
+      "package.json",
+      "node_modules/**/*"
     ],
+
+    "publish": {
+      "provider": "github",
+      "owner": "manmarilalit",
+      "repo": "hiredfinally"
+    },
+
     "win": {
       "target": [
         "nsis",
@@ -42,6 +65,7 @@
         "sha256"
       ]
     },
+
     "mac": {
       "target": [
         "dmg"
@@ -49,6 +73,7 @@
       "icon": "build/icon.icns",
       "category": "public.app-category.productivity"
     },
+
     "linux": {
       "target": [
         "AppImage",
@@ -57,11 +82,13 @@
       "icon": "build/icon.png",
       "category": "Utility"
     },
+
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
     }
   },
+
   "devDependencies": {
     "@electron/rebuild": "^4.0.2",
     "@types/better-sqlite3": "^7.6.13",
@@ -70,9 +97,10 @@
     "electron-rebuild": "^3.2.9",
     "typescript": "^5.9.3"
   },
+
   "dependencies": {
     "better-sqlite3": "^12.5.0",
-    "electron-updater": "^6.8.3",
-    "sql.js": "^1.13.0"
+    "sql.js": "^1.13.0",
+    "electron-updater": "^6.3.9"
   }
 }
