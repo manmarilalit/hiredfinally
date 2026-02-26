@@ -604,10 +604,9 @@ webview { width:100%; height:100%; }
             <div class="nav-group-label">Browse</div>
             <div class="nav-item active" id="navBoards"><span class="nav-dot"></span><span>Job Boards</span></div>
             <div class="nav-group-label">Pipeline</div>
-            <div class="nav-item"><span class="nav-dot"></span><span>Applied</span></div>
-            <div class="nav-item"><span class="nav-dot"></span><span>In Progress</span></div>
-            <div class="nav-item"><span class="nav-dot"></span><span>Interviews</span></div>
-            <div class="nav-item"><span class="nav-dot"></span><span>Offers</span></div>
+            <div class="nav-item" id="navPipeline"><span class="nav-dot"></span><span>Applications</span></div>
+            <div class="nav-item" id="navInterviews"><span class="nav-dot"></span><span>Interviews</span></div>
+            <div class="nav-item" id="navOffers"><span class="nav-dot"></span><span>Offers</span></div>
         </div>
         <div class="nav-bottom">
             <div class="nav-item" id="navSettings"><span class="nav-dot"></span><span>Settings</span></div>
@@ -982,7 +981,7 @@ const DRAG_THRESHOLD = 6;
 const DEFAULT_BOARDS = [
     { name:'Indeed',       url:'https://www.indeed.com/' },
     { name:'LinkedIn',     url:'https://www.linkedin.com/jobs/' },
-    { name:'Glassdoor',    url:'https://www.glassdoor.com/Job/' },
+    { name:'Glassdoor',    url:'https://www.https://www.glassdoor.com/Job/index.htm' },
     { name:'Handshake',    url:'https://www.joinhandshake.com/' },
     { name:'ZipRecruiter', url:'https://www.ziprecruiter.com/' },
     { name:'Monster',      url:'https://www.monster.com/' },
@@ -1283,6 +1282,10 @@ webview.addEventListener('new-window', e => {
 webview.addEventListener('did-finish-load', () => console.log('[RENDERER] loaded:', webview.getURL()));
 webview.addEventListener('console-message', e => console.log('[WEBVIEW]', e.message));
 webview.addEventListener('crashed', () => console.error('[RENDERER] Webview crashed'));
+document.getElementById('navPipeline').addEventListener('click', () => ipcRenderer.send('open-pipeline'));
+document.getElementById('navInterviews').addEventListener('click', () => ipcRenderer.send('open-pipeline'));
+document.getElementById('navOffers').addEventListener('click', () => ipcRenderer.send('open-pipeline'));
+ipcRenderer.on('open-settings-view', () => openSettings());
 </script>
 </body>
 </html>

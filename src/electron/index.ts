@@ -4,7 +4,7 @@ const fs   = require('fs');
 const Database = require('better-sqlite3');
 
 const { detectApplicationStatus }   = require('./status');
-const { addInProgress, updateCompleted, getStatus } = require('./storage');
+const { addInProgress, updateCompleted, getStatus, getAll, getByStatus, clearAll } = require('./storage');
 const { NotificationManager }       = require('./notifications');
 
 if (process.platform === 'win32') {
@@ -160,6 +160,7 @@ app.on('ready', async () => {
 
         if (isCorrect) {
             applyStatusChange(detectedStatus, d.url);
+            mainWindow?.webContents.send('app-status-updated');
         } else {
             lastLoggedURL = '';
         }
@@ -175,8 +176,10 @@ app.on('ready', async () => {
         notificationManager.updateSettings(s);
     });
     ipcMain.on('navigate-home', () => {
-        resetStatus();
-        mainWindow?.webContents.send('navigate-home');
+        mainWindow?.loadFile(path.join(__dirname, 'home.html'));
+        mainWindow?.webContents.once('did-finish-load', () => {
+            mainWindow?.webContents.send('navigate-home');
+        });
     });
     ipcMain.on('set-theme', (_e: any, theme: string) => {
         mainWindow?.webContents.send('apply-theme', theme);
@@ -185,8 +188,46 @@ app.on('ready', async () => {
         sendNativeNotification(title, body);
     });
     ipcMain.on('export-application-data', () => exportApplicationData());
-    ipcMain.on('clear-application-data',  () => clearApplicationData());
+    ipcMain.on('clear-application-data', () => {
+        clearAll();
+        sendNativeNotification('HiredFinally', 'All application data cleared.');
+    });
 
+    ipcMain.on('get-all-apps', (event: any) => {
+        try {
+            const apps = getAll();
+            event.sender.send('all-apps-data', apps);
+        } catch (e) {
+            console.error('[GET-ALL-APPS]', e);
+            event.sender.send('all-apps-data', []);
+        }
+    });
+
+    ipcMain.on('delete-app', (_e: any, url: string) => {
+        try {
+            db.prepare("DELETE FROM job_apps WHERE url = ?").run(url);
+        } catch (e) {
+            console.error('[DELETE-APP]', e);
+        }
+    });
+
+    ipcMain.on('open-url-in-home', (_e: any, url: string) => {
+        mainWindow?.loadFile(path.join(__dirname, 'home.html'));
+        mainWindow?.webContents.once('did-finish-load', () => {
+            mainWindow?.webContents.send('load-in-webview', url);
+        });
+    });
+
+    ipcMain.on('open-pipeline', () => {
+        mainWindow?.loadFile(path.join(__dirname, 'pipeline.html'));
+    });
+
+    ipcMain.on('open-settings', () => {
+        mainWindow?.loadFile(path.join(__dirname, 'home.html'));
+        mainWindow?.webContents.once('did-finish-load', () => {
+            mainWindow?.webContents.send('open-settings-view');
+        });
+    });
     function exportApplicationData(): void {
         const rows = db.prepare("SELECT * FROM job_apps ORDER BY rowid DESC").all() as JobAppRow[];
         const csv  = ['URL,Status', ...rows.map((r: JobAppRow) => `"${r.url}",${r.status}`)].join('\n');
@@ -201,11 +242,6 @@ app.on('ready', async () => {
                 sendNativeNotification('HiredFinally', 'Application data exported.');
             }
         }).catch((e: Error) => console.error('[EXPORT ERROR]', e));
-    }
-
-    function clearApplicationData(): void {
-        db.prepare("DELETE FROM job_apps").run();
-        sendNativeNotification('HiredFinally', 'All application data cleared.');
     }
 
     // ── Apply a confirmed status change ───────────────────────────────────────

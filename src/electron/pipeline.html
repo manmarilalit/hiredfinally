@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Pipeline — HiredFinally</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* ── UI Scale ── */
+:root {
+    --ui-scale: 1;
+    --fs-xs:   calc(9px  * var(--ui-scale));
+    --fs-sm:   calc(11px * var(--ui-scale));
+    --fs-md:   calc(13px * var(--ui-scale));
+    --fs-lg:   calc(15px * var(--ui-scale));
+    --sp-sm:   calc(6px  * var(--ui-scale));
+    --sp-md:   calc(10px * var(--ui-scale));
+    --sp-lg:   calc(16px * var(--ui-scale));
+    --sp-xl:   calc(20px * var(--ui-scale));
+    --sp-2xl:  calc(28px * var(--ui-scale));
+}
+[data-scale="sm"] { --ui-scale: 0.88; }
+[data-scale="md"] { --ui-scale: 1;    }
+[data-scale="lg"] { --ui-scale: 1.18; }
+[data-scale="xl"] { --ui-scale: 1.38; }
+
+[data-theme="dark"] {
+    --bg:        #0e0e14;
+    --surface:   #13131c;
+    --border:    #1f1f2e;
+    --border-hi: #2e2e45;
+    --text:      #d4d4e0;
+    --text-dim:  #6b6b80;
+    --text-mute: #3a3a50;
+    --accent:    #8b6ef5;
+    --accent-lo: rgba(139,110,245,0.08);
+    --accent-md: rgba(139,110,245,0.18);
+    --green:     #3ecf8e;
+    --green-lo:  rgba(62,207,142,0.1);
+    --amber:     #f0a05a;
+    --amber-lo:  rgba(240,160,90,0.1);
+    --blue:      #5ab0f0;
+    --blue-lo:   rgba(90,176,240,0.1);
+    --red:       #ef5a5a;
+    --red-lo:    rgba(239,90,90,0.1);
+}
+[data-theme="light"] {
+    --bg:        #f4f4f8;
+    --surface:   #ffffff;
+    --border:    #e2e2ec;
+    --border-hi: #c8c8dc;
+    --text:      #1a1a2e;
+    --text-dim:  #5a5a72;
+    --text-mute: #aaaabb;
+    --accent:    #6b4fe0;
+    --accent-lo: rgba(107,79,224,0.07);
+    --accent-md: rgba(107,79,224,0.15);
+    --green:     #1a9e6a;
+    --green-lo:  rgba(26,158,106,0.1);
+    --amber:     #c47a20;
+    --amber-lo:  rgba(196,122,32,0.1);
+    --blue:      #2a7abf;
+    --blue-lo:   rgba(42,122,191,0.1);
+    --red:       #c94040;
+    --red-lo:    rgba(201,64,64,0.1);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-user-select:none; user-select:none; }
+a { -webkit-user-select:text; user-select:text; }
+
+body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    transition: background 0.2s, color 0.2s;
+}
+
+/* ── Sidebar (identical to home.html) ── */
+.sidebar {
+    width: 220px;
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border);
+    flex-shrink: 0;
+    transition: background 0.2s, border-color 0.2s;
+}
+.sidebar-header {
+    height: calc(52px * var(--ui-scale));
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    border-bottom: 1px solid var(--border);
+}
+.sidebar-header h1 {
+    font-family: 'DM Mono', monospace;
+    color: var(--accent);
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+.nav-group-label {
+    font-family: 'DM Mono', monospace;
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-mute);
+    padding: var(--sp-lg) var(--sp-xl) var(--sp-sm);
+}
+.nav-section { flex: 1; padding: var(--sp-sm) 0; }
+.nav-item {
+    padding: var(--sp-md) var(--sp-xl);
+    cursor: pointer;
+    font-size: var(--fs-md);
+    font-weight: 400;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-md);
+    color: var(--text-dim);
+    position: relative;
+    white-space: nowrap;
+    transition: all 0.15s;
+}
+.nav-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--text-mute);
+    flex-shrink: 0;
+    transition: background 0.15s;
+}
+.nav-item:hover { background: var(--accent-lo); color: var(--text); }
+.nav-item:hover .nav-dot { background: var(--text-dim); }
+.nav-item.active { background: var(--accent-lo); color: var(--accent); }
+.nav-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 4px; bottom: 4px;
+    width: 2px;
+    background: var(--accent);
+    border-radius: 0 2px 2px 0;
+}
+.nav-item.active .nav-dot { background: var(--accent); }
+.nav-bottom { padding: 6px 0; border-top: 1px solid var(--border); }
+
+/* ── Main ── */
+.main-content { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+.top-bar {
+    height: calc(52px * var(--ui-scale));
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: var(--sp-md);
+    padding: 0 var(--sp-xl);
+    flex-shrink: 0;
+    transition: background 0.2s, border-color 0.2s;
+}
+.top-bar-title {
+    font-family: 'DM Mono', monospace;
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+}
+.top-bar-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-md);
+}
+
+/* ── Content area ── */
+.content-area {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+}
+
+/* ── Stats strip ── */
+.stats-strip {
+    display: flex;
+    gap: 1px;
+    background: var(--border);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+.stat-cell {
+    flex: 1;
+    background: var(--surface);
+    padding: var(--sp-md) var(--sp-lg);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+.stat-value {
+    font-family: 'DM Mono', monospace;
+    font-size: calc(22px * var(--ui-scale));
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1;
+}
+.stat-label {
+    font-family: 'DM Mono', monospace;
+    font-size: var(--fs-xs);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-mute);
+}
+.stat-cell.green .stat-value { color: var(--green); }
+.stat-cell.amber .stat-value { color: var(--amber); }
+.stat-cell.blue  .stat-value { color: var(--blue); }
+
+/* ── Tabs ── */
+.tabs-bar {
+    display: flex;
+    gap: 2px;
+    padding: var(--sp-md) var(--sp-lg);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+.tab-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-sm);
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    transition: color 0.15s, background 0.15s;
+}
+.tab-btn:hover { color: var(--text); background: var(--accent-lo); }
+.tab-btn.active { background: var(--accent-md); color: var(--accent); }
+.tab-count {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 99px;
+    background: var(--bg);
+    color: var(--text-mute);
+    border: 1px solid var(--border-hi);
+    transition: background 0.15s, color 0.15s;
+    min-width: 20px;
+    text-align: center;
+}
+.tab-btn.active .tab-count {
+    background: var(--accent-lo);
+    color: var(--accent);
+    border-color: transparent;
+}
+
+/* ── Filter row ── */
+.filter-row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-md);
+    padding: var(--sp-md) var(--sp-lg);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    background: var(--bg);
+}
+.search-input {
+    flex: 1;
+    max-width: 320px;
+    padding: 6px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border-hi);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: var(--fs-sm);
+    outline: none;
+    transition: border-color 0.15s;
+    -webkit-user-select: text;
+    user-select: text;
+}
+.search-input::placeholder { color: var(--text-mute); }
+.search-input:focus { border-color: var(--accent); }
+.filter-sep { width: 1px; height: 18px; background: var(--border); flex-shrink: 0; }
+.sort-label {
+    font-family: 'DM Mono', monospace;
+    font-size: var(--fs-xs);
+    color: var(--text-mute);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+.sort-select {
+    padding: 5px 10px;
+    background: var(--surface);
+    border: 1px solid var(--border-hi);
+    border-radius: 5px;
+    color: var(--text-dim);
+    font-family: 'DM Mono', monospace;
+    font-size: var(--fs-xs);
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    -webkit-user-select: none;
+    user-select: none;
+}
+.sort-select:focus { border-color: var(--accent); }
+.item-count-label {
+    margin-left: auto;
+    font-family: 'DM Mono', monospace;
+    font-size: var(--fs-xs);
+    color: var(--text-mute);
+    letter-spacing: 0.08em;
+}
+
+/* ── Table ── */
+.table-scroll {
+    flex: 1;
+    overflow-y: auto;
+}
+.table-scroll::-webkit-scrollbar { width: 6px; }
+.table-scroll::-webkit-scrollbar-track { background: transparent; }
+.table-scroll::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 3px; }
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+thead { position: sticky; top: 0; z-index: 2; }
+thead tr {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+}
+th {
+    font-family: 'DM Mono', monospace;
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-mute);
+    padding: var(--sp-sm) var(--sp-lg);
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color 0.15s;
+    user-select: none;
+    -webkit-user-select: none;
+}
+th:hover { color: var(--text-dim); }
+th.sorted { color: var(--accent); }
+th .sort-arrow { font-size: 8px; margin-left: 4px; opacity: 0.6; }
+
+tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.12s;
+    cursor: default;
+}
+tbody tr:hover { background: var(--accent-lo); }
+tbody tr:last-child { border-bottom: none; }
+
+td {
+    padding: var(--sp-md) var(--sp-lg);
+    font-size: var(--fs-sm);
+    color: var(--text-dim);
+    vertical-align: middle;
+}
+
+/* URL cell */
+.url-cell { max-width: 0; }
+.url-inner {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-sm);
+}
+.url-favicon {
+    width: 14px; height: 14px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    opacity: 0.7;
+}
+.url-text {
+    font-family: 'DM Mono', monospace;
+    font-size: var(--fs-xs);
+    color: var(--text-dim);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: color 0.15s;
+}
+.url-link-btn {
+    flex-shrink: 0;
+    opacity: 0;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: var(--accent-lo);
+    color: var(--accent);
+    border: 1px solid transparent;
+    font-family: 'DM Mono', monospace;
+    font-size: 8px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: opacity 0.15s, border-color 0.15s;
+    white-space: nowrap;
+}
+tbody tr:hover .url-link-btn { opacity: 1; }
+tbody tr:hover .url-link-btn:hover { border-color: var(--accent); }
+
+/* Domain chip */
+.domain-chip {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--bg);
+    color: var(--text-dim);
+    border: 1px solid var(--border-hi);
+    white-space: nowrap;
+}
+
+/* Status badge */
+.status-pill {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    font-weight: 500;
+    padding: 3px 9px;
+    border-radius: 4px;
+    border: 1px solid;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+}
+.status-IN_PROGRESS { background: var(--amber-lo); color: var(--amber); border-color: rgba(240,160,90,0.25); }
+.status-COMPLETED   { background: var(--green-lo); color: var(--green); border-color: rgba(62,207,142,0.25); }
+
+/* Date cell */
+.date-cell {
+    font-family: 'DM Mono', monospace;
+    font-size: var(--fs-xs);
+    color: var(--text-mute);
+    white-space: nowrap;
+}
+.date-relative {
+    color: var(--text-dim);
+}
+.date-abs {
+    font-size: 9px;
+    color: var(--text-mute);
+    margin-top: 2px;
+}
+
+/* Delete btn */
+.row-delete-btn {
+    opacity: 0;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: var(--red-lo);
+    color: var(--red);
+    border: 1px solid rgba(239,90,90,0.2);
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    cursor: pointer;
+    transition: opacity 0.15s, background 0.15s;
+    white-space: nowrap;
+}
+tbody tr:hover .row-delete-btn { opacity: 1; }
+.row-delete-btn:hover { background: rgba(239,90,90,0.2); }
+
+/* ── Empty state ── */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 40px;
+    gap: 12px;
+    text-align: center;
+}
+.empty-icon {
+    font-size: 36px;
+    opacity: 0.15;
+    line-height: 1;
+}
+.empty-title {
+    font-family: 'DM Mono', monospace;
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-mute);
+}
+.empty-desc {
+    font-size: var(--fs-sm);
+    color: var(--text-mute);
+    max-width: 280px;
+    line-height: 1.6;
+}
+
+/* ── Toast ── */
+.toast {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    background: var(--surface);
+    color: var(--green);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 10px 16px;
+    border-radius: 6px;
+    border: 1px solid rgba(62,207,142,0.3);
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none;
+    z-index: 9999;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+
+/* ── Transitions ── */
+.sidebar, .top-bar, .tabs-bar, .stat-cell, .stats-strip, .filter-row, table {
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+@media (max-width: 1000px) {
+    .sidebar { width: 160px; }
+}
+@media (max-width: 700px) {
+    .sidebar { width: 130px; }
+}
+</style>
+</head>
+
+<body>
+<div class="sidebar">
+    <div class="sidebar-header"><h1>HiredFinally</h1></div>
+    <div class="nav-section">
+        <div class="nav-group-label">Browse</div>
+        <div class="nav-item" id="navBoards"><span class="nav-dot"></span><span>Job Boards</span></div>
+        <div class="nav-group-label">Pipeline</div>
+        <div class="nav-item active" id="navPipeline"><span class="nav-dot"></span><span>Applications</span></div>
+        <div class="nav-item" id="navInterviews"><span class="nav-dot"></span><span>Interviews</span></div>
+        <div class="nav-item" id="navOffers"><span class="nav-dot"></span><span>Offers</span></div>
+    </div>
+    <div class="nav-bottom">
+        <div class="nav-item" id="navSettings"><span class="nav-dot"></span><span>Settings</span></div>
+        <div class="nav-item"><span class="nav-dot"></span><span>Account</span></div>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="top-bar">
+        <span class="top-bar-title">Applications</span>
+        <div class="top-bar-right">
+            <button class="tab-btn" id="refreshBtn" style="gap:6px;">
+                <span style="font-size:11px;">↻</span> Refresh
+            </button>
+        </div>
+    </div>
+
+    <div class="content-area">
+        <!-- Stats strip -->
+        <div class="stats-strip">
+            <div class="stat-cell">
+                <div class="stat-value" id="statTotal">0</div>
+                <div class="stat-label">Total</div>
+            </div>
+            <div class="stat-cell amber">
+                <div class="stat-value" id="statInProgress">0</div>
+                <div class="stat-label">In Progress</div>
+            </div>
+            <div class="stat-cell green">
+                <div class="stat-value" id="statCompleted">0</div>
+                <div class="stat-label">Submitted</div>
+            </div>
+            <div class="stat-cell blue">
+                <div class="stat-value" id="statToday">0</div>
+                <div class="stat-label">Today</div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs-bar">
+            <button class="tab-btn active" data-tab="all">
+                All <span class="tab-count" id="countAll">0</span>
+            </button>
+            <button class="tab-btn" data-tab="IN_PROGRESS">
+                In Progress <span class="tab-count" id="countInProgress">0</span>
+            </button>
+            <button class="tab-btn" data-tab="COMPLETED">
+                Submitted <span class="tab-count" id="countCompleted">0</span>
+            </button>
+        </div>
+
+        <!-- Filter row -->
+        <div class="filter-row">
+            <input class="search-input" id="searchInput" type="text" placeholder="Search by URL or domain…">
+            <div class="filter-sep"></div>
+            <span class="sort-label">Sort</span>
+            <select class="sort-select" id="sortSelect">
+                <option value="date-desc">Newest first</option>
+                <option value="date-asc">Oldest first</option>
+                <option value="domain">By domain</option>
+                <option value="status">By status</option>
+            </select>
+            <span class="item-count-label" id="itemCountLabel">— items</span>
+        </div>
+
+        <!-- Table -->
+        <div class="table-scroll" id="tableScroll">
+            <table id="appsTable">
+                <thead>
+                    <tr>
+                        <th style="width:40%;" data-sort="url">URL <span class="sort-arrow">↕</span></th>
+                        <th style="width:15%;" data-sort="domain">Domain <span class="sort-arrow">↕</span></th>
+                        <th style="width:12%;" data-sort="status">Status <span class="sort-arrow">↕</span></th>
+                        <th style="width:18%;" data-sort="date">Applied <span class="sort-arrow">↕</span></th>
+                        <th style="width:15%;"></th>
+                    </tr>
+                </thead>
+                <tbody id="appsBody"></tbody>
+            </table>
+            <div class="empty-state" id="emptyState" style="display:none;">
+                <div class="empty-icon">📋</div>
+                <div class="empty-title">No applications yet</div>
+                <div class="empty-desc">Applications you start or complete on job boards will appear here automatically.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const { ipcRenderer } = require('electron');
+
+// ── Apply saved theme + scale ─────────────────────────────────────────────────
+const ACCENT_COLORS = {
+    purple: { dark:  { accent:'#8b6ef5', lo:'rgba(139,110,245,0.08)', md:'rgba(139,110,245,0.18)' }, light: { accent:'#6b4fe0', lo:'rgba(107,79,224,0.07)', md:'rgba(107,79,224,0.15)' } },
+    blue:   { dark:  { accent:'#5ab0f0', lo:'rgba(90,176,240,0.08)', md:'rgba(90,176,240,0.18)' },  light: { accent:'#2a7abf', lo:'rgba(42,122,191,0.07)', md:'rgba(42,122,191,0.15)' } },
+    cyan:   { dark:  { accent:'#3ecfcf', lo:'rgba(62,207,207,0.08)', md:'rgba(62,207,207,0.18)' },  light: { accent:'#1a9e9e', lo:'rgba(26,158,158,0.07)', md:'rgba(26,158,158,0.15)' } },
+    green:  { dark:  { accent:'#3ecf8e', lo:'rgba(62,207,142,0.08)', md:'rgba(62,207,142,0.18)' },  light: { accent:'#1a9e6a', lo:'rgba(26,158,106,0.07)', md:'rgba(26,158,106,0.15)' } },
+    amber:  { dark:  { accent:'#f0a05a', lo:'rgba(240,160,90,0.08)', md:'rgba(240,160,90,0.18)' },  light: { accent:'#c47a20', lo:'rgba(196,122,32,0.07)', md:'rgba(196,122,32,0.15)' } },
+    rose:   { dark:  { accent:'#f05a8b', lo:'rgba(240,90,139,0.08)', md:'rgba(240,90,139,0.18)' },  light: { accent:'#c4205a', lo:'rgba(196,32,90,0.07)', md:'rgba(196,32,90,0.15)' } },
+    red:    { dark:  { accent:'#ef5a5a', lo:'rgba(239,90,90,0.08)', md:'rgba(239,90,90,0.18)' },    light: { accent:'#c94040', lo:'rgba(201,64,64,0.07)', md:'rgba(201,64,64,0.15)' } },
+    slate:  { dark:  { accent:'#8890a8', lo:'rgba(136,144,168,0.08)', md:'rgba(136,144,168,0.18)' },light: { accent:'#5a6278', lo:'rgba(90,98,120,0.07)', md:'rgba(90,98,120,0.15)' } },
+};
+
+(function() {
+    const theme = localStorage.getItem('hf-theme') || 'dark';
+    const scale = localStorage.getItem('hf-scale') || 'md';
+    const accent = localStorage.getItem('hf-accent') || 'purple';
+    document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.setAttribute('data-scale', scale);
+    applyAccent(accent);
+})();
+
+function applyAccent(colorKey) {
+    const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+    const c = ACCENT_COLORS[colorKey]?.[theme] || ACCENT_COLORS.purple[theme];
+    document.documentElement.style.setProperty('--accent', c.accent);
+    document.documentElement.style.setProperty('--accent-lo', c.lo);
+    document.documentElement.style.setProperty('--accent-md', c.md);
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function showToast(msg, error = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.borderColor = error ? 'rgba(239,90,90,0.3)' : 'rgba(62,207,142,0.3)';
+    t.style.color = error ? 'var(--red)' : 'var(--green)';
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let allApps    = [];
+let activeTab  = 'all';
+let searchQ    = '';
+let sortMode   = 'date-desc';
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function getDomain(url) {
+    try {
+        const h = new URL(url).hostname;
+        const parts = h.split('.');
+        return parts.length >= 2 ? parts.slice(-2).join('.') : h;
+    } catch { return url; }
+}
+
+function getFaviconUrl(url) {
+    try {
+        const origin = new URL(url).origin;
+        return `${origin}/favicon.ico`;
+    } catch { return ''; }
+}
+
+function relativeTime(isoStr) {
+    if (!isoStr) return '—';
+    const d = new Date(isoStr.includes('T') ? isoStr : isoStr.replace(' ', 'T') + 'Z');
+    const diff = Date.now() - d.getTime();
+    const mins  = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days  = Math.floor(diff / 86400000);
+    if (mins < 2)   return 'just now';
+    if (mins < 60)  return `${mins}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7)   return `${days}d ago`;
+    if (days < 30)  return `${Math.floor(days/7)}w ago`;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function absDate(isoStr) {
+    if (!isoStr) return '';
+    const d = new Date(isoStr.includes('T') ? isoStr : isoStr.replace(' ', 'T') + 'Z');
+    return d.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function isToday(isoStr) {
+    if (!isoStr) return false;
+    const d = new Date(isoStr.includes('T') ? isoStr : isoStr.replace(' ', 'T') + 'Z');
+    const now = new Date();
+    return d.getDate() === now.getDate() && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+}
+
+// ── Filter + sort pipeline ────────────────────────────────────────────────────
+function filteredApps() {
+    let arr = [...allApps];
+
+    // Tab filter
+    if (activeTab !== 'all') arr = arr.filter(a => a.status === activeTab);
+
+    // Search filter
+    if (searchQ) {
+        const q = searchQ.toLowerCase();
+        arr = arr.filter(a => a.url.toLowerCase().includes(q) || getDomain(a.url).includes(q));
+    }
+
+    // Sort
+    switch (sortMode) {
+        case 'date-desc': arr.sort((a,b) => new Date(b.applied_at) - new Date(a.applied_at)); break;
+        case 'date-asc':  arr.sort((a,b) => new Date(a.applied_at) - new Date(b.applied_at)); break;
+        case 'domain':    arr.sort((a,b) => getDomain(a.url).localeCompare(getDomain(b.url))); break;
+        case 'status':    arr.sort((a,b) => a.status.localeCompare(b.status)); break;
+    }
+
+    return arr;
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function render() {
+    const apps = filteredApps();
+
+    // Stats
+    const inP  = allApps.filter(a => a.status === 'IN_PROGRESS').length;
+    const comp = allApps.filter(a => a.status === 'COMPLETED').length;
+    const tod  = allApps.filter(a => isToday(a.applied_at)).length;
+    document.getElementById('statTotal').textContent      = allApps.length;
+    document.getElementById('statInProgress').textContent = inP;
+    document.getElementById('statCompleted').textContent  = comp;
+    document.getElementById('statToday').textContent      = tod;
+
+    // Tab counts
+    document.getElementById('countAll').textContent        = allApps.length;
+    document.getElementById('countInProgress').textContent = inP;
+    document.getElementById('countCompleted').textContent  = comp;
+
+    // Item count label
+    document.getElementById('itemCountLabel').textContent = `${apps.length} item${apps.length === 1 ? '' : 's'}`;
+
+    // Table body
+    const tbody = document.getElementById('appsBody');
+    const empty = document.getElementById('emptyState');
+
+    if (apps.length === 0) {
+        tbody.innerHTML = '';
+        empty.style.display = 'flex';
+        empty.querySelector('.empty-title').textContent =
+            searchQ ? 'No matches' : (activeTab !== 'all' ? 'Nothing here yet' : 'No applications yet');
+        empty.querySelector('.empty-desc').textContent =
+            searchQ ? 'Try a different search term.' : 'Applications you start or complete on job boards will appear here automatically.';
+        return;
+    }
+
+    empty.style.display = 'none';
+    tbody.innerHTML = apps.map(app => {
+        const domain  = getDomain(app.url);
+        const favicon = getFaviconUrl(app.url);
+        const rel     = relativeTime(app.applied_at);
+        const abs     = absDate(app.applied_at);
+        const statusLabel = app.status === 'IN_PROGRESS' ? 'In Progress' : 'Submitted';
+        return `
+        <tr data-url="${escHtml(app.url)}">
+            <td class="url-cell">
+                <div class="url-inner">
+                    <img class="url-favicon" src="${escHtml(favicon)}" onerror="this.style.display='none'" alt="">
+                    <span class="url-text" title="${escHtml(app.url)}">${escHtml(app.url)}</span>
+                    <button class="url-link-btn" data-url="${escHtml(app.url)}">↗ Open</button>
+                </div>
+            </td>
+            <td><span class="domain-chip">${escHtml(domain)}</span></td>
+            <td><span class="status-pill status-${app.status}">${statusLabel}</span></td>
+            <td class="date-cell">
+                <div class="date-relative">${rel}</div>
+                <div class="date-abs">${abs}</div>
+            </td>
+            <td style="text-align:right;">
+                <button class="row-delete-btn" data-url="${escHtml(app.url)}">Remove</button>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function escHtml(str) {
+    return String(str)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Load from main process ────────────────────────────────────────────────────
+function loadData() {
+    ipcRenderer.send('get-all-apps');
+}
+
+ipcRenderer.on('all-apps-data', (_e, data) => {
+    allApps = data || [];
+    render();
+});
+
+// Listen for real-time status updates pushed from main process
+ipcRenderer.on('app-status-updated', () => {
+    loadData();
+});
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        activeTab = btn.dataset.tab;
+        document.querySelectorAll('.tab-btn[data-tab]').forEach(b => b.classList.toggle('active', b === btn));
+        render();
+    });
+});
+
+// ── Search ────────────────────────────────────────────────────────────────────
+document.getElementById('searchInput').addEventListener('input', e => {
+    searchQ = e.target.value.trim();
+    render();
+});
+
+// ── Sort ──────────────────────────────────────────────────────────────────────
+document.getElementById('sortSelect').addEventListener('change', e => {
+    sortMode = e.target.value;
+    render();
+});
+
+// ── Column header sort ────────────────────────────────────────────────────────
+document.querySelectorAll('th[data-sort]').forEach(th => {
+    th.addEventListener('click', () => {
+        const s = th.dataset.sort;
+        if (s === 'date')   sortMode = sortMode === 'date-desc' ? 'date-asc' : 'date-desc';
+        else if (s === 'domain') sortMode = 'domain';
+        else if (s === 'status') sortMode = 'status';
+        document.getElementById('sortSelect').value = sortMode;
+        document.querySelectorAll('th[data-sort]').forEach(t => t.classList.toggle('sorted', t === th));
+        render();
+    });
+});
+
+// ── Table click delegation ────────────────────────────────────────────────────
+document.getElementById('appsBody').addEventListener('click', e => {
+    // Open link
+    const openBtn = e.target.closest('.url-link-btn');
+    if (openBtn) {
+        ipcRenderer.send('open-url-in-home', openBtn.dataset.url);
+        return;
+    }
+    // Delete row
+    const delBtn = e.target.closest('.row-delete-btn');
+    if (delBtn) {
+        const url = delBtn.dataset.url;
+        if (confirm(`Remove this application?\n\n${url}`)) {
+            ipcRenderer.send('delete-app', url);
+            allApps = allApps.filter(a => a.url !== url);
+            render();
+            showToast('Removed');
+        }
+    }
+});
+
+// ── Refresh ───────────────────────────────────────────────────────────────────
+document.getElementById('refreshBtn').addEventListener('click', () => {
+    loadData();
+    showToast('Refreshed');
+});
+
+// ── Nav ───────────────────────────────────────────────────────────────────────
+document.getElementById('navBoards').addEventListener('click', () => {
+    ipcRenderer.send('navigate-home');
+});
+document.getElementById('navSettings').addEventListener('click', () => {
+    ipcRenderer.send('open-settings');
+});
+
+// ── Listen for theme changes from main ───────────────────────────────────────
+ipcRenderer.on('apply-theme', (_e, theme) => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('hf-theme', theme);
+    applyAccent(localStorage.getItem('hf-accent') || 'purple');
+});
+
+// ── Initial load ──────────────────────────────────────────────────────────────
+loadData();
+</script>
+</body>
+</html>

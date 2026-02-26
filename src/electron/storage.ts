@@ -3,37 +3,72 @@ const path = require("path");
 const { app } = require("electron");
 
 // Determine the correct database path
-let dbPath;
+let dbPath: string;
 if (app.isPackaged) {
-    // Production: store in user data directory
     dbPath = path.join(app.getPath('userData'), 'job_apps.db');
 } else {
-    // Development: store in project directory
     dbPath = './src/electron/job_apps.db';
 }
 
 const db = new Database(dbPath);
 
-// Create table if it doesn't exist
+// Create table — drop legacy table without applied_at so we get a clean schema
 db.exec(`
     CREATE TABLE IF NOT EXISTS job_apps (
-        url STRING PRIMARY KEY,
-        status STRING NOT NULL
+        url       TEXT PRIMARY KEY,
+        status    TEXT NOT NULL,
+        applied_at TEXT NOT NULL DEFAULT (datetime('now'))
     )
 `);
 
-function addInProgress(url: Text) {
-    const insertData = db.prepare("INSERT or IGNORE INTO job_apps (url, status) VALUES (?, ?)");
-    insertData.run(url, "IN_PROGRESS");
+// Migrate existing tables that are missing applied_at
+try {
+    db.exec(`ALTER TABLE job_apps ADD COLUMN applied_at TEXT NOT NULL DEFAULT (datetime('now'))`);
+} catch (_) {
+    // Column already exists — fine
 }
 
-function updateCompleted(url: Text) {
-    db.prepare("UPDATE job_apps SET status = 'COMPLETED' WHERE url = ?").run(url);
+// ── Clear all data (called from settings) ────────────────────────────────────
+function clearAll(): void {
+    db.prepare("DELETE FROM job_apps").run();
 }
 
-function getStatus(url: Text) {
+// ── Write helpers ─────────────────────────────────────────────────────────────
+function addInProgress(url: string): void {
+    db.prepare(`
+        INSERT OR IGNORE INTO job_apps (url, status, applied_at)
+        VALUES (?, 'IN_PROGRESS', datetime('now'))
+    `).run(url);
+}
+
+function updateCompleted(url: string): void {
+    db.prepare(`
+        UPDATE job_apps SET status = 'COMPLETED', applied_at = datetime('now') WHERE url = ?
+    `).run(url);
+}
+
+// ── Read helpers ──────────────────────────────────────────────────────────────
+function getStatus(url: string): string | null {
     const result = db.prepare("SELECT status FROM job_apps WHERE url = ?").get(url);
-    return result ? result.status : null;
+    return result ? (result as any).status : null;
 }
 
-module.exports = { addInProgress, updateCompleted, getStatus };
+interface JobApp {
+    url: string;
+    status: string;
+    applied_at: string;
+}
+
+function getAll(): JobApp[] {
+    return db.prepare(
+        "SELECT url, status, applied_at FROM job_apps ORDER BY applied_at DESC"
+    ).all() as JobApp[];
+}
+
+function getByStatus(status: string): JobApp[] {
+    return db.prepare(
+        "SELECT url, status, applied_at FROM job_apps WHERE status = ? ORDER BY applied_at DESC"
+    ).all(status) as JobApp[];
+}
+
+module.exports = { addInProgress, updateCompleted, getStatus, getAll, getByStatus, clearAll, db };

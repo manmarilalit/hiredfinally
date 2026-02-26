@@ -9,7 +9,7 @@
   "private": true,
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "copy-html": "node -e \"['home','settings'].forEach(f=>require('fs').copyFileSync('src/electron/'+f+'.html','out/electron/'+f+'.html'))\"",
+    "copy-html": "node -e \"['home','settings','pipeline'].forEach(f=>require('fs').copyFileSync('src/electron/'+f+'.html','out/electron/'+f+'.html'))\"",
     "start": "electron ./out/electron/index.js",
     "build": "tsc && npm run copy-html",
     "build:watch": "tsc --watch & npm run copy-html",
@@ -32,18 +32,28 @@
       "package.json"
     ],
     "win": {
-      "target": ["nsis", "portable"],
+      "target": [
+        "nsis",
+        "portable"
+      ],
       "icon": "build/icon.ico",
       "sign": null,
-      "signingHashAlgorithms": ["sha256"]
+      "signingHashAlgorithms": [
+        "sha256"
+      ]
     },
     "mac": {
-      "target": ["dmg"],
+      "target": [
+        "dmg"
+      ],
       "icon": "build/icon.icns",
       "category": "public.app-category.productivity"
     },
     "linux": {
-      "target": ["AppImage", "deb"],
+      "target": [
+        "AppImage",
+        "deb"
+      ],
       "icon": "build/icon.png",
       "category": "Utility"
     },
@@ -62,6 +72,7 @@
   },
   "dependencies": {
     "better-sqlite3": "^12.5.0",
+    "electron-updater": "^6.8.3",
     "sql.js": "^1.13.0"
   }
 }
