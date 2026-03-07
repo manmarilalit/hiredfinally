@@ -139,3 +139,19 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Electron build output
+dist/
+
+# Compiled TypeScript output
+out/
+
+# SQLite database
+*.db
+src/electron/job_apps.db
+
+# Sensitive files
+src/electron/status.ts
+
+# Electron builder cache
+.electron-builder-cache/
