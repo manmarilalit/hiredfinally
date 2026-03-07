@@ -1,3 +1,4 @@
+//notifications.ts
 const { Notification } = require('electron');
 const path = require('path');
 

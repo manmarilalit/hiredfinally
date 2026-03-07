@@ -9,10 +9,10 @@ const { detectApplicationStatus, isDefiniteApplicationPage } = require('./status
 const {
     addInProgress, updateCompleted, updateMeta, clearScreenshot,
     incrementExtractionAttempts, getPendingExtraction, resetExtractionAttempts,
-    getStatus, getAll, getByStatus, clearAll,
+    getAll, clearAll,
     deleteApp, upsertInProgress, upsertCompleted,
 } = require('./storage');
-const { NotificationManager }            = require('./notifications');
+const { NotificationManager }                  = require('./notifications');
 const { extractJobMeta, checkOllamaAvailable } = require('./extractor');
 
 if (process.platform === 'win32') {
@@ -26,7 +26,6 @@ interface PendingConfirmation {
     url:           string;
     newStatus:     Status;
     currentStatus: Status;
-    reasoning:     string[];
     confidence:    Confidence;
     urlChanged:    boolean;
     wasPopup:      boolean;
@@ -49,13 +48,11 @@ interface PageSignals {
     hasOverlay?:          boolean;
     hasResumeUpload?:     boolean;
     hasCompletionToast?:  boolean;
-    // New: passed from preload to avoid re-detection
     hasApplyButton?:      boolean;
 }
 
 interface DetectionResult {
     status:     string;
-    reasoning:  string[];
     confidence: Confidence;
 }
 
@@ -77,7 +74,7 @@ function sendNativeNotification(title: string, body: string): void {
 
 let runExtractionWorkerFn: () => void = () => {};
 
-// ── Ollama ────────────────────────────────────────────────────────────────────
+// -- Ollama --------------------------------------------------------------------
 const MODEL = 'qwen2.5vl:3b';
 
 function spawnOllamaServe(): void {
@@ -85,13 +82,11 @@ function spawnOllamaServe(): void {
     try {
         const child = spawn(exe, ['serve'], { detached: true, stdio: 'ignore', windowsHide: true });
         child.unref();
-        console.log('[OLLAMA] Spawned ollama serve');
     } catch { /* not installed yet */ }
 }
 
 function ensureOllamaRunning(): void {
     spawnOllamaServe();
-    // Reduced from 2000ms — ollama is usually ready almost immediately after spawn
     setTimeout(() => checkAndPullModel(true), 800);
 }
 
@@ -99,21 +94,15 @@ async function checkAndPullModel(allowInstall = false): Promise<void> {
     try {
         const res = await fetch('http://localhost:11434/api/tags', { signal: AbortSignal.timeout(3000) });
         if (!res.ok) { mainWindow?.webContents.send('ollama-status', { status: 'error' }); return; }
-
         const data     = await res.json();
         const models   = (data.models || []).map((m: any) => m.name as string);
         const hasModel = models.some((m: string) => m.startsWith('qwen2.5vl'));
-
         if (hasModel) {
-            console.log('[OLLAMA] ✓ Ready');
             mainWindow?.webContents.send('ollama-status', { status: 'ready' });
             resetExtractionAttempts();
-            // Reduced from 3000ms — kick off extraction immediately
             runExtractionWorkerFn();
             return;
         }
-
-        console.log('[OLLAMA] Pulling ' + MODEL + '...');
         mainWindow?.webContents.send('ollama-status', { status: 'pulling', model: MODEL });
         const pull = await fetch('http://localhost:11434/api/pull', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -199,7 +188,7 @@ function downloadFile(url: string, dest: string): Promise<void> {
     });
 }
 
-// ── App ready ─────────────────────────────────────────────────────────────────
+// -- App ready -----------------------------------------------------------------
 app.on('ready', async () => {
     if (process.platform === 'win32') app.setAppUserModelId(app.name);
 
@@ -226,7 +215,7 @@ app.on('ready', async () => {
 
     ensureOllamaRunning();
 
-    // ── Session state ─────────────────────────────────────────────────────────
+    // -- Session state ---------------------------------------------------------
     let lastLoggedURL:         string  = '';
     let currentStatus:         Status  = 'NOT_STARTED';
     let startingURL:           string  = '';
@@ -237,162 +226,69 @@ app.on('ready', async () => {
     let pendingConfirmation:   PendingConfirmation | null = null;
     let currentJobTitle:       string  = '';
     let lastPageSignals:       PageSignals | null = null;
-    let lastResetDomain:       string  = '';  // debounce duplicate domain-change resets
+    let lastResetDomain:       string  = '';
 
-    // ── Screenshot state ──────────────────────────────────────────────────────
-    // TWO-DEEP buffer: previousScreenshot is almost always the job detail page
-    // (the page before the apply form). We prefer it over listingScreenshot
-    // when picking what to store for IN_PROGRESS.
-    let listingScreenshot:  Buffer | null = null; // most recent capture
-    let previousScreenshot: Buffer | null = null; // one capture before that
+    let listingScreenshot:  Buffer | null = null;
+    let previousScreenshot: Buffer | null = null;
     let screenshotFrozen:   boolean       = false;
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    /**
-     * Wait until the webview page is genuinely ready to screenshot.
-     *
-     * Three conditions must ALL be true before we capture:
-     *
-     *   1. document.readyState === 'complete'
-     *      The HTML, CSS, and synchronous scripts have finished executing.
-     *
-     *   2. Network idle for >= 500 ms
-     *      No new <img>, fetch(), or XHR requests started in the last 500 ms.
-     *      Implemented inside the renderer by patching fetch/XHR and watching
-     *      PerformanceObserver resource entries. This catches lazy-loaded images
-     *      and SPA data fetches that fire after readyState is already 'complete'.
-     *
-     *   3. Main content container is visible
-     *      At least one of the common content landmark selectors (main, article,
-     *      [role="main"], #content, .content, .job-details, etc.) has a
-     *      non-zero bounding rect, meaning the layout has painted real content
-     *      rather than a blank skeleton or spinner.
-     *
-     * Hard cap: 10 s total. If any condition hasn't resolved by then we proceed
-     * anyway so a slow ATS never blocks the screenshot indefinitely.
-     */
+    // -- Helpers ---------------------------------------------------------------
     async function waitForPageReady(webview: any): Promise<void> {
-        // Step 1 — wait for the Electron-level load event first.
-        // This avoids running executeJavaScript on a page that hasn't
-        // started loading yet (which throws).
         if (webview.isLoading()) {
             await new Promise<void>(resolve => {
-                const done = () => resolve();
-                webview.once('did-finish-load', done);
-                setTimeout(done, 10_000); // hard cap
+                webview.once('did-finish-load', resolve);
+                setTimeout(resolve, 10_000);
             });
         }
-
-        // Step 2 — run the three-condition check inside the renderer.
-        // We inject a self-contained script that resolves as soon as all
-        // three gates pass, or after a 10 s safety timeout.
         try {
             await webview.executeJavaScript(`
                 (() => {
-                    const NETWORK_IDLE_MS  = 500;   // quiet period required
-                    const CONTENT_TIMEOUT  = 10000; // overall cap (ms)
-
+                    const NETWORK_IDLE_MS  = 500;
+                    const CONTENT_TIMEOUT  = 10000;
                     return new Promise(resolve => {
-                        const timer = setTimeout(resolve, CONTENT_TIMEOUT);
-
-                        // -- Condition 1: readyState --------------------------
-                        function readyStateOk() {
-                            return document.readyState === 'complete';
-                        }
-
-                        // -- Condition 2: network idle ------------------------
-                        // We track in-flight requests by patching fetch and XHR,
-                        // and watching new PerformanceResourceTiming entries.
+                        const timer = setTimeout(() => resolve(undefined), CONTENT_TIMEOUT);
                         let inFlight = 0;
                         let idleTimer = null;
-
-                        function resetIdle() {
-                            clearTimeout(idleTimer);
-                            idleTimer = setTimeout(checkAll, NETWORK_IDLE_MS);
-                        }
-                        function networkIdle() {
-                            return inFlight === 0;
-                        }
-
-                        // Patch fetch
+                        function resetIdle() { clearTimeout(idleTimer); idleTimer = setTimeout(checkAll, NETWORK_IDLE_MS); }
+                        function networkIdle() { return inFlight === 0; }
                         const origFetch = window.fetch;
                         window.fetch = function(...args) {
                             inFlight++;
                             resetIdle();
-                            return origFetch.apply(this, args).finally(() => {
-                                inFlight = Math.max(0, inFlight - 1);
-                                resetIdle();
-                            });
+                            return origFetch.apply(this, args).finally(() => { inFlight = Math.max(0, inFlight - 1); resetIdle(); });
                         };
-
-                        // Patch XHR
                         const origOpen = XMLHttpRequest.prototype.open;
                         XMLHttpRequest.prototype.open = function(...args) {
-                            this.addEventListener('loadend', () => {
-                                inFlight = Math.max(0, inFlight - 1);
-                                resetIdle();
-                            });
+                            this.addEventListener('loadend', () => { inFlight = Math.max(0, inFlight - 1); resetIdle(); });
                             inFlight++;
                             resetIdle();
                             return origOpen.apply(this, args);
                         };
-
-                        // Watch resource timing for images / scripts loaded
-                        // after the initial parse (PerformanceObserver is
-                        // non-blocking so it won't delay resolution itself)
                         try {
                             const po = new PerformanceObserver(() => resetIdle());
                             po.observe({ type: 'resource', buffered: false });
-                        } catch (_) { /* not available in all contexts */ }
-
-                        // -- Condition 3: main content visible ----------------
+                        } catch (_) {}
                         function contentVisible() {
-                            const selectors = [
-                                'main', 'article', '[role="main"]',
-                                '#main', '#content', '#job-details',
-                                '.job-description', '.job-details', '.job-content',
-                                '.content', '.container', '.page-content',
-                                '[data-testid*="job"]', '[class*="jobDetail"]'
-                            ];
+                            const selectors = ['main','article','[role="main"]','#main','#content','#job-details','.job-description','.job-details','.job-content','.content','.container','.page-content','[data-testid*="job"]','[class*="jobDetail"]'];
                             for (const sel of selectors) {
-                                try {
-                                    const el = document.querySelector(sel);
-                                    if (el) {
-                                        const r = el.getBoundingClientRect();
-                                        if (r.width > 0 && r.height > 50) return true;
-                                    }
-                                } catch (_) {}
+                                try { const el = document.querySelector(sel); if (el) { const r = el.getBoundingClientRect(); if (r.width > 0 && r.height > 50) return true; } } catch (_) {}
                             }
-                            // Fallback: body has meaningful text content
                             return (document.body?.innerText?.trim().length ?? 0) > 200;
                         }
-
-                        // -- Poll until all three pass ------------------------
                         function checkAll() {
-                            if (readyStateOk() && networkIdle() && contentVisible()) {
+                            if (document.readyState === 'complete' && networkIdle() && contentVisible()) {
                                 clearTimeout(timer);
                                 resolve(undefined);
                             } else {
-                                // Re-check after one more idle period
                                 setTimeout(checkAll, NETWORK_IDLE_MS);
                             }
                         }
-
-                        // Kick off: if readyState isn't complete yet, wait for it
-                        if (document.readyState === 'complete') {
-                            resetIdle(); // start the idle countdown immediately
-                        } else {
-                            window.addEventListener('load', () => resetIdle(), { once: true });
-                        }
+                        if (document.readyState === 'complete') { resetIdle(); }
+                        else { window.addEventListener('load', () => resetIdle(), { once: true }); }
                     });
                 })()
             `);
-        } catch (err) {
-            // executeJavaScript can throw if the webview navigated away mid-wait;
-            // log and proceed so we still take a screenshot rather than hanging.
-            console.warn('[CAPTURE] waitForPageReady script error (proceeding):', err);
-        }
+        } catch { /* proceed anyway */ }
     }
 
     async function captureCurrentPage(url: string): Promise<void> {
@@ -404,34 +300,20 @@ app.on('ready', async () => {
             await waitForPageReady(webview);
 
             const image   = await webview.capturePage();
-            const resized = image.resize({ width: Math.min(image.getSize().width, 1280) });
+            const size    = image.getSize();
+            const resized = image.resize({ width: Math.min(size.width, 1280) });
 
-            // Roll the buffer before overwriting
             previousScreenshot = listingScreenshot;
             listingScreenshot  = resized.toJPEG(70);
-
-            const sizeKB = Math.round(listingScreenshot!.length / 1024);
-            const prevKB = previousScreenshot ? Math.round(previousScreenshot.length / 1024) + 'KB' : 'none';
-            console.log(`[SCREENSHOT] Captured ${sizeKB}KB  prev=${prevKB}  ${url}`);
-        } catch (err) {
-            console.warn(`[EXTRACTOR] Capture failed for ${url}:`, err);
-        }
+        } catch { /* ignore */ }
     }
 
     function resetStatus(clearScreenshots = true): void {
-        console.log('[RESET] Status reset');
         currentStatus         = 'NOT_STARTED';
         hasStartedApplication = false;
         startingURL           = '';
         pendingConfirmation   = null;
         lastPageSignals       = null;
-        // lastNotStartedURL and lastLoggedURL are intentionally NOT cleared here.
-        // On a domain change (clearScreenshots=false) these still point to the
-        // source job detail page (e.g. the LinkedIn card the user clicked Apply
-        // from). Keeping them means the manual override and applyStatusChange
-        // can use them as the record URL when IN_PROGRESS fires on the ATS domain.
-        // They are only wiped when the user explicitly resets to NOT_STARTED or
-        // navigates back to a job listing page.
         if (clearScreenshots) {
             lastNotStartedURL  = '';
             lastLoggedURL      = '';
@@ -459,7 +341,7 @@ app.on('ready', async () => {
         }
     });
 
-    // ── IPC ───────────────────────────────────────────────────────────────────
+    // -- IPC -------------------------------------------------------------------
     ipcMain.on('webview-data', async (_e: any, data: PageSignals) => {
         lastPageSignals = data;
         await processPageStatus(data);
@@ -472,65 +354,31 @@ app.on('ready', async () => {
         const d              = typeof payload === 'boolean' ? pendingConfirmation : (payload.data ?? pendingConfirmation);
         if (!d) return;
         const detectedStatus = (d.newStatus ?? (d as any).status) as Status;
-        const SEP = '-'.repeat(60);
-        console.log('\n' + SEP + '\n[STATUS CONFIRMATION]');
-        console.log(`  URL: ${d.url}  Detected: ${detectedStatus}  Was: ${d.currentStatus}  User: ${isCorrect ? 'CORRECT' : 'WRONG'}`);
-        console.log(SEP + '\n');
         if (isCorrect) { applyStatusChange(detectedStatus, d.url); mainWindow?.webContents.send('app-status-updated'); }
-        else           { lastLoggedURL = ''; }
+        else { lastLoggedURL = ''; }
         pendingConfirmation = null;
         mainWindow?.webContents.send('hide-confirmation-dialog');
     });
 
-    // ── Manual Status Override ────────────────────────────────────────────────
+    // -- Manual Status Override ------------------------------------------------
     ipcMain.on('manual-status-override', async (_e: any, payload: { newStatus: string }) => {
         const { newStatus } = payload;
         const url = lastLoggedURL || lastNotStartedURL || startingURL;
 
-        const SEP = '═'.repeat(68);
-        console.log('\n' + SEP);
-        console.log('[MANUAL OVERRIDE] User triggered status change from UI dropdown');
-        console.log(SEP);
-        console.log(`  Time:              ${new Date().toLocaleTimeString()}`);
-        console.log(`  Requested:         ${newStatus}`);
-        console.log(`  Current:           ${currentStatus}`);
-        console.log(`  Resolved URL:      ${url || '(none)'}`);
-        console.log(`  lastLoggedURL:     ${lastLoggedURL || '(none)'}`);
-        console.log(`  lastNotStartedURL: ${lastNotStartedURL || '(none)'}`);
-        console.log(`  startingURL:       ${startingURL || '(none)'}`);
-        console.log(`  currentJobTitle:   ${currentJobTitle || '(none)'}`);
-        console.log(`  currentJobBoard:   ${currentJobBoard || '(none)'}`);
-        console.log(`  previousURL:       ${previousURL || '(none)'}`);
-        console.log(`  listingScreenshot: ${listingScreenshot  ? Math.round(listingScreenshot.length  / 1024) + 'KB' : 'none'}`);
-        console.log(`  previousScreenshot:${previousScreenshot ? Math.round(previousScreenshot.length / 1024) + 'KB' : 'none'}`);
-        console.log(`  screenshotFrozen:  ${screenshotFrozen}`);
-        console.log(`  hasStartedApp:     ${hasStartedApplication}`);
-        console.log(SEP);
-
         if (!url) {
-            console.warn('[MANUAL OVERRIDE] ✗ No URL — user has not navigated anywhere yet');
             mainWindow?.webContents.send('manual-override-result', { success: false, reason: 'no-url' });
             return;
         }
 
         if (newStatus === currentStatus) {
-            console.log(`[MANUAL OVERRIDE] Already ${currentStatus} — no-op`);
             mainWindow?.webContents.send('manual-override-result', { success: true, newStatus: currentStatus, noChange: true });
             return;
         }
 
-        const prevStatus = currentStatus;
-
         try {
             if (newStatus === 'NOT_STARTED') {
                 const urlToRemove = startingURL || lastNotStartedURL || url;
-                if (hasStartedApplication && urlToRemove) {
-                    console.log(`[MANUAL OVERRIDE] Deleting DB row: ${urlToRemove}`);
-                    const r = deleteApp(urlToRemove);
-                    console.log(`[MANUAL OVERRIDE] deleteApp: ${r.changes} row(s) removed`);
-                } else {
-                    console.log(`[MANUAL OVERRIDE] hasStartedApplication=false — no DB row to remove`);
-                }
+                if (hasStartedApplication && urlToRemove) deleteApp(urlToRemove);
                 currentStatus         = 'NOT_STARTED';
                 hasStartedApplication = false;
                 startingURL           = '';
@@ -540,46 +388,30 @@ app.on('ready', async () => {
                 listingScreenshot     = null;
                 previousScreenshot    = null;
                 screenshotFrozen      = false;
-                console.log(`[MANUAL OVERRIDE] ✓ NOT_STARTED — session cleared`);
                 updateStatusBadge('NOT_STARTED');
                 mainWindow?.webContents.send('app-status-updated');
                 mainWindow?.webContents.send('manual-override-result', { success: true, newStatus: 'NOT_STARTED' });
 
             } else if (newStatus === 'IN_PROGRESS') {
-                let screenshotToUse: Buffer | null;
-                let screenshotSource: string;
-
                 const snapshotPrevious = previousScreenshot as Buffer | null;
                 const snapshotListing  = listingScreenshot  as Buffer | null;
+                let screenshotToUse: Buffer | null;
 
                 if (snapshotPrevious) {
-                    screenshotToUse  = snapshotPrevious;
-                    screenshotSource = `previousScreenshot (${Math.round(snapshotPrevious.length / 1024)}KB) — job detail page`;
+                    screenshotToUse = snapshotPrevious;
                 } else if (snapshotListing) {
-                    screenshotToUse  = snapshotListing;
-                    screenshotSource = `listingScreenshot (${Math.round(snapshotListing.length / 1024)}KB) — apply form fallback`;
+                    screenshotToUse = snapshotListing;
                 } else {
-                    console.log(`[MANUAL OVERRIDE] No screenshot in buffer — capturing current webview`);
                     await captureCurrentPage(url);
-                    const captured   = listingScreenshot as Buffer | null;
-                    screenshotToUse  = captured;
-                    screenshotSource = captured
-                        ? `live capture (${Math.round(captured.length / 1024)}KB)`
-                        : 'live capture failed';
+                    screenshotToUse = listingScreenshot as Buffer | null;
                 }
 
-                console.log(`[MANUAL OVERRIDE] Screenshot source: ${screenshotSource}`);
-
                 const urlToRecord = lastNotStartedURL || url;
-                console.log(`[MANUAL OVERRIDE] Upserting IN_PROGRESS for: ${urlToRecord}`);
                 upsertInProgress(urlToRecord, screenshotToUse);
-
                 startingURL           = urlToRecord;
                 hasStartedApplication = true;
                 currentStatus         = 'IN_PROGRESS';
                 screenshotFrozen      = true;
-
-                console.log(`[MANUAL OVERRIDE] ✓ IN_PROGRESS — triggering extraction`);
                 runExtractionWorker();
                 updateStatusBadge('IN_PROGRESS');
                 mainWindow?.webContents.send('app-status-updated');
@@ -587,33 +419,22 @@ app.on('ready', async () => {
 
             } else if (newStatus === 'COMPLETED') {
                 const urlToComplete = startingURL || lastNotStartedURL || url;
-                console.log(`[MANUAL OVERRIDE] Upserting COMPLETED for: ${urlToComplete}`);
                 upsertCompleted(urlToComplete);
-                if (currentJobTitle) {
-                    console.log(`[MANUAL OVERRIDE] Firing completion notification: "${currentJobTitle}"`);
-                    notificationManager?.onApplicationCompleted(urlToComplete, currentJobTitle);
-                } else {
-                    console.log(`[MANUAL OVERRIDE] No currentJobTitle — skipping completion notification`);
-                }
+                if (currentJobTitle) notificationManager?.onApplicationCompleted(urlToComplete, currentJobTitle);
                 hasStartedApplication = false;
                 startingURL           = '';
+                lastNotStartedURL     = '';
+                screenshotFrozen      = false;
+                pendingConfirmation   = null;
                 currentStatus         = 'COMPLETED';
-                console.log(`[MANUAL OVERRIDE] ✓ COMPLETED`);
                 updateStatusBadge('COMPLETED');
                 mainWindow?.webContents.send('app-status-updated');
                 mainWindow?.webContents.send('manual-override-result', { success: true, newStatus: 'COMPLETED' });
 
             } else {
-                console.warn(`[MANUAL OVERRIDE] ✗ Unknown status: "${newStatus}"`);
                 mainWindow?.webContents.send('manual-override-result', { success: false, reason: 'unknown-status' });
-                return;
             }
-
-            console.log(`[MANUAL OVERRIDE] Transition complete: ${prevStatus} → ${newStatus}`);
-            console.log(SEP + '\n');
-
         } catch (err: any) {
-            console.error(`[MANUAL OVERRIDE] ✗ Error:`, err?.message || err);
             mainWindow?.webContents.send('manual-override-result', {
                 success: false, reason: 'error', message: err?.message || String(err),
             });
@@ -633,12 +454,12 @@ app.on('ready', async () => {
 
     ipcMain.on('get-all-apps', (event: any) => {
         try { event.sender.send('all-apps-data', getAll()); }
-        catch (e) { console.error('[GET-ALL-APPS]', e); event.sender.send('all-apps-data', []); }
+        catch { event.sender.send('all-apps-data', []); }
     });
 
     ipcMain.on('delete-app', (_e: any, url: string) => {
         try { db.prepare('DELETE FROM job_apps WHERE url = ?').run(url); }
-        catch (e) { console.error('[DELETE-APP]', e); }
+        catch { /* ignore */ }
     });
 
     ipcMain.on('open-url-in-home', (_e: any, url: string) => {
@@ -668,10 +489,10 @@ app.on('ready', async () => {
                 fs.writeFileSync(result.filePath, csv);
                 sendNativeNotification('HiredFinally', 'Application data exported.');
             }
-        }).catch((e: Error) => console.error('[EXPORT ERROR]', e));
+        }).catch(() => { /* ignore */ });
     }
 
-    // ── URL helpers ───────────────────────────────────────────────────────────
+    // -- URL helpers -----------------------------------------------------------
     function getJobBoardDomain(url: string): string {
         try { const p = new URL(url).hostname.split('.'); return p.length >= 2 ? p.slice(-2).join('.') : (p[0] ?? ''); }
         catch { return ''; }
@@ -699,10 +520,6 @@ app.on('ready', async () => {
                /linkedin\.com\/notifications/i.test(u)      ||
                /indeed\.com\/account/i.test(u)              ||
                /chrome-error:\/\//i.test(u)                 ||
-               // ATS login/auth pages — the user hasn't started an application,
-               // they're just being asked to sign in before the form loads.
-               // Storing these as lastNotStartedURL or startingURL produces
-               // ugly /login URLs in the pipeline and wrong screenshot targets.
                /\/login(\?|$|\/)/i.test(u)                  ||
                /\/signin(\?|$|\/)/i.test(u)                 ||
                /\/auth(\?|$|\/)/i.test(u)                   ||
@@ -731,11 +548,7 @@ app.on('ready', async () => {
         const newDomain = getJobBoardDomain(newUrl);
         const newHost   = new URL(newUrl).hostname.toLowerCase();
         if (newHost.includes(currentJobBoard) || currentJobBoard.includes(newDomain)) return false;
-        if (newDomain && newDomain !== currentJobBoard) {
-            console.log(`[DOMAIN CHANGE] ${currentJobBoard} → ${newDomain}`);
-            return true;
-        }
-        return false;
+        return !!(newDomain && newDomain !== currentJobBoard);
     }
 
     function extractJobTitle(bodyText: string, url: string): string {
@@ -743,19 +556,18 @@ app.on('ready', async () => {
             const m = bodyText.match(p);
             if (m?.[1]) { const t = m[1].trim(); if (t.length > 5 && t.length < 100) return t; }
         }
+        const handshakeMatch = url.match(/joinhandshake\.com\/(?:job-search|jobs)\/(\d+)/i);
+        if (handshakeMatch) return `Handshake Job #${handshakeMatch[1]}`;
         try {
             const parts = new URL(url).pathname.split('/').filter(Boolean);
             const last  = parts[parts.length - 1];
-            if (last) return last.replace(/[-_]/g, ' ').substring(0, 50);
+            if (last && !/^\d+$/.test(last)) return last.replace(/[-_]/g, ' ').substring(0, 50);
         } catch {}
         return 'Job Position';
     }
 
-    // ── Apply status change ───────────────────────────────────────────────────
+    // -- Apply status change ---------------------------------------------------
     async function applyStatusChange(status: Status, url: string): Promise<void> {
-        console.log(`\n[STATUS CHANGE] ${currentStatus} → ${status}`);
-        console.log(`[STATUS URL]    ${url}`);
-
         if (status === 'NOT_STARTED') {
             if (!screenshotFrozen) lastNotStartedURL = url;
             hasStartedApplication = false;
@@ -770,11 +582,6 @@ app.on('ready', async () => {
                 addInProgress(urlToRecord, screenshotUsed);
                 startingURL           = urlToRecord;
                 hasStartedApplication = true;
-                const usedKB     = screenshotUsed ? Math.round(screenshotUsed.length / 1024) : 0;
-                const usedSource = previousScreenshot ? 'previousScreenshot (job detail)' : listingScreenshot ? 'listingScreenshot (current page)' : 'none';
-                console.log(`[SCREENSHOT] Attaching ${usedKB}KB [${usedSource}]`);
-                console.log(`[SCREENSHOT] URL    ${urlToRecord}`);
-                console.log(`[SCREENSHOT] Bufs   listing=${listingScreenshot ? Math.round(listingScreenshot.length/1024)+'KB' : 'null'}  previous=${previousScreenshot ? Math.round(previousScreenshot.length/1024)+'KB' : 'null'}`);
                 sendNativeNotification('HiredFinally', `Application started: ${currentJobTitle || url}`);
                 runExtractionWorker();
             } else {
@@ -792,45 +599,42 @@ app.on('ready', async () => {
             hasStartedApplication = false;
             lastNotStartedURL     = '';
             startingURL           = '';
+            screenshotFrozen      = false;
+            pendingConfirmation   = null;
             currentStatus         = 'COMPLETED';
         }
 
         updateStatusBadge(currentStatus);
     }
 
-    // ── Background extraction worker ──────────────────────────────────────────
+    // -- Background extraction worker ------------------------------------------
     let workerRunning = false;
 
     async function runExtractionWorker(): Promise<void> {
         runExtractionWorkerFn = runExtractionWorker;
-        if (workerRunning) { console.log('[WORKER] Already running — skipping'); return; }
+        if (workerRunning) return;
 
         const pending = getPendingExtraction() as PendingRow[];
         if (pending.length === 0) return;
 
         workerRunning = true;
-        console.log(`\n[WORKER] Found ${pending.length} job(s) pending extraction`);
 
         for (const row of pending) {
-            console.log(`[WORKER] Processing: ${row.url} (${Math.round((row.screenshot?.length || 0) / 1024)}KB)`);
             incrementExtractionAttempts(row.url);
             try {
                 const meta = await extractJobMeta(row.screenshot, row.url);
                 if (meta) {
                     updateMeta(row.url, meta.jobTitle, meta.company);
                     clearScreenshot(row.url);
-                    console.log(`[WORKER] ✓ title="${meta.jobTitle}"  company="${meta.company}"`);
                     mainWindow?.webContents.send('app-status-updated');
                 } else {
                     const still = (getPendingExtraction() as PendingRow[]).find((r: PendingRow) => r.url === row.url);
-                    if (!still) { clearScreenshot(row.url); console.log(`[WORKER] ✗ Max attempts — screenshot cleared`); }
-                    else          console.log(`[WORKER] ✗ No result — will retry`);
+                    if (!still) clearScreenshot(row.url);
                 }
-            } catch (err) { console.warn(`[WORKER] Error for ${row.url}:`, err); }
+            } catch { /* ignore */ }
         }
 
         workerRunning = false;
-        console.log('[WORKER] Cycle complete');
     }
 
     setInterval(runExtractionWorker, 60_000);
@@ -846,157 +650,93 @@ app.on('ready', async () => {
         mainWindow?.webContents.send('update-status-badge', label, cls);
     }
 
-    // ── Main processor ────────────────────────────────────────────────────────
+    // -- Main processor --------------------------------------------------------
     async function processPageStatus(signals: PageSignals): Promise<void> {
         try {
             const { url, bodyText } = signals;
             if (!url || url.startsWith('file://') || url === 'about:blank') return;
+            if (isExcludedFromTracking(url)) { previousURL = url; return; }
 
-            if (isExcludedFromTracking(url)) {
-                console.log(`[SKIP] Excluded URL: ${url}`);
-                previousURL = url;
-                return;
-            }
+            currentJobTitle = extractJobTitle(bodyText, url);
 
-            currentJobTitle  = extractJobTitle(bodyText, url);
-
-            // ── Domain change check ───────────────────────────────────────────
-            // Must run BEFORE computing urlChanged/firstSignalAfterReset so that
-            // a domain-reset signal correctly triggers firstSignalAfterReset=true
-            // and captures the new page immediately.
             const isIndeedApplyFlow = previousURL.includes('indeed.com') && url.includes('indeed.com');
             const newDomainForReset = getJobBoardDomain(url);
+
             if (!isIndeedApplyFlow && hasLeftJobBoard(url) && newDomainForReset !== lastResetDomain) {
-                lastResetDomain = newDomainForReset;
-                console.log('\n[RESET] Left job board');
+                lastResetDomain  = newDomainForReset;
                 screenshotFrozen = false;
                 resetStatus(false);
-                // Null previousScreenshot — it belongs to the old domain and
-                // would be wrongly preferred over the new capture via the
-                // `previousScreenshot ?? listingScreenshot` logic in applyStatusChange.
                 previousScreenshot = null;
-                // Leave previousURL as '' so firstSignalAfterReset=true fires
-                // below, triggering an immediate capture of the new page without
-                // waiting for the next navigation event.
             }
 
-            // urlChanged: true when we moved from one page to another.
-            // firstSignalAfterReset: true when previousURL was just wiped by a
-            // domain reset above — triggers an immediate capture on this signal.
             const urlChanged            = previousURL !== '' && previousURL !== url;
             const firstSignalAfterReset = previousURL === '' && url !== '';
-
-            // ── Screenshot capture ─────────────────────────────────────────────
-            //
-            // Rules (evaluated in order):
-            //
-            //  1. Not frozen + URL changed/first-after-reset
-            //     → Capture normally. If it's a job detail URL, freeze it.
-            //
-            //  2. Frozen + new job detail URL (user browsed to a different card)
-            //     → Re-capture and re-freeze on the new card. This ensures the
-            //       screenshot we save is always the last job detail the user
-            //       looked at before hitting Apply.
-            //
-            //  3. Frozen + heading to a known ATS apply page
-            //     → Do NOT capture, do NOT clear. Keep the frozen job-detail
-            //       screenshot so it gets attached when IN_PROGRESS fires.
-            //
-            //  4. Frozen + anything else (unrecognised page, not apply flow)
-            //     → Clear unless we're already IN_PROGRESS (mid-form navigation).
-            //
-            const headingToApplyPage = urlChanged && isDefiniteApplicationPage(url);
+            const headingToApplyPage    = urlChanged && isDefiniteApplicationPage(url);
 
             if ((urlChanged || firstSignalAfterReset) && !screenshotFrozen) {
-                // Rule 1 — normal capture
                 await captureCurrentPage(url);
                 if (isJobDetailUrl(url)) {
                     screenshotFrozen  = true;
                     lastNotStartedURL = canonicaliseUrl(url);
-                    console.log(`[SCREENSHOT] Frozen (job detail) → ${lastNotStartedURL}`);
                 }
             } else if (urlChanged && screenshotFrozen && isJobDetailUrl(url) && currentStatus !== 'IN_PROGRESS') {
-                // Rule 2 — user browsed to a different job card; re-freeze
                 clearScreenshotState();
                 await captureCurrentPage(url);
                 screenshotFrozen  = true;
                 lastNotStartedURL = canonicaliseUrl(url);
-                console.log(`[SCREENSHOT] Re-frozen (new job detail) → ${lastNotStartedURL}`);
-            } else if (headingToApplyPage) {
-                // Rule 3 — entering apply flow; preserve frozen screenshot
-                console.log(`[SCREENSHOT] Entering apply flow — frozen screenshot preserved`);
+            } else if (urlChanged && screenshotFrozen && currentStatus === 'IN_PROGRESS') {
+                // mid-form navigation — preserve screenshots
             } else if (urlChanged && screenshotFrozen) {
-                // Rule 4 — left the flow
-                if (currentStatus !== 'IN_PROGRESS') {
-                    clearScreenshotState();
-                }
+                clearScreenshotState();
             }
 
             if (currentStatus === 'IN_PROGRESS' && urlChanged && isJobListingUrl(url)) {
-                console.log('\n[RESET] Back to listing while IN_PROGRESS');
                 resetStatus(true);
                 clearScreenshotState();
             }
 
             const d = getJobBoardDomain(url);
-            if (d) { currentJobBoard = d; if (d !== lastResetDomain) lastResetDomain = ''; }
+            if (d) {
+                currentJobBoard = d;
+                if (d !== lastResetDomain) lastResetDomain = '';
+            }
 
-            const dom            = detectApplicationStatus(signals) as DetectionResult;
-            const detectedStatus = dom.status as Status;
-            const confidence     = dom.confidence;
+            const dom                   = detectApplicationStatus(signals) as DetectionResult;
+            const detectedStatus        = dom.status as Status;
+            const confidence            = dom.confidence;
+            let   effectiveStatus       = detectedStatus;
 
-            // ── Apply-button gate for IN_PROGRESS ─────────────────────────────
-            // If the detected status is IN_PROGRESS but the page still shows a
-            // prominent "Apply" / "Easy Apply" / "Apply Now" button, this page
-            // is a job detail page — NOT an actual application form. Keep status
-            // as NOT_STARTED. This prevents double-apply-page false positives
-            // universally, regardless of which job board or ATS is in use.
-            //
-            // Exception: we allow the transition if we're already IN_PROGRESS
-            // (multi-step form, user advanced past step 1) or if this is a known
-            // definite ATS URL (already handled as a fast path inside status.ts).
-            let effectiveDetectedStatus = detectedStatus;
             if (
                 detectedStatus === 'IN_PROGRESS' &&
                 currentStatus  !== 'IN_PROGRESS' &&
                 signals.hasApplyButton === true
             ) {
-                console.log(`[GATE]    IN_PROGRESS blocked — Apply button visible, treating as NOT_STARTED`);
-                effectiveDetectedStatus = 'NOT_STARTED';
+                effectiveStatus = 'NOT_STARTED';
             }
 
-            if (effectiveDetectedStatus === 'IN_PROGRESS' && !screenshotFrozen) {
+            if (effectiveStatus === 'IN_PROGRESS' && !screenshotFrozen) {
                 screenshotFrozen = true;
-                console.log(`[SCREENSHOT] Frozen (fallback) — apply form detected`);
             }
 
-            const isNewPage = url !== lastLoggedURL;
-            lastLoggedURL   = url;
+            const isCompletionSignal = effectiveStatus === 'COMPLETED' && signals.hasCompletionToast === true;
+            const isNewPage          = url !== lastLoggedURL;
+            lastLoggedURL            = url;
 
-            console.log(`\n${'─'.repeat(72)}`);
-            console.log(`[ANALYSE] ${new Date().toLocaleTimeString()} | ${url}`);
-            console.log(`[DETECT]  status=${effectiveDetectedStatus}  confidence=${confidence}  current=${currentStatus}`);
-
-            if (effectiveDetectedStatus !== 'UNKNOWN' && isNewPage) {
-                const changed = effectiveDetectedStatus !== currentStatus;
+            if (effectiveStatus !== 'UNKNOWN' && (isNewPage || isCompletionSignal)) {
+                const changed = effectiveStatus !== currentStatus;
                 if (confidence === 'high' && changed) {
-                    console.log(`[AUTO]    ${currentStatus} → ${effectiveDetectedStatus}  (high)`);
-                    await applyStatusChange(effectiveDetectedStatus, url);
+                    await applyStatusChange(effectiveStatus, url);
                     mainWindow?.webContents.send('app-status-updated');
                 } else if (confidence === 'medium' && changed &&
-                    (effectiveDetectedStatus === 'IN_PROGRESS' || effectiveDetectedStatus === 'COMPLETED')) {
-                    console.log(`[AUTO]    ${currentStatus} → ${effectiveDetectedStatus}  (medium, forward)`);
-                    await applyStatusChange(effectiveDetectedStatus, url);
+                    (effectiveStatus === 'IN_PROGRESS' || effectiveStatus === 'COMPLETED')) {
+                    await applyStatusChange(effectiveStatus, url);
                     mainWindow?.webContents.send('app-status-updated');
-                } else {
-                    console.log(`[AUTO]    no change — ${confidence}, detected=${effectiveDetectedStatus}`);
                 }
             }
 
             previousURL = url;
-        } catch (err) {
-            console.error('[PROCESS ERROR]', err);
-        }
+
+        } catch { /* ignore */ }
     }
 });
 
