@@ -76,8 +76,9 @@ src/electron/
 ├── home.html         # main UI
 ├── pipeline.html     # board view
 ├── settings.html     # settings page
-└── status.ts         # the most important file in the whole project
-                      # responsible for everything that makes this app actually work
+└── status.ts         # THE MOST IMPORTANT FILE in the whole project
+                      # responsible for everything that makes this app actually
+                      # work!!
 
 ```
 
