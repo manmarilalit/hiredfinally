@@ -8,7 +8,7 @@ HiredFinally is a dedicated job application browser - Chromium baked into a desk
 
 ## Download
 
-**[⬇️ Download for Windows](https://github.com/manmarilalit/hiredfinally/releases/latest)**
+**[Download for Windows](https://github.com/manmarilalit/hiredfinally/releases/latest)**
 
 ---
 <!-- Add screenshots -->
