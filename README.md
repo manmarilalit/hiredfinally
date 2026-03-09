@@ -1,6 +1,6 @@
 # HiredFinally
 
-> A browser built for job hunting. Nothing else.
+> A app built for job hunting. Nothing else.
 
 HiredFinally is a dedicated job application browser - Chromium baked into a desktop app, laser-focused on getting you hired. No Twitter rabbit holes, no YouTube detours. Just you, your applications, and a tracker that does the work automatically.
 
