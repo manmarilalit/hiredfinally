@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, Notification } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Notification, Tray, Menu } = require('electron');
 const { spawn } = require('child_process');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
@@ -17,6 +17,20 @@ const { extractJobMeta, checkOllamaAvailable } = require('./extractor');
 
 if (process.platform === 'win32') {
     try { require('child_process').execSync('chcp 65001', { stdio: 'ignore' }); } catch {}
+}
+
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+    app.quit();
+} else {
+    app.on('second-instance', () => {
+        // mainWindow may not exist yet if app is still starting up
+        if (mainWindow) {
+            if (mainWindow.isMinimized()) mainWindow.restore();
+            mainWindow.show();
+            mainWindow.focus();
+        }
+    });
 }
 
 type Status     = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'UNKNOWN';
@@ -62,6 +76,7 @@ interface PendingRow {
 }
 
 let mainWindow:          any = null;
+let tray:                any = null;
 let notificationManager: any = null;
 let db:                  any = null;
 
@@ -192,16 +207,68 @@ function downloadFile(url: string, dest: string): Promise<void> {
 app.on('ready', async () => {
     if (process.platform === 'win32') app.setAppUserModelId(app.name);
 
+    const iconPath = path.join(__dirname, 'icon.png');
+
     mainWindow = new BrowserWindow({
         width: 1400, height: 900,
+        icon: iconPath,
+        show: false,
         webPreferences: { nodeIntegration: true, contextIsolation: false, webviewTag: true, webSecurity: false },
     });
     mainWindow.setMenuBarVisibility(false);
     mainWindow.loadFile(path.join(__dirname, 'home.html'));
+    mainWindow.once('ready-to-show', () => mainWindow.show());
+
+    // -- System tray -----------------------------------------------------------
+    tray = new Tray(iconPath);
+    tray.setToolTip('HiredFinally');
+
+    const trayMenu = Menu.buildFromTemplate([
+        { label: 'Open HiredFinally', click: () => { mainWindow?.show(); mainWindow?.focus(); } },
+        { type: 'separator' },
+        { label: 'Quit', click: () => { app.isQuiting = true; app.quit(); } },
+    ]);
+    tray.setContextMenu(trayMenu);
+    tray.on('click', () => {
+        if (mainWindow?.isVisible()) {
+            mainWindow.focus();
+        } else {
+            mainWindow?.show();
+            mainWindow?.focus();
+        }
+    });
+
+    // Minimise to tray instead of closing
+    mainWindow.on('close', (e: any) => {
+        if (!app.isQuiting) {
+            e.preventDefault();
+            mainWindow.hide();
+        }
+    });
+
+    // On macOS, re-show window when clicking dock icon
+    app.on('activate', () => {
+        mainWindow?.show();
+        mainWindow?.focus();
+    });
 
     autoUpdater.checkForUpdatesAndNotify();
     autoUpdater.on('update-available',  () => sendNativeNotification('HiredFinally', 'Update available! Downloading now...'));
-    autoUpdater.on('update-downloaded', () => sendNativeNotification('HiredFinally', 'Update downloaded! Restart to apply.'));
+    autoUpdater.on('update-downloaded', () => {
+        dialog.showMessageBox(mainWindow, {
+            type: 'info',
+            title: 'Update Ready',
+            message: 'A new version of HiredFinally has been downloaded.',
+            detail: 'Restart now to apply the update, or continue and it will be applied next time you quit.',
+            buttons: ['Restart Now', 'Later'],
+            defaultId: 0,
+        }).then(({ response }: { response: number }) => {
+            if (response === 0) {
+                app.isQuiting = true;
+                autoUpdater.quitAndInstall();
+            }
+        });
+    });
 
     const dbPath = app.isPackaged
         ? path.join(app.getPath('userData'), 'job_apps.db')
@@ -443,6 +510,13 @@ app.on('ready', async () => {
 
     ipcMain.on('get-settings',  (event: any) => { event.sender.send('settings-loaded', notificationManager.getSettings()); });
     ipcMain.on('save-settings', (_e: any, s: any) => { notificationManager.updateSettings(s); });
+    ipcMain.on('get-version', (event: any) => { 
+        try {
+            event.returnValue = require('../../package.json').version;
+        } catch {
+            event.returnValue = app.getVersion();
+        }
+    });
     ipcMain.on('navigate-home', () => {
         mainWindow?.loadFile(path.join(__dirname, 'home.html'));
         mainWindow?.webContents.once('did-finish-load', () => mainWindow?.webContents.send('navigate-home'));
@@ -740,4 +814,4 @@ app.on('ready', async () => {
     }
 });
 
-app.on('before-quit', () => { notificationManager?.cleanup(); });
+app.on('before-quit', () => { app.isQuiting = true; notificationManager?.cleanup(); });

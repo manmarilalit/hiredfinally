@@ -535,7 +535,7 @@ webview { width:100%; height:100%; }
                     <div class="settings-panel" data-panel="about">
                         <div class="settings-block">
                             <div class="block-header">About HiredFinally</div>
-                            <div class="setting-row"><div class="setting-info"><div class="setting-name">Version</div><div class="setting-desc">1.0.0</div></div></div>
+                            <div class="setting-row"><div class="setting-info"><div class="setting-name">Version</div><div class="setting-desc" id="appVersion">...</div></div></div>
                             <div class="setting-row"><div class="setting-info"><div class="setting-name">Description</div><div class="setting-desc">Your intelligent job application tracker.</div></div></div>
                         </div>
                     </div>
@@ -992,6 +992,14 @@ document.getElementById('navPipeline').addEventListener('click',   () => ipcRend
 document.getElementById('navInterviews').addEventListener('click', () => ipcRenderer.send('open-pipeline'));
 document.getElementById('navOffers').addEventListener('click',     () => ipcRenderer.send('open-pipeline'));
 ipcRenderer.on('open-settings-view', () => openSettings());
+
+// ── App version ───────────────────────────────────────────────────────────────
+try {
+    const version = ipcRenderer.sendSync('get-version');
+    document.getElementById('appVersion').textContent = version || '—';
+} catch (e) {
+    try { document.getElementById('appVersion').textContent = require('../../package.json').version || '—'; } catch {}
+}
 </script>
 </body>
 </html>
