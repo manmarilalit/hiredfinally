@@ -154,4 +154,5 @@ src/electron/job_apps.db
 src/electron/status.ts
 
 # Electron builder cache
-.electron-builder-cache/
+.electron-builder-cache/src/electron/job_apps.db
+src/electron/notification-settings.json
