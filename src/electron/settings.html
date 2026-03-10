@@ -1,0 +1,862 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <script>
+    window.lucide = require(
+      require("path").join(__dirname, "..", "..", "node_modules", "lucide", "dist", "umd", "lucide.min.js"),
+    );
+  </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings — HiredFinally</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet" />
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    input,
+    textarea {
+      -webkit-user-select: text;
+      user-select: text;
+    }
+
+    ::-webkit-scrollbar {
+      width: 3px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #e2e2e2;
+      border-radius: 4px;
+    }
+
+    :root {
+      --black: #111111;
+      --white: #ffffff;
+      --bg: #ffffff;
+      --card: #f0f0f0;
+      --border: #e2e2e2;
+      --gray-400: #aaaaaa;
+      --gray-600: #666666;
+      --radius: 14px;
+      --radius-sm: 9px;
+      --sidebar-w: 110px;
+      --gap: 22px;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      font-family: "Space Grotesk", sans-serif;
+      background: var(--bg);
+      overflow: hidden;
+      color: var(--black);
+    }
+
+    /* ── Titlebar ── */
+    .titlebar {
+      position: fixed;
+      top: 0;
+      right: 0;
+      display: flex;
+      z-index: 9999;
+      -webkit-app-region: drag;
+      width: 100%;
+      height: 38px;
+      justify-content: flex-end;
+      align-items: center;
+    }
+
+    .titlebar-drag-handle {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 48px;
+      height: 3px;
+      background: #d0d0d0;
+      border-radius: 99px;
+      pointer-events: none;
+    }
+
+    .tb-btn {
+      width: 46px;
+      height: 38px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+      -webkit-app-region: no-drag;
+    }
+
+    .tb-btn svg {
+      width: 14px;
+      height: 14px;
+      stroke: #555;
+      stroke-width: 2.5;
+      pointer-events: none;
+    }
+
+    .tb-minimize:hover {
+      background: #e0e0e0;
+    }
+
+    .tb-maximize:hover {
+      background: #e0e0e0;
+    }
+
+    .tb-close:hover {
+      background: #e81123;
+    }
+
+    .tb-close:hover svg {
+      stroke: #ffffff;
+    }
+
+    /* ── Root layout ── */
+    .app {
+      display: flex;
+      width: 100vw;
+      height: 100vh;
+      padding: 38px var(--gap);
+      gap: var(--gap);
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+      background: var(--black);
+      border-radius: 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 14px 0;
+    }
+
+    .sidebar-logo {
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--white);
+      letter-spacing: -0.5px;
+      margin-bottom: 28px;
+    }
+
+    .sidebar-nav {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+    }
+
+    .sidebar-bottom {
+      margin-top: auto;
+    }
+
+    .nav-item {
+      width: 44px;
+      height: 44px;
+      border-radius: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.10);
+    }
+
+    .nav-item.active {
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    .nav-item svg {
+      width: 20px;
+      height: 20px;
+      stroke: rgba(255, 255, 255, 0.6);
+      stroke-width: 2;
+      transition: stroke 0.15s;
+    }
+
+    .nav-item.active svg,
+    .nav-item:hover svg {
+      stroke: #ffffff;
+    }
+
+    /* ── Main ── */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+      padding-left: 32px;
+      padding-right: 32px;
+    }
+
+    .page-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-shrink: 0;
+      padding-top: 22px;
+    }
+
+    .page-title {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.4px;
+    }
+
+    /* ── Settings layout ── */
+    .settings-layout {
+      flex: 1;
+      display: flex;
+      gap: 16px;
+      min-height: 0;
+    }
+
+    /* ── Left nav ── */
+    .settings-nav {
+      width: 180px;
+      flex-shrink: 0;
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 10px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .s-nav-label {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gray-400);
+      padding: 10px 14px 4px;
+    }
+
+    .s-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 9px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gray-600);
+      cursor: pointer;
+      position: relative;
+      transition: background 0.12s, color 0.12s;
+    }
+
+    .s-nav-item:hover {
+      background: rgba(0, 0, 0, 0.04);
+      color: var(--black);
+    }
+
+    .s-nav-item.active {
+      color: var(--black);
+      background: rgba(0, 0, 0, 0.06);
+    }
+
+    .s-nav-item.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 6px;
+      bottom: 6px;
+      width: 2.5px;
+      background: var(--black);
+      border-radius: 0 2px 2px 0;
+    }
+
+    .s-nav-item svg {
+      width: 14px;
+      height: 14px;
+      stroke: currentColor;
+      stroke-width: 2;
+      flex-shrink: 0;
+    }
+
+    /* ── Content ── */
+    .settings-content {
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
+    }
+
+    .s-panel {
+      display: none;
+    }
+
+    .s-panel.active {
+      display: block;
+      padding-bottom: 40px;
+    }
+
+    .s-section-title {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--gray-400);
+      margin-bottom: 10px;
+      margin-top: 22px;
+    }
+
+    .s-section-title:first-child {
+      margin-top: 0;
+    }
+
+    .s-block {
+      background: var(--card);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .s-block-header {
+      padding: 10px 16px;
+      font-size: 11px;
+      font-weight: 700;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .s-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      gap: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .s-row:last-child {
+      border-bottom: none;
+    }
+
+    .s-row-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .s-row-name {
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 2px;
+    }
+
+    .s-row-desc {
+      font-size: 11px;
+      color: var(--gray-600);
+      line-height: 1.5;
+    }
+
+    .s-input-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 0 16px 12px;
+      font-size: 12px;
+      color: var(--gray-600);
+    }
+
+    .s-num-input,
+    .s-time-input {
+      padding: 5px 10px;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--black);
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 12px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .s-num-input {
+      width: 62px;
+      text-align: center;
+    }
+
+    .s-num-input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+    }
+
+    .s-num-input:focus,
+    .s-time-input:focus {
+      border-color: var(--black);
+    }
+
+    .s-btn {
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid;
+      transition: opacity 0.15s, background 0.15s;
+      white-space: nowrap;
+    }
+
+    .s-btn-primary {
+      background: var(--black);
+      color: var(--white);
+      border-color: var(--black);
+    }
+
+    .s-btn-primary:hover {
+      opacity: 0.8;
+    }
+
+    .s-btn-ghost {
+      background: transparent;
+      color: var(--gray-600);
+      border-color: var(--border);
+    }
+
+    .s-btn-ghost:hover {
+      border-color: var(--black);
+      color: var(--black);
+    }
+
+    .s-btn-danger {
+      background: #fff0f0;
+      color: #c0392b;
+      border-color: #f5c0c0;
+    }
+
+    .s-btn-danger:hover {
+      background: #fde0e0;
+    }
+
+    .s-btn-success {
+      background: #f0fdf6;
+      color: #1a7a50;
+      border-color: #a8dfc0;
+    }
+
+    .s-btn-success:hover {
+      background: #dcf5ea;
+    }
+
+    .s-coming-soon {
+      font-size: 9px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #e8f4ff;
+      color: #2a7abf;
+      border: 1px solid #b8d8f8;
+    }
+
+    .s-footer {
+      display: flex;
+      gap: 10px;
+      padding-top: 14px;
+    }
+
+    .s-toggle {
+      position: relative;
+      width: 40px;
+      height: 22px;
+      cursor: pointer;
+      display: inline-block;
+    }
+
+    .s-toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+      position: absolute;
+    }
+
+    .s-toggle-track {
+      position: absolute;
+      inset: 0;
+      background: var(--border);
+      border-radius: 99px;
+      transition: background 0.2s;
+    }
+
+    .s-toggle-thumb {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 16px;
+      height: 16px;
+      background: var(--gray-400);
+      border-radius: 50%;
+      transition: transform 0.2s, background 0.2s;
+    }
+
+    .s-toggle input:checked~.s-toggle-track {
+      background: var(--black);
+    }
+
+    .s-toggle input:checked~.s-toggle-thumb {
+      transform: translateX(18px);
+      background: #fff;
+    }
+
+    .s-toggle input:disabled~.s-toggle-track {
+      opacity: 0.3;
+    }
+
+    .hf-toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--black);
+      color: var(--white);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity 0.2s, transform 0.2s;
+      pointer-events: none;
+      z-index: 99999;
+    }
+
+    .hf-toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="titlebar">
+    <div class="titlebar-drag-handle"></div>
+    <button class="tb-btn tb-minimize" id="btn-minimize"><i data-lucide="minus"></i></button>
+    <button class="tb-btn tb-maximize" id="btn-maximize"><i data-lucide="square"></i></button>
+    <button class="tb-btn tb-close" id="btn-close"><i data-lucide="x"></i></button>
+  </div>
+
+  <div class="app">
+    <aside class="sidebar">
+      <div class="sidebar-logo">HF.</div>
+      <nav class="sidebar-nav">
+        <div class="nav-item" id="navHome"><i data-lucide="house"></i></div>
+        <div class="nav-item" id="navPipeline"><i data-lucide="briefcase"></i></div>
+        <div class="nav-item"><i data-lucide="bell"></i></div>
+        <div class="nav-item"><i data-lucide="bar-chart-2"></i></div>
+        <div class="nav-item active"><i data-lucide="settings"></i></div>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="nav-item"><i data-lucide="user"></i></div>
+      </div>
+    </aside>
+
+    <div class="main">
+      <div class="page-header">
+        <div class="page-title">Settings</div>
+      </div>
+
+      <div class="settings-layout">
+        <div class="settings-nav">
+          <div class="s-nav-label">Preferences</div>
+          <div class="s-nav-item active" data-panel="notifications">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+            Notifications
+          </div>
+          <div class="s-nav-item" data-panel="appearance">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.07 4.93a10 10 0 0 0-14.14 0M4.93 19.07a10 10 0 0 0 14.14 0" />
+            </svg>
+            Appearance
+          </div>
+          <div class="s-nav-label" style="margin-top:6px;">Data</div>
+          <div class="s-nav-item" data-panel="data">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <ellipse cx="12" cy="5" rx="9" ry="3" />
+              <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+              <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+            </svg>
+            Data
+          </div>
+          <div class="s-nav-label" style="margin-top:6px;">Info</div>
+          <div class="s-nav-item" data-panel="about">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            About
+          </div>
+        </div>
+
+        <div class="settings-content">
+          <div class="s-panel active" id="s-panel-notifications">
+            <div class="s-section-title">General</div>
+            <div class="s-block">
+              <div class="s-row">
+                <div class="s-row-info">
+                  <div class="s-row-name">Enable Notifications</div>
+                  <div class="s-row-desc">Master switch for all notification types.</div>
+                </div>
+                <label class="s-toggle"><input type="checkbox" id="notifEnabled" checked><span
+                    class="s-toggle-track"></span><span class="s-toggle-thumb"></span></label>
+              </div>
+              <div class="s-row">
+                <div class="s-row-info">
+                  <div class="s-row-name">Notification Sound</div>
+                  <div class="s-row-desc">Play a sound with each notification.</div>
+                </div>
+                <label class="s-toggle"><input type="checkbox" id="soundEnabled" checked><span
+                    class="s-toggle-track"></span><span class="s-toggle-thumb"></span></label>
+              </div>
+              <div class="s-row">
+                <div class="s-row-info">
+                  <div class="s-row-name">Test Notification</div>
+                  <div class="s-row-desc">Send a test to confirm they're working.</div>
+                </div>
+                <button class="s-btn s-btn-success" id="testNotifBtn">Send Test</button>
+              </div>
+            </div>
+            <div class="s-section-title">Reminders</div>
+            <div class="s-block">
+              <div class="s-block-header">Follow-up</div>
+              <div class="s-row">
+                <div class="s-row-info">
+                  <div class="s-row-name">Follow-up on Viewed Jobs</div>
+                  <div class="s-row-desc">Remind you to apply to jobs you viewed but skipped.</div>
+                </div>
+                <label class="s-toggle"><input type="checkbox" id="followUpEnabled" checked><span
+                    class="s-toggle-track"></span><span class="s-toggle-thumb"></span></label>
+              </div>
+              <div class="s-input-row">Remind after <input class="s-num-input" type="number" id="followUpDelay" min="1"
+                  max="168" value="24"> hours</div>
+            </div>
+            <div class="s-block">
+              <div class="s-block-header">Daily</div>
+              <div class="s-row">
+                <div class="s-row-info">
+                  <div class="s-row-name">Daily Application Reminder</div>
+                  <div class="s-row-desc">Get a daily nudge to keep applying.</div>
+                </div>
+                <label class="s-toggle"><input type="checkbox" id="dailyEnabled" checked><span
+                    class="s-toggle-track"></span><span class="s-toggle-thumb"></span></label>
+              </div>
+              <div class="s-input-row">Reminder time <input class="s-time-input" type="time" id="dailyTime"
+                  value="10:00"></div>
+            </div>
+            <div class="s-block">
+              <div class="s-block-header">Inactivity</div>
+              <div class="s-row">
+                <div class="s-row-info">
+                  <div class="s-row-name">Inactivity Reminders</div>
+                  <div class="s-row-desc">Notified when you haven't applied recently.</div>
+                </div>
+                <label class="s-toggle"><input type="checkbox" id="inactivityEnabled" checked><span
+                    class="s-toggle-track"></span><span class="s-toggle-thumb"></span></label>
+              </div>
+              <div class="s-input-row">Alert after <input class="s-num-input" type="number" id="inactivityDelay" min="1"
+                  max="30" value="3"> days</div>
+            </div>
+            <div class="s-block">
+              <div class="s-block-header">Weekly Goal</div>
+              <div class="s-row">
+                <div class="s-row-info">
+                  <div class="s-row-name">Weekly Application Goal</div>
+                  <div class="s-row-desc">Track progress toward a weekly target.</div>
+                </div>
+                <label class="s-toggle"><input type="checkbox" id="weeklyEnabled" checked><span
+                    class="s-toggle-track"></span><span class="s-toggle-thumb"></span></label>
+              </div>
+              <div class="s-input-row">Goal <input class="s-num-input" type="number" id="weeklyGoal" min="1" max="50"
+                  value="5"> applications per week</div>
+            </div>
+            <div class="s-block">
+              <div class="s-block-header">Email Integration <span class="s-coming-soon">coming soon</span></div>
+              <div class="s-row">
+                <div class="s-row-info">
+                  <div class="s-row-name">Email Response Detection</div>
+                  <div class="s-row-desc">Automatically detect employer replies.</div>
+                </div>
+                <label class="s-toggle"><input type="checkbox" id="emailCheckEnabled" disabled><span
+                    class="s-toggle-track"></span><span class="s-toggle-thumb"></span></label>
+              </div>
+              <div class="s-input-row" style="opacity:0.4;">Check every <input class="s-num-input" type="number"
+                  id="emailCheckInterval" min="15" max="180" value="30" disabled> minutes</div>
+            </div>
+            <div class="s-footer">
+              <button class="s-btn s-btn-primary" id="settingsSave">Save Settings</button>
+              <button class="s-btn s-btn-ghost" id="settingsCancel">Cancel</button>
+            </div>
+          </div>
+
+          <div class="s-panel" id="s-panel-appearance">
+            <div class="s-section-title">Interface</div>
+            <div class="s-block">
+              <div class="s-row" style="border-bottom:none;">
+                <div class="s-row-info">
+                  <div class="s-row-name">Theme</div>
+                  <div class="s-row-desc">Light mode only for now. Dark mode coming soon.</div>
+                </div>
+                <span class="s-coming-soon">coming soon</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="s-panel" id="s-panel-data">
+            <div class="s-section-title">Application Data</div>
+            <div class="s-block">
+              <div class="s-row">
+                <div class="s-row-info">
+                  <div class="s-row-name">Export History</div>
+                  <div class="s-row-desc">Download all tracked applications as a CSV file.</div>
+                </div>
+                <button class="s-btn s-btn-ghost" id="exportBtn">Export CSV</button>
+              </div>
+              <div class="s-row">
+                <div class="s-row-info">
+                  <div class="s-row-name">Clear History</div>
+                  <div class="s-row-desc">Permanently remove all tracked records. Cannot be undone.</div>
+                </div>
+                <button class="s-btn s-btn-danger" id="clearBtn">Clear All</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="s-panel" id="s-panel-about">
+            <div class="s-section-title">About HiredFinally</div>
+            <div class="s-block">
+              <div class="s-row">
+                <div class="s-row-info">
+                  <div class="s-row-name">Version</div>
+                  <div class="s-row-desc" id="appVersion">—</div>
+                </div>
+              </div>
+              <div class="s-row">
+                <div class="s-row-info">
+                  <div class="s-row-name">Description</div>
+                  <div class="s-row-desc">Your intelligent job application tracker.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hf-toast" id="hfToast"></div>
+
+  <script>
+    window.addEventListener("load", () => {
+      lucide.createIcons();
+      const { ipcRenderer } = require("electron");
+
+      document.getElementById("btn-minimize").addEventListener("click", () => ipcRenderer.send("window-minimize"));
+      document.getElementById("btn-maximize").addEventListener("click", () => ipcRenderer.send("window-maximize"));
+      document.getElementById("btn-close").addEventListener("click", () => ipcRenderer.send("window-close"));
+
+      document.getElementById("navHome").addEventListener("click", () => ipcRenderer.send("navigate-home"));
+      document.getElementById("navPipeline").addEventListener("click", () => ipcRenderer.send("open-pipeline"));
+
+      function showToast(msg) {
+        const t = document.getElementById("hfToast");
+        t.textContent = msg; t.classList.add("show");
+        setTimeout(() => t.classList.remove("show"), 2400);
+      }
+
+      document.querySelectorAll(".s-nav-item[data-panel]").forEach(item => {
+        item.addEventListener("click", () => {
+          document.querySelectorAll(".s-nav-item[data-panel]").forEach(i => i.classList.remove("active"));
+          document.querySelectorAll(".s-panel").forEach(p => p.classList.remove("active"));
+          item.classList.add("active");
+          document.getElementById("s-panel-" + item.dataset.panel).classList.add("active");
+        });
+      });
+
+      ipcRenderer.on("settings-loaded", (_e, s) => {
+        const set = (id, val, prop = "checked") => { const el = document.getElementById(id); if (el) el[prop] = val; };
+        set("notifEnabled", s.enabled);
+        set("soundEnabled", s.soundEnabled);
+        set("followUpEnabled", s.followUpEnabled);
+        set("followUpDelay", s.followUpDelay, "value");
+        set("dailyEnabled", s.dailyReminderEnabled);
+        set("dailyTime", s.dailyReminderTime, "value");
+        set("inactivityEnabled", s.inactivityReminderEnabled);
+        set("inactivityDelay", s.inactivityDelay, "value");
+        set("weeklyEnabled", s.weeklyGoalEnabled);
+        set("weeklyGoal", s.weeklyGoal, "value");
+      });
+      ipcRenderer.send("get-settings");
+
+      try { document.getElementById("appVersion").textContent = ipcRenderer.sendSync("get-version"); } catch { }
+
+      function collectSettings() {
+        const g = id => document.getElementById(id);
+        return {
+          enabled: g("notifEnabled").checked,
+          soundEnabled: g("soundEnabled").checked,
+          followUpEnabled: g("followUpEnabled").checked,
+          followUpDelay: parseInt(g("followUpDelay").value) || 24,
+          dailyReminderEnabled: g("dailyEnabled").checked,
+          dailyReminderTime: g("dailyTime").value,
+          emailCheckEnabled: false,
+          emailCheckInterval: 30,
+          inactivityReminderEnabled: g("inactivityEnabled").checked,
+          inactivityDelay: parseInt(g("inactivityDelay").value) || 3,
+          weeklyGoalEnabled: g("weeklyEnabled").checked,
+          weeklyGoal: parseInt(g("weeklyGoal").value) || 5,
+        };
+      }
+
+      document.getElementById("settingsSave").addEventListener("click", () => {
+        ipcRenderer.send("save-settings", collectSettings());
+        showToast("Settings saved");
+        setTimeout(() => ipcRenderer.send("navigate-home"), 500);
+      });
+      document.getElementById("settingsCancel").addEventListener("click", () => ipcRenderer.send("navigate-home"));
+
+      document.getElementById("testNotifBtn").addEventListener("click", () => {
+        ipcRenderer.send("show-notification", { title: "HiredFinally", body: "Notifications are working." });
+        showToast("Test sent");
+      });
+      document.getElementById("exportBtn").addEventListener("click", () => {
+        ipcRenderer.send("export-application-data");
+        showToast("Exporting…");
+      });
+      document.getElementById("clearBtn").addEventListener("click", () => {
+        if (confirm("Delete all application data? This cannot be undone.")) {
+          ipcRenderer.send("clear-application-data");
+          showToast("Data cleared");
+        }
+      });
+    });
+  </script>
+</body>
+
+</html>
