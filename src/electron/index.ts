@@ -95,10 +95,33 @@ interface PendingRow {
     screenshot: Buffer | null;
 }
 
+interface BoardRow {
+    name: string;
+    url: string;
+}
+
+const DEFAULT_BOARDS: BoardRow[] = [
+    { name: "Indeed", url: "https://www.indeed.com/" },
+    { name: "LinkedIn", url: "https://www.linkedin.com/jobs/" },
+    { name: "Handshake", url: "https://app.joinhandshake.com/explore" },
+    { name: "Glassdoor", url: "https://www.glassdoor.com/Job/index.htm" },
+    { name: "ZipRecruiter", url: "https://www.ziprecruiter.com/" },
+    { name: "Wellfound", url: "https://wellfound.com/jobs" },
+    { name: "Dice", url: "https://www.dice.com/" },
+    { name: "Lever", url: "https://www.lever.co/" },
+    { name: "Greenhouse", url: "https://www.greenhouse.io/" },
+    { name: "Built In", url: "https://builtin.com/jobs" },
+    { name: "Remote.co", url: "https://remote.co/remote-jobs/" },
+    { name: "Y Combinator", url: "https://www.ycombinator.com/jobs" },
+];
+
 let mainWindow: any = null;
 let tray: any = null;
 let notificationManager: any = null;
 let db: any = null;
+
+// -- Auto updater flag ---------------------------------------------------------
+let updateDownloaded = false;
 
 function sendNativeNotification(title: string, body: string): void {
     if (!Notification.isSupported()) return;
@@ -108,6 +131,15 @@ function sendNativeNotification(title: string, body: string): void {
 }
 
 let runExtractionWorkerFn: () => void = () => { };
+
+// -- Logging -------------------------------------------------------------------
+const log = require('electron-log');
+autoUpdater.logger = log;
+autoUpdater.logger.transports.file.level = 'info';
+log.info('App starting...');
+
+// -- Auto updater config -------------------------------------------------------
+autoUpdater.autoInstallOnAppQuit = true;
 
 // -- Ollama --------------------------------------------------------------------
 const MODEL = "qwen2.5vl:3b";
@@ -321,7 +353,7 @@ app.on("ready", async () => {
     tray = new Tray(iconPath);
     tray.setToolTip("HiredFinally");
 
-    const trayMenu = Menu.buildFromTemplate([
+    const buildTrayMenu = () => Menu.buildFromTemplate([
         {
             label: "Open HiredFinally",
             click: () => {
@@ -331,14 +363,21 @@ app.on("ready", async () => {
         },
         { type: "separator" },
         {
-            label: "Quit",
+            // Show a hint in the label if an update is waiting
+            label: updateDownloaded ? "Quit & Install Update" : "Quit",
             click: () => {
                 app.isQuiting = true;
-                app.quit();
+                if (updateDownloaded) {
+                    autoUpdater.quitAndInstall(); // install update then quit
+                } else {
+                    app.quit();
+                }
             },
         },
     ]);
-    tray.setContextMenu(trayMenu);
+
+    tray.setContextMenu(buildTrayMenu());
+
     tray.on("click", () => {
         if (mainWindow?.isVisible()) {
             mainWindow.focus();
@@ -362,6 +401,7 @@ app.on("ready", async () => {
         mainWindow?.focus();
     });
 
+    // -- Auto updater ----------------------------------------------------------
     autoUpdater.checkForUpdatesAndNotify();
     setInterval(
         () => {
@@ -369,13 +409,22 @@ app.on("ready", async () => {
         },
         60 * 60 * 1000,
     );
-    autoUpdater.on("update-available", () =>
+
+    autoUpdater.on("update-available", () => {
+        log.info("Update available, downloading...");
         sendNativeNotification(
             "HiredFinally",
             "Update available! Downloading now...",
-        ),
-    );
-    autoUpdater.on("update-downloaded", () => {
+        );
+    });
+
+    autoUpdater.on("update-downloaded", (info: any) => {
+        log.info("Update downloaded:", info.version);
+        updateDownloaded = true;
+
+        // Refresh tray menu to show "Quit & Install Update"
+        tray.setContextMenu(buildTrayMenu());
+
         dialog
             .showMessageBox(mainWindow, {
                 type: "info",
@@ -394,10 +443,61 @@ app.on("ready", async () => {
             });
     });
 
+    autoUpdater.on("error", (err: any) => {
+        log.error("Auto updater error:", err);
+    });
+
     const dbPath = app.isPackaged
         ? path.join(app.getPath("userData"), "job_apps.db")
         : "./src/electron/job_apps.db";
     db = new Database(dbPath);
+
+    // -- Boards table ----------------------------------------------------------
+    db.prepare(`
+        CREATE TABLE IF NOT EXISTS boards (
+            id       INTEGER PRIMARY KEY AUTOINCREMENT,
+            name     TEXT    NOT NULL,
+            url      TEXT    NOT NULL,
+            position INTEGER DEFAULT 0
+        )
+    `).run();
+
+    // Seed defaults on first run
+    const boardCount = db.prepare("SELECT COUNT(*) as c FROM boards").get() as any;
+    if (boardCount.c === 0) {
+        const insertBoard = db.prepare(
+            "INSERT INTO boards (name, url, position) VALUES (?, ?, ?)"
+        );
+        DEFAULT_BOARDS.forEach((b, i) => insertBoard.run(b.name, b.url, i));
+    }
+
+    // -- Boards IPC handlers ---------------------------------------------------
+    ipcMain.handle("get-boards", () => {
+        try {
+            return db
+                .prepare("SELECT name, url FROM boards ORDER BY position ASC")
+                .all() as BoardRow[];
+        } catch {
+            return [];
+        }
+    });
+
+    ipcMain.handle("save-boards", (_e: any, boards: BoardRow[]) => {
+        try {
+            const del = db.prepare("DELETE FROM boards");
+            const ins = db.prepare(
+                "INSERT INTO boards (name, url, position) VALUES (?, ?, ?)"
+            );
+            const saveAll = db.transaction((rows: BoardRow[]) => {
+                del.run();
+                rows.forEach((b, i) => ins.run(b.name, b.url, i));
+            });
+            saveAll(boards || []);
+            return { success: true };
+        } catch (err: any) {
+            return { success: false, message: err?.message };
+        }
+    });
 
     const settingsPath = app.isPackaged
         ? path.join(app.getPath("userData"), "notification-settings.json")

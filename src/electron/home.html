@@ -823,18 +823,9 @@
     }
 
     @keyframes browser-load {
-      0% {
-        width: 0%
-      }
-
-      60% {
-        width: 80%
-      }
-
-      100% {
-        width: 100%;
-        opacity: 0
-      }
+      0% { width: 0% }
+      60% { width: 80% }
+      100% { width: 100%; opacity: 0 }
     }
 
     /* ── Status pill dropdown ── */
@@ -868,15 +859,8 @@
     }
 
     @keyframes dropdown-in {
-      from {
-        opacity: 0;
-        transform: translateY(-4px)
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0)
-      }
+      from { opacity: 0; transform: translateY(-4px) }
+      to { opacity: 1; transform: translateY(0) }
     }
 
     .status-pill-wrap.open .status-dropdown {
@@ -938,17 +922,9 @@
       flex-shrink: 0;
     }
 
-    .dot-not-started {
-      background: #5ab0f0;
-    }
-
-    .dot-in-progress {
-      background: var(--amber);
-    }
-
-    .dot-completed {
-      background: var(--green);
-    }
+    .dot-not-started { background: #5ab0f0; }
+    .dot-in-progress { background: var(--amber); }
+    .dot-completed { background: var(--green); }
 
     .status-dropdown-inner {
       flex: 1;
@@ -1000,15 +976,8 @@
     }
 
     @keyframes modal-pop {
-      from {
-        opacity: 0;
-        transform: scale(0.96) translateY(8px)
-      }
-
-      to {
-        opacity: 1;
-        transform: scale(1) translateY(0)
-      }
+      from { opacity: 0; transform: scale(0.96) translateY(8px) }
+      to { opacity: 1; transform: scale(1) translateY(0) }
     }
 
     .confirm-title {
@@ -1293,13 +1262,8 @@
     }
 
     @keyframes ph-pulse {
-      from {
-        opacity: 0.4
-      }
-
-      to {
-        opacity: 0.9
-      }
+      from { opacity: 0.4 }
+      to { opacity: 0.9 }
     }
 
     .add-board-card {
@@ -1553,21 +1517,10 @@
       pointer-events: none;
     }
 
-    .tb-minimize:hover {
-      background: #e0e0e0;
-    }
-
-    .tb-maximize:hover {
-      background: #e0e0e0;
-    }
-
-    .tb-close:hover {
-      background: #e81123;
-    }
-
-    .tb-close:hover svg {
-      stroke: #ffffff;
-    }
+    .tb-minimize:hover { background: #e0e0e0; }
+    .tb-maximize:hover { background: #e0e0e0; }
+    .tb-close:hover { background: #e81123; }
+    .tb-close:hover svg { stroke: #ffffff; }
   </style>
 </head>
 
@@ -1890,70 +1843,170 @@
 
       // ── Job boards ───────────────────────────────────────────────────────────
       const DEFAULT_BOARDS = [
-        { name: 'Indeed', url: 'https://www.indeed.com/' }, { name: 'LinkedIn', url: 'https://www.linkedin.com/jobs/' },
-        { name: 'Handshake', url: 'https://app.joinhandshake.com/explore' }, { name: 'Glassdoor', url: 'https://www.glassdoor.com/Job/index.htm' },
-        { name: 'ZipRecruiter', url: 'https://www.ziprecruiter.com/' }, { name: 'Wellfound', url: 'https://wellfound.com/jobs' },
-        { name: 'Dice', url: 'https://www.dice.com/' }, { name: 'Lever', url: 'https://www.lever.co/' },
-        { name: 'Greenhouse', url: 'https://www.greenhouse.io/' }, { name: 'Built In', url: 'https://builtin.com/jobs' },
-        { name: 'Remote.co', url: 'https://remote.co/remote-jobs/' }, { name: 'Y Combinator', url: 'https://www.ycombinator.com/jobs' },
+        { name: 'Indeed', url: 'https://www.indeed.com/' },
+        { name: 'LinkedIn', url: 'https://www.linkedin.com/jobs/' },
+        { name: 'Handshake', url: 'https://app.joinhandshake.com/explore' },
+        { name: 'Glassdoor', url: 'https://www.glassdoor.com/Job/index.htm' },
+        { name: 'ZipRecruiter', url: 'https://www.ziprecruiter.com/' },
+        { name: 'Wellfound', url: 'https://wellfound.com/jobs' },
+        { name: 'Dice', url: 'https://www.dice.com/' },
+        { name: 'Lever', url: 'https://www.lever.co/' },
+        { name: 'Greenhouse', url: 'https://www.greenhouse.io/' },
+        { name: 'Built In', url: 'https://builtin.com/jobs' },
+        { name: 'Remote.co', url: 'https://remote.co/remote-jobs/' },
+        { name: 'Y Combinator', url: 'https://www.ycombinator.com/jobs' },
       ];
+
       const grid = document.getElementById('jobBoardsGrid');
       const ghostEl = document.getElementById('dragGhost');
       let dragCard = null, placeholder = null, dragOffX = 0, dragOffY = 0, dragMoved = false, mouseDownCard = null, mouseDownPos = null;
       const DRAG_THRESHOLD = 6;
 
-      function makeInitials(n) { const w = n.trim().split(/\s+/); return w.length >= 2 ? (w[0][0] + w[1][0]).toUpperCase() : n.slice(0, 2).toUpperCase(); }
+      // ── Persist boards to SQLite via IPC ──────────────────────────────────────
+      function saveBoards() {
+        const boards = [...grid.querySelectorAll('.job-board-card')].map(card => ({
+          name: card.querySelector('.job-board-name').textContent,
+          url: card.dataset.url
+        }));
+        ipcRenderer.invoke('save-boards', boards).catch(() => {});
+      }
+
+      async function initBoards() {
+        try {
+          const boards = await ipcRenderer.invoke('get-boards');
+          const list = (boards && boards.length > 0) ? boards : DEFAULT_BOARDS;
+          list.forEach(b => grid.insertBefore(makeBoardCard(b.name, b.url), grid.querySelector('.add-board-card')));
+          // If we used defaults, seed them into the DB
+          if (!boards || boards.length === 0) saveBoards();
+        } catch {
+          // Fallback: render defaults without persisting (DB not ready yet)
+          DEFAULT_BOARDS.forEach(b => grid.insertBefore(makeBoardCard(b.name, b.url), grid.querySelector('.add-board-card')));
+        }
+      }
+
+      function makeInitials(n) {
+        const w = n.trim().split(/\s+/);
+        return w.length >= 2 ? (w[0][0] + w[1][0]).toUpperCase() : n.slice(0, 2).toUpperCase();
+      }
+
       function makeBoardCard(name, url) {
-        const card = document.createElement('div'); card.className = 'job-board-card'; card.dataset.url = url;
+        const card = document.createElement('div');
+        card.className = 'job-board-card';
+        card.dataset.url = url;
         card.innerHTML = `<div class="job-board-logo">${makeInitials(name)}</div><div class="job-board-name">${name}</div><button class="card-delete-btn" title="Remove">✕</button>`;
+
         card.querySelector('.card-delete-btn').addEventListener('mousedown', e => e.stopPropagation());
-        card.querySelector('.card-delete-btn').addEventListener('click', e => { e.stopPropagation(); card.style.transition = 'opacity .15s,transform .15s'; card.style.opacity = '0'; card.style.transform = 'scale(0.9)'; setTimeout(() => card.remove(), 150); showToast(name + ' removed'); });
-        card.addEventListener('mousedown', e => { if (e.button !== 0) return; mouseDownCard = card; mouseDownPos = { x: e.clientX, y: e.clientY }; dragMoved = false; const r = card.getBoundingClientRect(); dragOffX = e.clientX - r.left; dragOffY = e.clientY - r.top; ghostEl.textContent = name; ghostEl.style.width = r.width + 'px'; ghostEl.style.height = r.height + 'px'; e.preventDefault(); });
+        card.querySelector('.card-delete-btn').addEventListener('click', e => {
+          e.stopPropagation();
+          card.style.transition = 'opacity .15s,transform .15s';
+          card.style.opacity = '0';
+          card.style.transform = 'scale(0.9)';
+          setTimeout(() => {
+            card.remove();
+            saveBoards(); // ← persist after delete
+          }, 150);
+          showToast(name + ' removed');
+        });
+
+        card.addEventListener('mousedown', e => {
+          if (e.button !== 0) return;
+          mouseDownCard = card;
+          mouseDownPos = { x: e.clientX, y: e.clientY };
+          dragMoved = false;
+          const r = card.getBoundingClientRect();
+          dragOffX = e.clientX - r.left;
+          dragOffY = e.clientY - r.top;
+          ghostEl.textContent = name;
+          ghostEl.style.width = r.width + 'px';
+          ghostEl.style.height = r.height + 'px';
+          e.preventDefault();
+        });
+
         card.addEventListener('click', () => { if (!dragMoved) openBrowser(url); });
         return card;
       }
-      function makeAddCard() { const c = document.createElement('div'); c.className = 'add-board-card'; c.innerHTML = '<span>+ Add Board</span>'; c.addEventListener('click', openAddModal); return c; }
-      DEFAULT_BOARDS.forEach(b => grid.appendChild(makeBoardCard(b.name, b.url)));
+
+      function makeAddCard() {
+        const c = document.createElement('div');
+        c.className = 'add-board-card';
+        c.innerHTML = '<span>+ Add Board</span>';
+        c.addEventListener('click', openAddModal);
+        return c;
+      }
+
+      // Render the add card first, then load boards from DB
       grid.appendChild(makeAddCard());
+      initBoards();
 
       document.addEventListener('mousemove', e => {
         if (!mouseDownCard) return;
         const dx = e.clientX - mouseDownPos.x, dy = e.clientY - mouseDownPos.y;
         if (!dragMoved && Math.sqrt(dx * dx + dy * dy) > DRAG_THRESHOLD) {
-          dragMoved = true; dragCard = mouseDownCard; dragCard.classList.add('dragging');
-          placeholder = document.createElement('div'); placeholder.className = 'drop-placeholder'; dragCard.after(placeholder);
+          dragMoved = true;
+          dragCard = mouseDownCard;
+          dragCard.classList.add('dragging');
+          placeholder = document.createElement('div');
+          placeholder.className = 'drop-placeholder';
+          dragCard.after(placeholder);
           ghostEl.classList.add('visible');
         }
-        if (dragMoved) { ghostEl.style.left = (e.clientX - dragOffX) + 'px'; ghostEl.style.top = (e.clientY - dragOffY) + 'px'; movePlaceholder(e.clientX, e.clientY); }
+        if (dragMoved) {
+          ghostEl.style.left = (e.clientX - dragOffX) + 'px';
+          ghostEl.style.top = (e.clientY - dragOffY) + 'px';
+          movePlaceholder(e.clientX, e.clientY);
+        }
       });
+
       document.addEventListener('mouseup', () => {
         if (!mouseDownCard) return;
-        if (dragMoved && dragCard && placeholder) { placeholder.replaceWith(dragCard); dragCard.classList.remove('dragging'); }
+        if (dragMoved && dragCard && placeholder) {
+          placeholder.replaceWith(dragCard);
+          dragCard.classList.remove('dragging');
+          saveBoards(); // ← persist after reorder
+        }
         ghostEl.classList.remove('visible');
         if (placeholder?.parentNode) placeholder.remove();
-        dragCard = placeholder = mouseDownCard = mouseDownPos = null; setTimeout(() => { dragMoved = false; }, 0);
+        dragCard = placeholder = mouseDownCard = mouseDownPos = null;
+        setTimeout(() => { dragMoved = false; }, 0);
       });
+
       function movePlaceholder(cx, cy) {
         if (!placeholder) return;
         for (const item of [...grid.children].filter(el => el !== dragCard && el !== placeholder && !el.classList.contains('add-board-card'))) {
           const r = item.getBoundingClientRect();
-          if (cy >= r.top && cy <= r.bottom && cx >= r.left && cx <= r.right) { cx < r.left + r.width / 2 ? item.before(placeholder) : item.after(placeholder); break; }
+          if (cy >= r.top && cy <= r.bottom && cx >= r.left && cx <= r.right) {
+            cx < r.left + r.width / 2 ? item.before(placeholder) : item.after(placeholder);
+            break;
+          }
         }
       }
 
       // ── Add board modal ───────────────────────────────────────────────────────
-      const addModal = document.getElementById('addBoardModal'), nameInp = document.getElementById('newBoardName'), urlInp = document.getElementById('newBoardUrl');
+      const addModal = document.getElementById('addBoardModal');
+      const nameInp = document.getElementById('newBoardName');
+      const urlInp = document.getElementById('newBoardUrl');
+
       function openAddModal() { nameInp.value = ''; urlInp.value = ''; addModal.classList.add('active'); setTimeout(() => nameInp.focus(), 60); }
       function closeAddModal() { addModal.classList.remove('active'); }
+
       document.getElementById('modalCancel').addEventListener('click', closeAddModal);
       addModal.addEventListener('click', e => { if (e.target === addModal) closeAddModal(); });
+
       document.getElementById('modalConfirm').addEventListener('click', () => {
-        const name = nameInp.value.trim(); let url = urlInp.value.trim(); if (!name || !url) return;
+        const name = nameInp.value.trim();
+        let url = urlInp.value.trim();
+        if (!name || !url) return;
         if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
         grid.insertBefore(makeBoardCard(name, url), grid.querySelector('.add-board-card'));
-        closeAddModal(); showToast(name + ' added');
+        saveBoards(); // ← persist after add
+        closeAddModal();
+        showToast(name + ' added');
       });
-      [nameInp, urlInp].forEach(inp => inp.addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('modalConfirm').click(); if (e.key === 'Escape') closeAddModal(); }));
+
+      [nameInp, urlInp].forEach(inp => inp.addEventListener('keydown', e => {
+        if (e.key === 'Enter') document.getElementById('modalConfirm').click();
+        if (e.key === 'Escape') closeAddModal();
+      }));
 
       // ── Browser overlay ───────────────────────────────────────────────────────
       const overlay = document.getElementById("browserOverlay");
@@ -1967,8 +2020,12 @@
 
       function openBrowser(url) { overlay.classList.add("active"); webview.src = url; urlText.textContent = url; setStatus("not-started"); }
       function closeBrowser() {
-        overlay.classList.remove("active"); try { webview.src = "about:blank"; } catch (e) { }
-        setStatus("not-started"); urlText.textContent = "—"; ipcRenderer.send("reset-status"); closeStatusDropdown();
+        overlay.classList.remove("active");
+        try { webview.src = "about:blank"; } catch (e) { }
+        setStatus("not-started");
+        urlText.textContent = "—";
+        ipcRenderer.send("reset-status");
+        closeStatusDropdown();
       }
 
       document.getElementById("browserClose").addEventListener("click", closeBrowser);
@@ -1984,52 +2041,85 @@
 
       // ── Status pill ───────────────────────────────────────────────────────────
       let _currentStatus = 'NOT_STARTED';
+
       function setStatus(cls, label) {
         const labels = { "not-started": "Not Started", "in-progress": "In Progress", "completed": "Completed" };
         const pill = document.getElementById("statusPill"), txt = document.getElementById("statusText");
-        pill.className = "status-pill " + (cls || "not-started"); txt.textContent = label || labels[cls] || "Not Started";
-        const map = { 'not-started': 'NOT_STARTED', 'in-progress': 'IN_PROGRESS', 'completed': 'COMPLETED' }; _currentStatus = map[cls] || 'NOT_STARTED';
+        pill.className = "status-pill " + (cls || "not-started");
+        txt.textContent = label || labels[cls] || "Not Started";
+        const map = { 'not-started': 'NOT_STARTED', 'in-progress': 'IN_PROGRESS', 'completed': 'COMPLETED' };
+        _currentStatus = map[cls] || 'NOT_STARTED';
       }
+
       const pillWrap = document.getElementById('statusPillWrap'), dropdown = document.getElementById('statusDropdown');
-      function openStatusDropdown() { dropdown.querySelectorAll('.status-dropdown-option').forEach(o => o.classList.toggle('current', o.dataset.status === _currentStatus)); pillWrap.classList.add('open'); }
+
+      function openStatusDropdown() {
+        dropdown.querySelectorAll('.status-dropdown-option').forEach(o => o.classList.toggle('current', o.dataset.status === _currentStatus));
+        pillWrap.classList.add('open');
+      }
       function closeStatusDropdown() { pillWrap.classList.remove('open'); }
-      document.getElementById('statusPill').addEventListener('click', e => { e.stopPropagation(); pillWrap.classList.contains('open') ? closeStatusDropdown() : openStatusDropdown(); });
-      document.addEventListener('click', e => { if (!pillWrap.contains(e.target)) closeStatusDropdown(); });
-      dropdown.addEventListener('click', e => {
-        const opt = e.target.closest('.status-dropdown-option'); if (!opt) return;
-        const ns = opt.dataset.status; if (!ns || ns === _currentStatus) { closeStatusDropdown(); return; }
-        closeStatusDropdown(); ipcRenderer.send('manual-status-override', { newStatus: ns });
+
+      document.getElementById('statusPill').addEventListener('click', e => {
+        e.stopPropagation();
+        pillWrap.classList.contains('open') ? closeStatusDropdown() : openStatusDropdown();
       });
+      document.addEventListener('click', e => { if (!pillWrap.contains(e.target)) closeStatusDropdown(); });
+
+      dropdown.addEventListener('click', e => {
+        const opt = e.target.closest('.status-dropdown-option');
+        if (!opt) return;
+        const ns = opt.dataset.status;
+        if (!ns || ns === _currentStatus) { closeStatusDropdown(); return; }
+        closeStatusDropdown();
+        ipcRenderer.send('manual-status-override', { newStatus: ns });
+      });
+
       ipcRenderer.on('update-status-badge', (_e, label, cls) => setStatus(cls, label));
       ipcRenderer.on('manual-override-result', (_e, r) => {
-        if (r.success && !r.noChange) { const L = { NOT_STARTED: 'Not Started', IN_PROGRESS: 'In Progress', COMPLETED: 'Completed' }; showToast('Status set to: ' + (L[r.newStatus] || r.newStatus)); }
-        else if (!r.success) showToast(r.reason === 'no-url' ? 'No URL detected — browse to a job listing first' : (r.message || 'Override failed'));
+        if (r.success && !r.noChange) {
+          const L = { NOT_STARTED: 'Not Started', IN_PROGRESS: 'In Progress', COMPLETED: 'Completed' };
+          showToast('Status set to: ' + (L[r.newStatus] || r.newStatus));
+        } else if (!r.success) {
+          showToast(r.reason === 'no-url' ? 'No URL detected — browse to a job listing first' : (r.message || 'Override failed'));
+        }
       });
 
       // ── Confirmation dialog ───────────────────────────────────────────────────
       let _pendingDebugData = null;
       const SN = { NOT_STARTED: 'Not Started', IN_PROGRESS: 'In Progress', COMPLETED: 'Completed', UNKNOWN: 'Unknown' };
+
       ipcRenderer.on('show-confirmation-dialog', (_e, data) => {
         _pendingDebugData = data;
         document.getElementById('confirmFromTo').innerHTML = `<span class="confirm-spill spill-${data.currentStatus}">${SN[data.currentStatus] || data.currentStatus}</span><span class="confirm-arrow">→</span><span class="confirm-spill spill-${data.newStatus}">${SN[data.newStatus]}</span>`;
         document.getElementById('confirmMessage').innerHTML = `Detected <strong>${SN[data.newStatus]}</strong><span class="confirm-confidence conf-${data.confidence}">${data.confidence}</span> — is this right?`;
-        const tags = []; if (data.urlChanged) tags.push('<span>url changed</span>'); if (data.wasPopup) tags.push('<span>popup</span>');
-        if (data.signals) { tags.push(`<span>${data.signals.formCount} forms</span>`); tags.push(`<span>${data.signals.inputCount} inputs</span>`); if (data.signals.hasProgressIndicator) tags.push('<span>progress bar</span>'); }
+        const tags = [];
+        if (data.urlChanged) tags.push('<span>url changed</span>');
+        if (data.wasPopup) tags.push('<span>popup</span>');
+        if (data.signals) {
+          tags.push(`<span>${data.signals.formCount} forms</span>`);
+          tags.push(`<span>${data.signals.inputCount} inputs</span>`);
+          if (data.signals.hasProgressIndicator) tags.push('<span>progress bar</span>');
+        }
         document.getElementById('confirmMeta').innerHTML = tags.join('');
         document.getElementById('confirmUrl').textContent = data.url;
         document.getElementById('debugLog').textContent = (data.reasoning || []).join('\n');
         document.getElementById('confirmOverlay').classList.add('active');
       });
+
       ipcRenderer.on('hide-confirmation-dialog', () => {
         document.getElementById('confirmOverlay').classList.remove('active');
         document.getElementById('debugLog').classList.remove('open');
         document.getElementById('debugToggle').classList.remove('open');
         _pendingDebugData = null;
       });
+
       document.getElementById('debugToggle').addEventListener('click', () => {
         const log = document.getElementById('debugLog'), btn = document.getElementById('debugToggle');
-        const open = log.classList.toggle('open'); btn.classList.toggle('open', open); btn.textContent = open ? 'Hide reasoning' : 'Show reasoning';
+        const open = log.classList.toggle('open');
+        btn.classList.toggle('open', open);
+        btn.textContent = open ? 'Hide reasoning' : 'Show reasoning';
       });
+
       document.getElementById('confirmYes').addEventListener('click', () => ipcRenderer.send('status-confirmation', { correct: true, data: _pendingDebugData }));
       document.getElementById('confirmNo').addEventListener('click', () => ipcRenderer.send('status-confirmation', { correct: false, data: _pendingDebugData }));
 

@@ -1,6 +1,6 @@
 {
   "name": "hiredfinally",
-  "version": "1.0.10",
+  "version": "1.0.0",
   "description": "A job application tracker",
   "license": "ISC",
   "author": "Lalit Manmari",
@@ -36,7 +36,8 @@
     "publish": {
       "provider": "github",
       "owner": "manmarilalit",
-      "repo": "hiredfinally"
+      "repo": "hiredfinally",
+      "releaseType": "release"
     },
     "win": {
       "target": [
@@ -78,6 +79,7 @@
   },
   "dependencies": {
     "better-sqlite3": "^12.5.0",
+    "electron-log": "^5.4.3",
     "electron-updater": "^6.3.9",
     "lucide": "^0.577.0",
     "sql.js": "^1.13.0"
