@@ -1,6 +1,6 @@
 {
   "name": "hiredfinally",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A job application tracker",
   "license": "ISC",
   "author": "Lalit Manmari",
@@ -9,7 +9,7 @@
   "private": true,
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "copy-html": "node -e \"['home','pipeline','settings'].forEach(f=>require('fs').copyFileSync('src/electron/'+f+'.html','out/electron/'+f+'.html')); require('fs').copyFileSync('src/electron/icon.png','out/electron/icon.png')\"",
+    "copy-html": "node -e \"['home','pipeline','settings','notifications'].forEach(f=>require('fs').copyFileSync('src/electron/'+f+'.html','out/electron/'+f+'.html')); require('fs').copyFileSync('src/electron/icon.png','out/electron/icon.png')\"",
     "start": "electron ./out/electron/index.js",
     "build": "tsc && npm run copy-html",
     "build:watch": "tsc --watch & npm run copy-html",

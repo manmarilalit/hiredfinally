@@ -3,6 +3,10 @@
 
 <head>
   <script>
+    (function () {
+      const t = localStorage.getItem('hf-theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
     window.lucide = require(
       require("path").join(__dirname, "..", "..", "node_modules", "lucide", "dist", "umd", "lucide.min.js"),
     );
@@ -10,7 +14,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Settings — HiredFinally</title>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap"
     rel="stylesheet" />
   <style>
     *,
@@ -22,13 +27,18 @@
     }
 
     input,
-    textarea {
+    textarea,
+    select {
       -webkit-user-select: text;
       user-select: text;
     }
 
+    input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+    }
+
     ::-webkit-scrollbar {
-      width: 3px;
+      width: 4px;
     }
 
     ::-webkit-scrollbar-track {
@@ -36,44 +46,63 @@
     }
 
     ::-webkit-scrollbar-thumb {
-      background: #e2e2e2;
+      background: rgba(255, 255, 255, 0.08);
       border-radius: 4px;
     }
 
     :root {
-      --black: #111111;
-      --white: #ffffff;
-      --bg: #ffffff;
-      --card: #f0f0f0;
-      --border: #e2e2e2;
-      --gray-400: #aaaaaa;
-      --gray-600: #666666;
-      --radius: 14px;
-      --radius-sm: 9px;
-      --sidebar-w: 110px;
-      --gap: 22px;
+      --bg: #0c0e1a;
+      --surface: #111420;
+      --panel: #141828;
+      --border: rgba(255, 255, 255, 0.07);
+      --border-s: rgba(255, 255, 255, 0.05);
+      --text: #e4e6f0;
+      --text-2: #7880a0;
+      --text-3: #404565;
+      --accent: #6b5fff;
+      --accent-h: #7d72ff;
+      --green: #3ecf8e;
+      --red: #ef4444;
+      --radius: 16px;
+      --radius-sm: 10px;
+      --sidebar-w: 72px;
+      --snav-w: 210px;
+    }
+
+    [data-theme="light"] {
+      --bg: #eef0f8;
+      --surface: #ffffff;
+      --panel: #f5f6fc;
+      --border: rgba(0, 0, 0, 0.07);
+      --border-s: rgba(0, 0, 0, 0.04);
+      --text: #0f1128;
+      --text-2: #6066880;
+      --text-3: #aab0cc;
+      --text-2: #606880;
     }
 
     html,
     body {
       width: 100%;
       height: 100%;
-      font-family: "Space Grotesk", sans-serif;
+      font-family: "DM Sans", sans-serif;
       background: var(--bg);
       overflow: hidden;
-      color: var(--black);
+      color: var(--text);
+      -webkit-user-select: none;
+      user-select: none;
     }
 
     /* ── Titlebar ── */
     .titlebar {
       position: fixed;
       top: 0;
+      left: 0;
       right: 0;
-      display: flex;
+      height: 38px;
       z-index: 9999;
       -webkit-app-region: drag;
-      width: 100%;
-      height: 38px;
+      display: flex;
       justify-content: flex-end;
       align-items: center;
     }
@@ -82,9 +111,9 @@
       position: absolute;
       left: 50%;
       transform: translateX(-50%);
-      width: 48px;
+      width: 40px;
       height: 3px;
-      background: #d0d0d0;
+      background: rgba(255, 255, 255, 0.08);
       border-radius: 99px;
       pointer-events: none;
     }
@@ -103,19 +132,16 @@
     }
 
     .tb-btn svg {
-      width: 14px;
-      height: 14px;
-      stroke: #555;
+      width: 13px;
+      height: 13px;
+      stroke: rgba(255, 255, 255, 0.3);
       stroke-width: 2.5;
       pointer-events: none;
     }
 
-    .tb-minimize:hover {
-      background: #e0e0e0;
-    }
-
+    .tb-minimize:hover,
     .tb-maximize:hover {
-      background: #e0e0e0;
+      background: rgba(255, 255, 255, 0.06);
     }
 
     .tb-close:hover {
@@ -123,54 +149,55 @@
     }
 
     .tb-close:hover svg {
-      stroke: #ffffff;
+      stroke: #fff;
     }
 
-    /* ── Root layout ── */
+    /* ── App layout ── */
     .app {
       display: flex;
       width: 100vw;
       height: 100vh;
-      padding: 38px var(--gap);
-      gap: var(--gap);
+      padding: 38px 18px 18px;
+      gap: 14px;
     }
 
-    /* ── Sidebar ── */
-    .sidebar {
+    /* ── HF icon sidebar ── */
+    .hf-sidebar {
       width: var(--sidebar-w);
       flex-shrink: 0;
-      background: var(--black);
-      border-radius: 18px;
+      background: #0a0c18;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255, 255, 255, 0.04);
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 14px 0;
+      padding: 16px 0;
     }
 
-    .sidebar-logo {
-      font-size: 19px;
+    .hf-logo {
+      font-size: 16px;
       font-weight: 700;
-      color: var(--white);
+      color: #fff;
       letter-spacing: -0.5px;
-      margin-bottom: 28px;
+      margin-bottom: 24px;
     }
 
-    .sidebar-nav {
+    .hf-nav {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
       flex: 1;
     }
 
-    .sidebar-bottom {
+    .hf-bottom {
       margin-top: auto;
     }
 
-    .nav-item {
-      width: 44px;
-      height: 44px;
-      border-radius: 11px;
+    .hf-nav-item {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -178,113 +205,94 @@
       transition: background 0.15s;
     }
 
-    .nav-item:hover {
-      background: rgba(255, 255, 255, 0.10);
+    .hf-nav-item:hover {
+      background: rgba(255, 255, 255, 0.07);
     }
 
-    .nav-item.active {
-      background: rgba(255, 255, 255, 0.16);
+    .hf-nav-item.active {
+      background: rgba(107, 95, 255, 0.2);
     }
 
-    .nav-item svg {
-      width: 20px;
-      height: 20px;
-      stroke: rgba(255, 255, 255, 0.6);
+    .hf-nav-item svg {
+      width: 18px;
+      height: 18px;
+      stroke: rgba(255, 255, 255, 0.35);
       stroke-width: 2;
       transition: stroke 0.15s;
     }
 
-    .nav-item.active svg,
-    .nav-item:hover svg {
-      stroke: #ffffff;
+    .hf-nav-item.active svg {
+      stroke: var(--accent-h);
     }
 
-    /* ── Main ── */
+    .hf-nav-item:hover svg {
+      stroke: rgba(255, 255, 255, 0.7);
+    }
+
+    /* ── Main card ── */
     .main {
       flex: 1;
-      display: flex;
-      flex-direction: column;
       min-width: 0;
-      min-height: 0;
-      padding-left: 32px;
-      padding-right: 32px;
-    }
-
-    .page-header {
-      display: flex;
-      align-items: center;
-      margin-bottom: 20px;
-      flex-shrink: 0;
-      padding-top: 22px;
-    }
-
-    .page-title {
-      font-size: 22px;
-      font-weight: 700;
-      letter-spacing: -0.4px;
-    }
-
-    /* ── Settings layout ── */
-    .settings-layout {
-      flex: 1;
-      display: flex;
-      gap: 16px;
-      min-height: 0;
-    }
-
-    /* ── Left nav ── */
-    .settings-nav {
-      width: 180px;
-      flex-shrink: 0;
-      background: var(--card);
+      background: var(--surface);
       border-radius: var(--radius);
-      padding: 10px 0;
+      border: 1px solid var(--border);
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* ── Settings left nav ── */
+    .s-nav {
+      width: var(--snav-w);
+      flex-shrink: 0;
+      background: var(--panel);
+      border-right: 1px solid var(--border-s);
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      overflow-y: auto;
+      padding: 20px 0 16px;
     }
 
-    .s-nav-label {
-      font-size: 9px;
-      font-weight: 600;
+    .s-nav-heading {
+      font-size: 10px;
+      font-weight: 700;
       letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: var(--gray-400);
-      padding: 10px 14px 4px;
+      color: var(--text-3);
+      padding: 0 16px 14px;
     }
 
     .s-nav-item {
       display: flex;
       align-items: center;
-      gap: 9px;
-      padding: 9px 14px;
+      gap: 10px;
+      padding: 10px 16px;
       font-size: 13px;
       font-weight: 500;
-      color: var(--gray-600);
+      color: var(--text-2);
       cursor: pointer;
-      position: relative;
       transition: background 0.12s, color 0.12s;
+      position: relative;
     }
 
     .s-nav-item:hover {
-      background: rgba(0, 0, 0, 0.04);
-      color: var(--black);
+      background: rgba(107, 95, 255, 0.06);
+      color: var(--text);
     }
 
     .s-nav-item.active {
-      color: var(--black);
-      background: rgba(0, 0, 0, 0.06);
+      color: var(--text);
+      background: rgba(107, 95, 255, 0.1);
     }
 
     .s-nav-item.active::before {
       content: '';
       position: absolute;
       left: 0;
-      top: 6px;
-      bottom: 6px;
-      width: 2.5px;
-      background: var(--black);
-      border-radius: 0 2px 2px 0;
+      top: 7px;
+      bottom: 7px;
+      width: 3px;
+      background: var(--accent);
+      border-radius: 0 3px 3px 0;
     }
 
     .s-nav-item svg {
@@ -293,13 +301,103 @@
       stroke: currentColor;
       stroke-width: 2;
       flex-shrink: 0;
+      opacity: 0.6;
     }
 
-    /* ── Content ── */
-    .settings-content {
+    .s-nav-item.active svg {
+      opacity: 1;
+    }
+
+    .s-nav-sep {
+      height: 1px;
+      background: var(--border-s);
+      margin: 6px 16px;
+    }
+
+    .s-nav-section {
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      padding: 12px 16px 4px;
+    }
+
+    .s-nav-footer {
+      margin-top: auto;
+      padding: 14px 16px 0;
+      border-top: 1px solid var(--border-s);
+      font-size: 11px;
+      color: var(--text-3);
+      line-height: 1.6;
+    }
+
+    /* ── Content pane ── */
+    .s-content {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Search bar area */
+    .s-topbar {
+      padding: 18px 28px 0;
+      flex-shrink: 0;
+    }
+
+    .s-search {
+      width: 100%;
+      max-width: 380px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      padding: 8px 16px;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    [data-theme="light"] .s-search {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .s-search:focus-within {
+      border-color: var(--accent);
+      background: rgba(107, 95, 255, 0.05);
+    }
+
+    .s-search svg {
+      width: 14px;
+      height: 14px;
+      stroke: var(--text-3);
+      stroke-width: 2;
+      flex-shrink: 0;
+    }
+
+    .s-search input {
+      flex: 1;
+      background: none;
+      border: none;
+      outline: none;
+      font-family: "DM Sans", sans-serif;
+      font-size: 13px;
+      color: var(--text);
+      -webkit-user-select: text;
+      user-select: text;
+    }
+
+    .s-search input::placeholder {
+      color: var(--text-3);
+    }
+
+    /* Panel scroll area */
+    .s-panel-wrap {
       flex: 1;
       overflow-y: auto;
-      min-height: 0;
+      padding: 0 28px 40px;
     }
 
     .s-panel {
@@ -308,182 +406,56 @@
 
     .s-panel.active {
       display: block;
-      padding-bottom: 40px;
     }
 
-    .s-section-title {
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--gray-400);
-      margin-bottom: 10px;
-      margin-top: 22px;
-    }
-
-    .s-section-title:first-child {
-      margin-top: 0;
-    }
-
-    .s-block {
-      background: var(--card);
-      border-radius: var(--radius);
-      overflow: hidden;
-      margin-bottom: 10px;
-    }
-
-    .s-block-header {
-      padding: 10px 16px;
-      font-size: 11px;
-      font-weight: 700;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .s-row {
+    /* Panel header */
+    .s-panel-header {
+      padding: 20px 0 22px;
+      border-bottom: 1px solid var(--border-s);
+      margin-bottom: 0;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 16px;
-      gap: 20px;
-      border-bottom: 1px solid var(--border);
+    }
+
+    .s-panel-title {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.4px;
+      color: var(--text);
+    }
+
+    /* Section label */
+    .s-section {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      padding: 20px 0 6px;
+    }
+
+    /* ── Setting row — flat, separated by lines, no bubbles ── */
+    .s-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border-s);
     }
 
     .s-row:last-child {
       border-bottom: none;
     }
 
-    .s-row-info {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .s-row-name {
-      font-size: 13px;
-      font-weight: 500;
-      margin-bottom: 2px;
-    }
-
-    .s-row-desc {
-      font-size: 11px;
-      color: var(--gray-600);
-      line-height: 1.5;
-    }
-
-    .s-input-row {
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      padding: 0 16px 12px;
-      font-size: 12px;
-      color: var(--gray-600);
-    }
-
-    .s-num-input,
-    .s-time-input {
-      padding: 5px 10px;
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      color: var(--black);
-      font-family: "Space Grotesk", sans-serif;
-      font-size: 12px;
-      outline: none;
-      transition: border-color 0.15s;
-    }
-
-    .s-num-input {
-      width: 62px;
-      text-align: center;
-    }
-
-    .s-num-input::-webkit-inner-spin-button {
-      -webkit-appearance: none;
-    }
-
-    .s-num-input:focus,
-    .s-time-input:focus {
-      border-color: var(--black);
-    }
-
-    .s-btn {
-      padding: 6px 14px;
-      border-radius: var(--radius-sm);
-      font-family: inherit;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      border: 1px solid;
-      transition: opacity 0.15s, background 0.15s;
-      white-space: nowrap;
-    }
-
-    .s-btn-primary {
-      background: var(--black);
-      color: var(--white);
-      border-color: var(--black);
-    }
-
-    .s-btn-primary:hover {
-      opacity: 0.8;
-    }
-
-    .s-btn-ghost {
-      background: transparent;
-      color: var(--gray-600);
-      border-color: var(--border);
-    }
-
-    .s-btn-ghost:hover {
-      border-color: var(--black);
-      color: var(--black);
-    }
-
-    .s-btn-danger {
-      background: #fff0f0;
-      color: #c0392b;
-      border-color: #f5c0c0;
-    }
-
-    .s-btn-danger:hover {
-      background: #fde0e0;
-    }
-
-    .s-btn-success {
-      background: #f0fdf6;
-      color: #1a7a50;
-      border-color: #a8dfc0;
-    }
-
-    .s-btn-success:hover {
-      background: #dcf5ea;
-    }
-
-    .s-coming-soon {
-      font-size: 9px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      padding: 2px 6px;
-      border-radius: 4px;
-      background: #e8f4ff;
-      color: #2a7abf;
-      border: 1px solid #b8d8f8;
-    }
-
-    .s-footer {
-      display: flex;
-      gap: 10px;
-      padding-top: 14px;
-    }
-
+    /* Toggle LEFT */
     .s-toggle {
       position: relative;
-      width: 40px;
-      height: 22px;
+      width: 44px;
+      height: 26px;
       cursor: pointer;
       display: inline-block;
+      flex-shrink: 0;
     }
 
     .s-toggle input {
@@ -496,24 +468,31 @@
     .s-toggle-track {
       position: absolute;
       inset: 0;
-      background: var(--border);
+      background: rgba(255, 255, 255, 0.1);
       border-radius: 99px;
       transition: background 0.2s;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    [data-theme="light"] .s-toggle-track {
+      background: rgba(0, 0, 0, 0.1);
+      border-color: rgba(0, 0, 0, 0.07);
     }
 
     .s-toggle-thumb {
       position: absolute;
-      top: 3px;
-      left: 3px;
+      top: 4px;
+      left: 4px;
       width: 16px;
       height: 16px;
-      background: var(--gray-400);
+      background: rgba(255, 255, 255, 0.35);
       border-radius: 50%;
       transition: transform 0.2s, background 0.2s;
     }
 
     .s-toggle input:checked~.s-toggle-track {
-      background: var(--black);
+      background: var(--accent);
+      border-color: transparent;
     }
 
     .s-toggle input:checked~.s-toggle-thumb {
@@ -523,252 +502,725 @@
 
     .s-toggle input:disabled~.s-toggle-track {
       opacity: 0.3;
+      cursor: not-allowed;
     }
 
+    /* Info in the middle */
+    .s-row-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .s-row-name {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 3px;
+    }
+
+    .s-row-desc {
+      font-size: 12.5px;
+      color: var(--text-2);
+      line-height: 1.55;
+    }
+
+    /* Pill control on the RIGHT — matches screenshot bubble dropdowns */
+    .s-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      background: rgba(255, 255, 255, 0.04);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-2);
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    [data-theme="light"] .s-pill {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .s-pill:hover {
+      border-color: rgba(107, 95, 255, 0.4);
+      color: var(--text);
+    }
+
+    .s-pill svg {
+      width: 12px;
+      height: 12px;
+      stroke: currentColor;
+      stroke-width: 2;
+      opacity: 0.6;
+    }
+
+    /* Pill with editable input inside */
+    .s-pill-input {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 14px;
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      background: rgba(255, 255, 255, 0.04);
+      font-size: 13px;
+      color: var(--text-2);
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: border-color 0.15s;
+    }
+
+    [data-theme="light"] .s-pill-input {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .s-pill-input:focus-within {
+      border-color: var(--accent);
+    }
+
+    .s-pill-input input {
+      width: 36px;
+      text-align: center;
+      background: none;
+      border: none;
+      outline: none;
+      font-family: "DM Sans", sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .s-pill-input span {
+      font-size: 12px;
+      color: var(--text-3);
+    }
+
+    /* Time pill */
+    .s-pill-time {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 14px;
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      background: rgba(255, 255, 255, 0.04);
+      font-size: 13px;
+      color: var(--text-2);
+      flex-shrink: 0;
+      transition: border-color 0.15s;
+    }
+
+    [data-theme="light"] .s-pill-time {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .s-pill-time:focus-within {
+      border-color: var(--accent);
+    }
+
+    .s-pill-time input {
+      background: none;
+      border: none;
+      outline: none;
+      font-family: "DM Sans", sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      -webkit-user-select: text;
+      user-select: text;
+    }
+
+    /* Hidden inputs that remain in DOM for data collection */
+    .s-hidden {
+      display: none;
+    }
+
+    /* Action buttons */
+    .s-btn {
+      padding: 7px 18px;
+      border-radius: 99px;
+      font-family: "DM Sans", sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid;
+      transition: opacity 0.15s, background 0.15s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .s-btn-primary {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .s-btn-primary:hover {
+      opacity: 0.85;
+    }
+
+    .s-btn-ghost {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-2);
+      border-color: var(--border);
+    }
+
+    [data-theme="light"] .s-btn-ghost {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .s-btn-ghost:hover {
+      color: var(--text);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .s-btn-danger {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--red);
+      border-color: rgba(239, 68, 68, 0.2);
+    }
+
+    .s-btn-danger:hover {
+      background: rgba(239, 68, 68, 0.18);
+    }
+
+    .s-btn-success {
+      background: rgba(62, 207, 142, 0.1);
+      color: var(--green);
+      border-color: rgba(62, 207, 142, 0.2);
+    }
+
+    .s-btn-success:hover {
+      background: rgba(62, 207, 142, 0.18);
+    }
+
+    /* Badge */
+    .s-badge {
+      font-size: 9px;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 99px;
+      background: rgba(107, 95, 255, 0.15);
+      color: var(--accent-h);
+      border: 1px solid rgba(107, 95, 255, 0.2);
+      vertical-align: middle;
+      margin-left: 8px;
+    }
+
+    /* Footer save row */
+    .s-footer {
+      display: flex;
+      gap: 10px;
+      padding: 24px 0 0;
+    }
+
+    /* Theme switcher */
+    .theme-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      max-width: 300px;
+      margin-top: 6px;
+    }
+
+    .theme-option {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 12px;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--border);
+      cursor: pointer;
+      transition: border-color 0.15s;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    [data-theme="light"] .theme-option {
+      background: rgba(0, 0, 0, 0.02);
+    }
+
+    .theme-option:hover {
+      border-color: rgba(107, 95, 255, 0.35);
+    }
+
+    .theme-option.active {
+      border-color: var(--accent);
+    }
+
+    .theme-preview {
+      width: 100%;
+      height: 48px;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .tp-light {
+      background: #eef0f8;
+      display: flex;
+      gap: 3px;
+      padding: 5px;
+      height: 100%;
+    }
+
+    .tp-light .p-sidebar {
+      width: 10px;
+      background: #111;
+      border-radius: 2px;
+    }
+
+    .tp-light .p-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .tp-light .p-bar {
+      height: 6px;
+      background: #dde0ee;
+      border-radius: 2px;
+    }
+
+    .tp-light .p-bar.short {
+      width: 60%;
+    }
+
+    .tp-dark {
+      background: #0c0e1a;
+      display: flex;
+      gap: 3px;
+      padding: 5px;
+      height: 100%;
+    }
+
+    .tp-dark .p-sidebar {
+      width: 10px;
+      background: #0a0c18;
+      border-radius: 2px;
+    }
+
+    .tp-dark .p-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .tp-dark .p-bar {
+      height: 6px;
+      background: #1a1d30;
+      border-radius: 2px;
+    }
+
+    .tp-dark .p-bar.short {
+      width: 60%;
+    }
+
+    .theme-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-2);
+    }
+
+    .theme-option.active .theme-label {
+      color: var(--text);
+    }
+
+    .theme-check {
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .theme-option.active .theme-check {
+      border-color: var(--accent);
+      background: var(--accent);
+    }
+
+    .theme-check::after {
+      content: '';
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: transparent;
+    }
+
+    .theme-option.active .theme-check::after {
+      background: #fff;
+    }
+
+    /* Toast */
     .hf-toast {
       position: fixed;
-      bottom: 24px;
-      right: 24px;
-      background: var(--black);
-      color: var(--white);
-      font-size: 12px;
-      font-weight: 500;
-      padding: 10px 18px;
-      border-radius: var(--radius-sm);
+      bottom: 22px;
+      right: 22px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 12.5px;
+      font-weight: 600;
+      padding: 10px 20px;
+      border-radius: 99px;
       opacity: 0;
       transform: translateY(6px);
       transition: opacity 0.2s, transform 0.2s;
       pointer-events: none;
       z-index: 99999;
+      box-shadow: 0 4px 24px rgba(107, 95, 255, 0.45);
     }
 
     .hf-toast.show {
       opacity: 1;
       transform: translateY(0);
     }
+
+    /* Dimmed rows */
+    .s-row.dimmed {
+      opacity: 0.4;
+      pointer-events: none;
+    }
   </style>
 </head>
 
 <body>
-
   <div class="titlebar">
     <div class="titlebar-drag-handle"></div>
-    <button class="tb-btn tb-minimize" id="btn-minimize"><i data-lucide="minus"></i></button>
-    <button class="tb-btn tb-maximize" id="btn-maximize"><i data-lucide="square"></i></button>
-    <button class="tb-btn tb-close" id="btn-close"><i data-lucide="x"></i></button>
+    <button class="tb-btn tb-minimize" id="btn-minimize"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round">
+        <line x1="5" y1="12" x2="19" y2="12" />
+      </svg></button>
+    <button class="tb-btn tb-maximize" id="btn-maximize"><i id="maximizeIcon" data-lucide="maximize"></i></button>
+    <button class="tb-btn tb-close" id="btn-close"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round">
+        <line x1="18" y1="6" x2="6" y2="18" />
+        <line x1="6" y1="6" x2="18" y2="18" />
+      </svg></button>
   </div>
 
   <div class="app">
-    <aside class="sidebar">
-      <div class="sidebar-logo">HF.</div>
-      <nav class="sidebar-nav">
-        <div class="nav-item" id="navHome"><i data-lucide="house"></i></div>
-        <div class="nav-item" id="navPipeline"><i data-lucide="briefcase"></i></div>
-        <div class="nav-item"><i data-lucide="bell"></i></div>
-        <div class="nav-item"><i data-lucide="bar-chart-2"></i></div>
-        <div class="nav-item active"><i data-lucide="settings"></i></div>
+
+    <!-- HF icon sidebar -->
+    <aside class="hf-sidebar">
+      <div class="hf-logo">HF.</div>
+      <nav class="hf-nav">
+        <div class="hf-nav-item" id="navHome" title="Home"><i data-lucide="house"></i></div>
+        <div class="hf-nav-item" id="navPipeline" title="Applications"><i data-lucide="briefcase"></i></div>
+        <div class="hf-nav-item" id="navNotifications" title="Notifications"><i data-lucide="bell"></i></div>
+        <div class="hf-nav-item" title="Analytics"><i data-lucide="bar-chart-2"></i></div>
+        <div class="hf-nav-item active" title="Settings"><i data-lucide="settings"></i></div>
       </nav>
-      <div class="sidebar-bottom">
-        <div class="nav-item"><i data-lucide="user"></i></div>
+      <div class="hf-bottom">
+        <div class="hf-nav-item" title="Account"><i data-lucide="user"></i></div>
       </div>
     </aside>
 
+    <!-- Main settings card -->
     <div class="main">
-      <div class="page-header">
-        <div class="page-title">Settings</div>
-      </div>
 
-      <div class="settings-layout">
-        <div class="settings-nav">
-          <div class="s-nav-label">Preferences</div>
-          <div class="s-nav-item active" data-panel="notifications">
+      <!-- Left settings nav -->
+      <nav class="s-nav">
+        <div class="s-nav-heading">Settings</div>
+
+        <div class="s-nav-item active" data-panel="notifications">
+          <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+          </svg>
+          Notifications
+        </div>
+        <div class="s-nav-item" data-panel="appearance">
+          <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3" />
+            <path
+              d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+          </svg>
+          Appearance
+        </div>
+
+        <div class="s-nav-sep"></div>
+        <div class="s-nav-section">Data</div>
+
+        <div class="s-nav-item" data-panel="data">
+          <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <ellipse cx="12" cy="5" rx="9" ry="3" />
+            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+          </svg>
+          Data
+        </div>
+
+        <div class="s-nav-sep"></div>
+        <div class="s-nav-section">Info</div>
+
+        <div class="s-nav-item" data-panel="about">
+          <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          About
+        </div>
+
+        <div class="s-nav-footer">
+          HiredFinally<br>
+          <span id="appVersion" style="font-size:10px; opacity:0.5;">—</span>
+        </div>
+      </nav>
+
+      <!-- Content -->
+      <div class="s-content">
+
+        <!-- Search bar -->
+        <div class="s-topbar">
+          <div class="s-search">
             <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
-            Notifications
-          </div>
-          <div class="s-nav-item" data-panel="appearance">
-            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.07 4.93a10 10 0 0 0-14.14 0M4.93 19.07a10 10 0 0 0 14.14 0" />
-            </svg>
-            Appearance
-          </div>
-          <div class="s-nav-label" style="margin-top:6px;">Data</div>
-          <div class="s-nav-item" data-panel="data">
-            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
-              <ellipse cx="12" cy="5" rx="9" ry="3" />
-              <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
-              <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
-            </svg>
-            Data
-          </div>
-          <div class="s-nav-label" style="margin-top:6px;">Info</div>
-          <div class="s-nav-item" data-panel="about">
-            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
-            About
+            <input type="text" placeholder="Search settings…" id="settingsSearch">
           </div>
         </div>
 
-        <div class="settings-content">
+        <!-- Scrollable panel area -->
+        <div class="s-panel-wrap">
+
+          <!-- ── Notifications Panel ── -->
           <div class="s-panel active" id="s-panel-notifications">
-            <div class="s-section-title">General</div>
-            <div class="s-block">
-              <div class="s-row">
-                <div class="s-row-info">
-                  <div class="s-row-name">Enable Notifications</div>
-                  <div class="s-row-desc">Master switch for all notification types.</div>
-                </div>
-                <label class="s-toggle"><input type="checkbox" id="notifEnabled" checked><span
-                    class="s-toggle-track"></span><span class="s-toggle-thumb"></span></label>
-              </div>
-              <div class="s-row">
-                <div class="s-row-info">
-                  <div class="s-row-name">Notification Sound</div>
-                  <div class="s-row-desc">Play a sound with each notification.</div>
-                </div>
-                <label class="s-toggle"><input type="checkbox" id="soundEnabled" checked><span
-                    class="s-toggle-track"></span><span class="s-toggle-thumb"></span></label>
-              </div>
-              <div class="s-row">
-                <div class="s-row-info">
-                  <div class="s-row-name">Test Notification</div>
-                  <div class="s-row-desc">Send a test to confirm they're working.</div>
-                </div>
-                <button class="s-btn s-btn-success" id="testNotifBtn">Send Test</button>
+            <div class="s-panel-header">
+              <div class="s-panel-title">Edit Notifications</div>
+              <button class="s-btn s-btn-success" id="testNotifBtn">Send Test</button>
+            </div>
+
+            <div class="s-section">General</div>
+
+            <div class="s-row">
+              <label class="s-toggle"><input type="checkbox" id="notifEnabled" checked><span
+                  class="s-toggle-track"></span><span class="s-toggle-thumb"></span></label>
+              <div class="s-row-info">
+                <div class="s-row-name">Enable Notifications</div>
+                <div class="s-row-desc">Master switch — turns all notification types on or off.</div>
               </div>
             </div>
-            <div class="s-section-title">Reminders</div>
-            <div class="s-block">
-              <div class="s-block-header">Follow-up</div>
-              <div class="s-row">
-                <div class="s-row-info">
-                  <div class="s-row-name">Follow-up on Viewed Jobs</div>
-                  <div class="s-row-desc">Remind you to apply to jobs you viewed but skipped.</div>
-                </div>
-                <label class="s-toggle"><input type="checkbox" id="followUpEnabled" checked><span
-                    class="s-toggle-track"></span><span class="s-toggle-thumb"></span></label>
+
+            <div class="s-row">
+              <label class="s-toggle"><input type="checkbox" id="soundEnabled" checked><span
+                  class="s-toggle-track"></span><span class="s-toggle-thumb"></span></label>
+              <div class="s-row-info">
+                <div class="s-row-name">Notification Sound</div>
+                <div class="s-row-desc">Play a sound with each notification.</div>
               </div>
-              <div class="s-input-row">Remind after <input class="s-num-input" type="number" id="followUpDelay" min="1"
-                  max="168" value="24"> hours</div>
             </div>
-            <div class="s-block">
-              <div class="s-block-header">Daily</div>
-              <div class="s-row">
-                <div class="s-row-info">
-                  <div class="s-row-name">Daily Application Reminder</div>
-                  <div class="s-row-desc">Get a daily nudge to keep applying.</div>
-                </div>
-                <label class="s-toggle"><input type="checkbox" id="dailyEnabled" checked><span
-                    class="s-toggle-track"></span><span class="s-toggle-thumb"></span></label>
+
+            <div class="s-section">After Applying</div>
+
+            <div class="s-row">
+              <label class="s-toggle"><input type="checkbox" id="spamCheckEnabled" checked><span
+                  class="s-toggle-track"></span><span class="s-toggle-thumb"></span></label>
+              <div class="s-row-info">
+                <div class="s-row-name">Spam Folder Check</div>
+                <div class="s-row-desc">Remind you to check spam for recruiter replies after applying.</div>
               </div>
-              <div class="s-input-row">Reminder time <input class="s-time-input" type="time" id="dailyTime"
-                  value="10:00"></div>
-            </div>
-            <div class="s-block">
-              <div class="s-block-header">Inactivity</div>
-              <div class="s-row">
-                <div class="s-row-info">
-                  <div class="s-row-name">Inactivity Reminders</div>
-                  <div class="s-row-desc">Notified when you haven't applied recently.</div>
-                </div>
-                <label class="s-toggle"><input type="checkbox" id="inactivityEnabled" checked><span
-                    class="s-toggle-track"></span><span class="s-toggle-thumb"></span></label>
+              <div class="s-pill-input">
+                <input type="number" id="spamCheckDelay" min="1" max="14" value="3">
+                <span>days</span>
               </div>
-              <div class="s-input-row">Alert after <input class="s-num-input" type="number" id="inactivityDelay" min="1"
-                  max="30" value="3"> days</div>
             </div>
-            <div class="s-block">
-              <div class="s-block-header">Weekly Goal</div>
-              <div class="s-row">
-                <div class="s-row-info">
-                  <div class="s-row-name">Weekly Application Goal</div>
-                  <div class="s-row-desc">Track progress toward a weekly target.</div>
-                </div>
-                <label class="s-toggle"><input type="checkbox" id="weeklyEnabled" checked><span
-                    class="s-toggle-track"></span><span class="s-toggle-thumb"></span></label>
+
+            <div class="s-row">
+              <label class="s-toggle"><input type="checkbox" id="postApplyFollowUpEnabled" checked><span
+                  class="s-toggle-track"></span><span class="s-toggle-thumb"></span></label>
+              <div class="s-row-info">
+                <div class="s-row-name">Follow-up Email Reminder</div>
+                <div class="s-row-desc">Nudge to send a polite follow-up after no response.</div>
               </div>
-              <div class="s-input-row">Goal <input class="s-num-input" type="number" id="weeklyGoal" min="1" max="50"
-                  value="5"> applications per week</div>
-            </div>
-            <div class="s-block">
-              <div class="s-block-header">Email Integration <span class="s-coming-soon">coming soon</span></div>
-              <div class="s-row">
-                <div class="s-row-info">
-                  <div class="s-row-name">Email Response Detection</div>
-                  <div class="s-row-desc">Automatically detect employer replies.</div>
-                </div>
-                <label class="s-toggle"><input type="checkbox" id="emailCheckEnabled" disabled><span
-                    class="s-toggle-track"></span><span class="s-toggle-thumb"></span></label>
+              <div class="s-pill-input">
+                <input type="number" id="postApplyFollowUpDelay" min="1" max="30" value="10">
+                <span>days</span>
               </div>
-              <div class="s-input-row" style="opacity:0.4;">Check every <input class="s-num-input" type="number"
-                  id="emailCheckInterval" min="15" max="180" value="30" disabled> minutes</div>
             </div>
+
+            <div class="s-row">
+              <label class="s-toggle"><input type="checkbox" id="keepApplyingEnabled" checked><span
+                  class="s-toggle-track"></span><span class="s-toggle-thumb"></span></label>
+              <div class="s-row-info">
+                <div class="s-row-name">Keep Pipeline Full</div>
+                <div class="s-row-desc">Nudge to keep applying while waiting on pending responses.</div>
+              </div>
+            </div>
+
+            <div class="s-section">Viewed Jobs</div>
+
+            <div class="s-row">
+              <label class="s-toggle"><input type="checkbox" id="followUpEnabled" checked><span
+                  class="s-toggle-track"></span><span class="s-toggle-thumb"></span></label>
+              <div class="s-row-info">
+                <div class="s-row-name">Follow-up on Viewed Jobs</div>
+                <div class="s-row-desc">Remind you to apply to jobs you viewed but skipped.</div>
+              </div>
+              <div class="s-pill-input">
+                <input type="number" id="followUpDelay" min="1" max="168" value="24">
+                <span>hrs</span>
+              </div>
+            </div>
+
+            <div class="s-section">Daily & Goals</div>
+
+            <div class="s-row">
+              <label class="s-toggle"><input type="checkbox" id="dailyEnabled" checked><span
+                  class="s-toggle-track"></span><span class="s-toggle-thumb"></span></label>
+              <div class="s-row-info">
+                <div class="s-row-name">Daily Application Reminder</div>
+                <div class="s-row-desc">Get a daily nudge to keep applying.</div>
+              </div>
+              <div class="s-pill-time">
+                <input type="time" id="dailyTime" value="10:00">
+              </div>
+            </div>
+
+            <div class="s-row">
+              <label class="s-toggle"><input type="checkbox" id="weeklyEnabled" checked><span
+                  class="s-toggle-track"></span><span class="s-toggle-thumb"></span></label>
+              <div class="s-row-info">
+                <div class="s-row-name">Weekly Application Goal</div>
+                <div class="s-row-desc">Track progress toward a weekly target.</div>
+              </div>
+              <div class="s-pill-input">
+                <input type="number" id="weeklyGoal" min="1" max="50" value="5">
+                <span>/ week</span>
+              </div>
+            </div>
+
+            <div class="s-row">
+              <label class="s-toggle"><input type="checkbox" id="inactivityEnabled" checked><span
+                  class="s-toggle-track"></span><span class="s-toggle-thumb"></span></label>
+              <div class="s-row-info">
+                <div class="s-row-name">Inactivity Reminders</div>
+                <div class="s-row-desc">Notified when you haven't applied recently.</div>
+              </div>
+              <div class="s-pill-input">
+                <input type="number" id="inactivityDelay" min="1" max="30" value="3">
+                <span>days</span>
+              </div>
+            </div>
+
+            <div class="s-row">
+              <label class="s-toggle"><input type="checkbox" id="milestoneEnabled" checked><span
+                  class="s-toggle-track"></span><span class="s-toggle-thumb"></span></label>
+              <div class="s-row-info">
+                <div class="s-row-name">Milestone Celebrations</div>
+                <div class="s-row-desc">Celebrate hitting 1, 5, 10, 25, 50, and 100 applications.</div>
+              </div>
+            </div>
+
+            <div class="s-section">Integrations</div>
+
+            <div class="s-row dimmed">
+              <label class="s-toggle"><input type="checkbox" id="emailCheckEnabled" disabled><span
+                  class="s-toggle-track"></span><span class="s-toggle-thumb"></span></label>
+              <div class="s-row-info">
+                <div class="s-row-name">Email Response Detection <span class="s-badge">Coming soon</span></div>
+                <div class="s-row-desc">Automatically detect employer replies in your inbox.</div>
+              </div>
+            </div>
+
             <div class="s-footer">
               <button class="s-btn s-btn-primary" id="settingsSave">Save Settings</button>
               <button class="s-btn s-btn-ghost" id="settingsCancel">Cancel</button>
             </div>
           </div>
 
+          <!-- ── Appearance Panel ── -->
           <div class="s-panel" id="s-panel-appearance">
-            <div class="s-section-title">Interface</div>
-            <div class="s-block">
-              <div class="s-row" style="border-bottom:none;">
-                <div class="s-row-info">
-                  <div class="s-row-name">Theme</div>
-                  <div class="s-row-desc">Light mode only for now. Dark mode coming soon.</div>
+            <div class="s-panel-header">
+              <div class="s-panel-title">Appearance</div>
+            </div>
+            <div class="s-section">Theme</div>
+            <div class="theme-grid">
+              <div class="theme-option" data-theme-val="light">
+                <div class="theme-preview">
+                  <div class="tp-light">
+                    <div class="p-sidebar"></div>
+                    <div class="p-content">
+                      <div class="p-bar"></div>
+                      <div class="p-bar short"></div>
+                      <div class="p-bar"></div>
+                    </div>
+                  </div>
                 </div>
-                <span class="s-coming-soon">coming soon</span>
+                <div class="theme-label">Light</div>
+                <div class="theme-check"></div>
+              </div>
+              <div class="theme-option" data-theme-val="dark">
+                <div class="theme-preview">
+                  <div class="tp-dark">
+                    <div class="p-sidebar"></div>
+                    <div class="p-content">
+                      <div class="p-bar"></div>
+                      <div class="p-bar short"></div>
+                      <div class="p-bar"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="theme-label">Dark</div>
+                <div class="theme-check"></div>
               </div>
             </div>
           </div>
 
+          <!-- ── Data Panel ── -->
           <div class="s-panel" id="s-panel-data">
-            <div class="s-section-title">Application Data</div>
-            <div class="s-block">
-              <div class="s-row">
-                <div class="s-row-info">
-                  <div class="s-row-name">Export History</div>
-                  <div class="s-row-desc">Download all tracked applications as a CSV file.</div>
-                </div>
-                <button class="s-btn s-btn-ghost" id="exportBtn">Export CSV</button>
+            <div class="s-panel-header">
+              <div class="s-panel-title">Data</div>
+            </div>
+            <div class="s-section">Application History</div>
+            <div class="s-row">
+              <div class="s-row-info" style="padding-left:0;">
+                <div class="s-row-name">Export History</div>
+                <div class="s-row-desc">Download all tracked applications as a CSV file.</div>
               </div>
-              <div class="s-row">
-                <div class="s-row-info">
-                  <div class="s-row-name">Clear History</div>
-                  <div class="s-row-desc">Permanently remove all tracked records. Cannot be undone.</div>
-                </div>
-                <button class="s-btn s-btn-danger" id="clearBtn">Clear All</button>
+              <button class="s-btn s-btn-ghost" id="exportBtn">Export CSV</button>
+            </div>
+            <div class="s-row">
+              <div class="s-row-info" style="padding-left:0;">
+                <div class="s-row-name">Clear History</div>
+                <div class="s-row-desc">Permanently remove all tracked records. Cannot be undone.</div>
+              </div>
+              <button class="s-btn s-btn-danger" id="clearBtn">Clear All</button>
+            </div>
+          </div>
+
+          <!-- ── About Panel ── -->
+          <div class="s-panel" id="s-panel-about">
+            <div class="s-panel-header">
+              <div class="s-panel-title">About</div>
+            </div>
+            <div class="s-section">App Info</div>
+            <div class="s-row">
+              <div class="s-row-info">
+                <div class="s-row-name">Version</div>
+                <div class="s-row-desc" id="aboutVersion">—</div>
+              </div>
+            </div>
+            <div class="s-row">
+              <div class="s-row-info">
+                <div class="s-row-name">Description</div>
+                <div class="s-row-desc">Automatically tracks job applications as you browse job boards.</div>
               </div>
             </div>
           </div>
 
-          <div class="s-panel" id="s-panel-about">
-            <div class="s-section-title">About HiredFinally</div>
-            <div class="s-block">
-              <div class="s-row">
-                <div class="s-row-info">
-                  <div class="s-row-name">Version</div>
-                  <div class="s-row-desc" id="appVersion">—</div>
-                </div>
-              </div>
-              <div class="s-row">
-                <div class="s-row-info">
-                  <div class="s-row-name">Description</div>
-                  <div class="s-row-desc">Your intelligent job application tracker.</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+        </div><!-- /s-panel-wrap -->
+      </div><!-- /s-content -->
+    </div><!-- /main -->
+  </div><!-- /app -->
 
   <div class="hf-toast" id="hfToast"></div>
 
@@ -777,19 +1229,52 @@
       lucide.createIcons();
       const { ipcRenderer } = require("electron");
 
+      // ── Theme ────────────────────────────────────────────────────────
+      function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('hf-theme', theme);
+        document.querySelectorAll('.theme-option').forEach(opt => {
+          opt.classList.toggle('active', opt.dataset.themeVal === theme);
+        });
+        ipcRenderer.send('set-theme', theme);
+      }
+      const currentTheme = localStorage.getItem('hf-theme') || 'dark';
+      document.querySelectorAll('.theme-option').forEach(opt => {
+        opt.classList.toggle('active', opt.dataset.themeVal === currentTheme);
+        opt.addEventListener('click', () => applyTheme(opt.dataset.themeVal));
+      });
+      ipcRenderer.on('apply-theme', (_e, theme) => {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('hf-theme', theme);
+        document.querySelectorAll('.theme-option').forEach(opt => {
+          opt.classList.toggle('active', opt.dataset.themeVal === theme);
+        });
+      });
+
+      // ── Window controls ──────────────────────────────────────────────
       document.getElementById("btn-minimize").addEventListener("click", () => ipcRenderer.send("window-minimize"));
       document.getElementById("btn-maximize").addEventListener("click", () => ipcRenderer.send("window-maximize"));
       document.getElementById("btn-close").addEventListener("click", () => ipcRenderer.send("window-close"));
+      function updateMaximizeIcon(v) {
+        document.getElementById("maximizeIcon").setAttribute("data-lucide", v ? "minimize" : "maximize");
+        lucide.createIcons();
+      }
+      ipcRenderer.on("window-maximized", () => updateMaximizeIcon(true));
+      ipcRenderer.on("window-unmaximized", () => updateMaximizeIcon(false));
 
+      // ── HF sidebar nav ───────────────────────────────────────────────
       document.getElementById("navHome").addEventListener("click", () => ipcRenderer.send("navigate-home"));
       document.getElementById("navPipeline").addEventListener("click", () => ipcRenderer.send("open-pipeline"));
+      document.getElementById("navNotifications").addEventListener("click", () => ipcRenderer.send("open-notifications"));
 
+      // ── Toast ────────────────────────────────────────────────────────
       function showToast(msg) {
         const t = document.getElementById("hfToast");
         t.textContent = msg; t.classList.add("show");
         setTimeout(() => t.classList.remove("show"), 2400);
       }
 
+      // ── Settings left nav ────────────────────────────────────────────
       document.querySelectorAll(".s-nav-item[data-panel]").forEach(item => {
         item.addEventListener("click", () => {
           document.querySelectorAll(".s-nav-item[data-panel]").forEach(i => i.classList.remove("active"));
@@ -799,8 +1284,21 @@
         });
       });
 
+      // ── Search (filters visible rows by name) ────────────────────────
+      document.getElementById("settingsSearch").addEventListener("input", e => {
+        const q = e.target.value.toLowerCase().trim();
+        document.querySelectorAll(".s-row").forEach(row => {
+          const name = row.querySelector(".s-row-name")?.textContent?.toLowerCase() || "";
+          const desc = row.querySelector(".s-row-desc")?.textContent?.toLowerCase() || "";
+          row.style.display = (!q || name.includes(q) || desc.includes(q)) ? "" : "none";
+        });
+      });
+
+      // ── Load settings ────────────────────────────────────────────────
       ipcRenderer.on("settings-loaded", (_e, s) => {
-        const set = (id, val, prop = "checked") => { const el = document.getElementById(id); if (el) el[prop] = val; };
+        const set = (id, val, prop = "checked") => {
+          const el = document.getElementById(id); if (el) el[prop] = val;
+        };
         set("notifEnabled", s.enabled);
         set("soundEnabled", s.soundEnabled);
         set("followUpEnabled", s.followUpEnabled);
@@ -811,11 +1309,25 @@
         set("inactivityDelay", s.inactivityDelay, "value");
         set("weeklyEnabled", s.weeklyGoalEnabled);
         set("weeklyGoal", s.weeklyGoal, "value");
+        set("postApplyFollowUpEnabled", s.postApplyFollowUpEnabled);
+        set("postApplyFollowUpDelay", s.postApplyFollowUpDelay, "value");
+        set("spamCheckEnabled", s.spamCheckEnabled);
+        set("spamCheckDelay", s.spamCheckDelay, "value");
+        set("keepApplyingEnabled", s.keepApplyingEnabled);
+        set("milestoneEnabled", s.milestoneEnabled);
       });
       ipcRenderer.send("get-settings");
 
-      try { document.getElementById("appVersion").textContent = ipcRenderer.sendSync("get-version"); } catch { }
+      // ── Version ──────────────────────────────────────────────────────
+      try {
+        const v = ipcRenderer.sendSync("get-version");
+        ["appVersion", "aboutVersion"].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.textContent = v;
+        });
+      } catch { }
 
+      // ── Collect & save ───────────────────────────────────────────────
       function collectSettings() {
         const g = id => document.getElementById(id);
         return {
@@ -831,6 +1343,12 @@
           inactivityDelay: parseInt(g("inactivityDelay").value) || 3,
           weeklyGoalEnabled: g("weeklyEnabled").checked,
           weeklyGoal: parseInt(g("weeklyGoal").value) || 5,
+          postApplyFollowUpEnabled: g("postApplyFollowUpEnabled").checked,
+          postApplyFollowUpDelay: parseInt(g("postApplyFollowUpDelay").value) || 10,
+          spamCheckEnabled: g("spamCheckEnabled").checked,
+          spamCheckDelay: parseInt(g("spamCheckDelay").value) || 3,
+          keepApplyingEnabled: g("keepApplyingEnabled").checked,
+          milestoneEnabled: g("milestoneEnabled").checked,
         };
       }
 
@@ -840,19 +1358,16 @@
         setTimeout(() => ipcRenderer.send("navigate-home"), 500);
       });
       document.getElementById("settingsCancel").addEventListener("click", () => ipcRenderer.send("navigate-home"));
-
       document.getElementById("testNotifBtn").addEventListener("click", () => {
         ipcRenderer.send("show-notification", { title: "HiredFinally", body: "Notifications are working." });
         showToast("Test sent");
       });
       document.getElementById("exportBtn").addEventListener("click", () => {
-        ipcRenderer.send("export-application-data");
-        showToast("Exporting…");
+        ipcRenderer.send("export-application-data"); showToast("Exporting…");
       });
       document.getElementById("clearBtn").addEventListener("click", () => {
         if (confirm("Delete all application data? This cannot be undone.")) {
-          ipcRenderer.send("clear-application-data");
-          showToast("Data cleared");
+          ipcRenderer.send("clear-application-data"); showToast("Data cleared");
         }
       });
     });

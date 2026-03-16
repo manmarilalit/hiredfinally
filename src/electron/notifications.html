@@ -1,0 +1,829 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <script>
+    (function () {
+      const t = localStorage.getItem('hf-theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+    window.lucide = require(
+      require("path").join(__dirname, "..", "..", "node_modules", "lucide", "dist", "umd", "lucide.min.js"),
+    );
+  </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notifications — HiredFinally</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap"
+    rel="stylesheet" />
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    input,
+    textarea {
+      -webkit-user-select: text;
+      user-select: text;
+    }
+
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+    }
+
+    [data-theme="light"] ::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.12);
+    }
+
+    :root {
+      --bg: #0c0e1a;
+      --surface: #111420;
+      --card: #1a1d2e;
+      --card-hover: #1e2135;
+      --border: rgba(255, 255, 255, 0.07);
+      --border-s: rgba(255, 255, 255, 0.05);
+      --text: #e4e6f0;
+      --text-2: #7880a0;
+      --text-3: #404565;
+      --accent: #6b5fff;
+      --accent-h: #7d72ff;
+      --amber: #f0a05a;
+      --green: #3ecf8e;
+      --blue: #5ab0f0;
+      --red: #ef4444;
+      --purple: #a78bfa;
+      --pink: #f472b6;
+      --radius: 16px;
+      --radius-sm: 10px;
+      --sidebar-w: 72px;
+      --gap: 14px;
+      --tb-icon: rgba(255, 255, 255, 0.35);
+      --tb-icon-h: rgba(255, 255, 255, 0.8);
+    }
+
+    [data-theme="light"] {
+      --bg: #eef0f8;
+      --surface: #ffffff;
+      --card: #f0f1fa;
+      --card-hover: #e8eaf6;
+      --border: rgba(0, 0, 0, 0.07);
+      --border-s: rgba(0, 0, 0, 0.04);
+      --text: #0f1128;
+      --text-2: #606880;
+      --text-3: #aab0cc;
+      --tb-icon: rgba(0, 0, 0, 0.45);
+      --tb-icon-h: rgba(0, 0, 0, 0.8);
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      font-family: "DM Sans", sans-serif;
+      background: var(--bg);
+      overflow: hidden;
+      color: var(--text);
+      -webkit-user-select: none;
+      user-select: none;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .titlebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 38px;
+      z-index: 9999;
+      -webkit-app-region: drag;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+    }
+
+    .titlebar-drag-handle {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40px;
+      height: 3px;
+      background: var(--border);
+      border-radius: 99px;
+      pointer-events: none;
+    }
+
+    .tb-btn {
+      width: 46px;
+      height: 38px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+      -webkit-app-region: no-drag;
+    }
+
+    .tb-btn svg {
+      width: 13px;
+      height: 13px;
+      stroke: var(--tb-icon);
+      stroke-width: 2.5;
+      pointer-events: none;
+      transition: stroke 0.15s;
+    }
+
+    .tb-minimize:hover,
+    .tb-maximize:hover {
+      background: rgba(128, 128, 128, 0.15);
+    }
+
+    .tb-minimize:hover svg,
+    .tb-maximize:hover svg {
+      stroke: var(--tb-icon-h);
+    }
+
+    .tb-close:hover {
+      background: #e81123;
+    }
+
+    .tb-close:hover svg {
+      stroke: #fff !important;
+    }
+
+    .app {
+      display: flex;
+      width: 100vw;
+      height: 100vh;
+      padding: 38px 18px 18px;
+      gap: 14px;
+    }
+
+    .hf-sidebar {
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+      background: #0a0c18;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px 0;
+    }
+
+    .hf-logo {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.5px;
+      margin-bottom: 24px;
+    }
+
+    .hf-nav {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      flex: 1;
+    }
+
+    .hf-bottom {
+      margin-top: auto;
+    }
+
+    .hf-nav-item {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.15s;
+      position: relative;
+    }
+
+    .hf-nav-item:hover {
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    .hf-nav-item.active {
+      background: rgba(107, 95, 255, 0.2);
+    }
+
+    .hf-nav-item svg {
+      width: 18px;
+      height: 18px;
+      stroke: rgba(255, 255, 255, 0.35);
+      stroke-width: 2;
+      transition: stroke 0.15s;
+    }
+
+    .hf-nav-item.active svg {
+      stroke: var(--accent-h);
+    }
+
+    .hf-nav-item:hover svg {
+      stroke: rgba(255, 255, 255, 0.7);
+    }
+
+    .nav-badge {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--red);
+      border: 1.5px solid #0a0c18;
+    }
+
+    .main-card {
+      flex: 1;
+      min-width: 0;
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .inner {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      padding: 22px 28px 0;
+    }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 14px;
+      flex-shrink: 0;
+    }
+
+    .page-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.3px;
+      flex: 1;
+    }
+
+    .toolbar-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 16px;
+      border-radius: 99px;
+      border: 1px solid var(--border);
+      background: transparent;
+      font-family: "DM Sans", sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-2);
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+
+    .toolbar-btn:hover {
+      border-color: var(--accent);
+      color: var(--text);
+      background: rgba(107, 95, 255, 0.06);
+    }
+
+    .toolbar-btn svg {
+      width: 14px;
+      height: 14px;
+      stroke: currentColor;
+      stroke-width: 2;
+    }
+
+    .toolbar-btn.danger {
+      color: var(--red);
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    .toolbar-btn.danger:hover {
+      background: rgba(239, 68, 68, 0.08);
+      border-color: var(--red);
+    }
+
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      flex-shrink: 0;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 3px;
+      background: var(--card);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-s);
+      padding: 3px;
+    }
+
+    .tab-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 7px;
+      font-family: "DM Sans", sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-2);
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      transition: color 0.15s, background 0.15s;
+    }
+
+    .tab-btn:hover {
+      color: var(--text);
+    }
+
+    .tab-btn.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .tab-count {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.15);
+      color: inherit;
+      min-width: 18px;
+      text-align: center;
+    }
+
+    .tab-btn:not(.active) .tab-count {
+      background: var(--border);
+      color: var(--text-3);
+    }
+
+    .unread-count-label {
+      margin-left: auto;
+      font-size: 11px;
+      color: var(--text-3);
+    }
+
+    .notif-feed {
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-bottom: 20px;
+    }
+
+    .notif-card {
+      background: var(--card);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 13px;
+      transition: background 0.15s;
+      border: 1px solid var(--border-s);
+      position: relative;
+    }
+
+    .notif-card.unread {
+      border-color: rgba(107, 95, 255, 0.25);
+      background: var(--card-hover);
+    }
+
+    .notif-card:hover {
+      background: var(--card-hover);
+    }
+
+    .unread-dot {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .notif-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 16px;
+    }
+
+    .icon-amber {
+      background: rgba(240, 160, 90, 0.14);
+    }
+
+    .icon-green {
+      background: rgba(62, 207, 142, 0.14);
+    }
+
+    .icon-blue {
+      background: rgba(90, 176, 240, 0.14);
+    }
+
+    .icon-red {
+      background: rgba(239, 68, 68, 0.14);
+    }
+
+    .icon-purple {
+      background: rgba(167, 139, 250, 0.14);
+    }
+
+    .icon-pink {
+      background: rgba(244, 114, 182, 0.14);
+    }
+
+    .icon-gray {
+      background: var(--card);
+      border: 1px solid var(--border-s);
+    }
+
+    .notif-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .notif-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 3px;
+      flex-wrap: wrap;
+    }
+
+    .notif-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .notif-tag {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 99px;
+      border: 1px solid;
+    }
+
+    .tag-followup {
+      background: rgba(240, 160, 90, 0.1);
+      color: var(--amber);
+      border-color: rgba(240, 160, 90, 0.3);
+    }
+
+    .tag-email {
+      background: rgba(90, 176, 240, 0.1);
+      color: var(--blue);
+      border-color: rgba(90, 176, 240, 0.3);
+    }
+
+    .tag-weekly {
+      background: rgba(62, 207, 142, 0.1);
+      color: var(--green);
+      border-color: rgba(62, 207, 142, 0.3);
+    }
+
+    .tag-inactivity {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--red);
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    .tag-milestone {
+      background: rgba(167, 139, 250, 0.1);
+      color: var(--purple);
+      border-color: rgba(167, 139, 250, 0.3);
+    }
+
+    .tag-deadline {
+      background: rgba(244, 114, 182, 0.1);
+      color: var(--pink);
+      border-color: rgba(244, 114, 182, 0.3);
+    }
+
+    .tag-daily {
+      background: rgba(128, 128, 128, 0.1);
+      color: var(--text-2);
+      border-color: var(--border-s);
+    }
+
+    .tag-interview {
+      background: rgba(62, 207, 142, 0.1);
+      color: var(--green);
+      border-color: rgba(62, 207, 142, 0.3);
+    }
+
+    .tag-thankyou {
+      background: rgba(244, 114, 182, 0.1);
+      color: var(--pink);
+      border-color: rgba(244, 114, 182, 0.3);
+    }
+
+    .notif-desc {
+      font-size: 13px;
+      color: var(--text-2);
+      line-height: 1.55;
+      margin-bottom: 8px;
+      -webkit-user-select: text;
+      user-select: text;
+    }
+
+    .notif-desc strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .notif-meta {
+      font-size: 10px;
+      color: var(--text-3);
+    }
+
+    .notif-actions {
+      display: flex;
+      gap: 7px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    .n-btn {
+      padding: 5px 14px;
+      border-radius: 99px;
+      font-family: "DM Sans", sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid;
+      transition: opacity 0.15s, background 0.15s;
+    }
+
+    .n-btn-primary {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .n-btn-primary:hover {
+      opacity: 0.85;
+    }
+
+    .n-btn-ghost {
+      background: transparent;
+      color: var(--text-2);
+      border-color: var(--border);
+    }
+
+    .n-btn-ghost:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    .progress-bar-wrap {
+      margin: 8px 0 4px;
+    }
+
+    .progress-bar-track {
+      height: 4px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: var(--green);
+      transition: width 0.4s ease;
+    }
+
+    .progress-label {
+      font-size: 10px;
+      color: var(--text-3);
+      margin-top: 4px;
+    }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 40px;
+      gap: 10px;
+      text-align: center;
+      flex: 1;
+    }
+
+    .empty-icon {
+      font-size: 40px;
+      opacity: 0.1;
+      line-height: 1;
+    }
+
+    .empty-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-3);
+    }
+
+    .empty-desc {
+      font-size: 12px;
+      color: var(--text-3);
+      max-width: 260px;
+      line-height: 1.6;
+    }
+
+    .hf-toast {
+      position: fixed;
+      bottom: 22px;
+      right: 22px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 12.5px;
+      font-weight: 600;
+      padding: 10px 20px;
+      border-radius: 99px;
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity 0.2s, transform 0.2s;
+      pointer-events: none;
+      z-index: 99999;
+      box-shadow: 0 4px 24px rgba(107, 95, 255, 0.4);
+    }
+
+    .hf-toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @keyframes slideOut {
+      to {
+        opacity: 0;
+        transform: translateX(12px);
+        max-height: 0;
+        padding: 0;
+        margin: 0;
+        overflow: hidden;
+      }
+    }
+
+    .notif-card.dismissing {
+      animation: slideOut 0.22s ease forwards;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="titlebar">
+    <div class="titlebar-drag-handle"></div>
+    <button class="tb-btn tb-minimize" id="btn-minimize"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round">
+        <line x1="5" y1="12" x2="19" y2="12" />
+      </svg></button>
+    <button class="tb-btn tb-maximize" id="btn-maximize"><i id="maximizeIcon" data-lucide="maximize"></i></button>
+    <button class="tb-btn tb-close" id="btn-close"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round">
+        <line x1="18" y1="6" x2="6" y2="18" />
+        <line x1="6" y1="6" x2="18" y2="18" />
+      </svg></button>
+  </div>
+  <div class="app">
+    <aside class="hf-sidebar">
+      <div class="hf-logo">HF.</div>
+      <nav class="hf-nav">
+        <div class="hf-nav-item" id="navHome" title="Home"><i data-lucide="house"></i></div>
+        <div class="hf-nav-item" id="navPipeline" title="Applications"><i data-lucide="briefcase"></i></div>
+        <div class="hf-nav-item active" title="Notifications">
+          <i data-lucide="bell"></i>
+          <span class="nav-badge" id="navBadge" style="display:none;"></span>
+        </div>
+        <div class="hf-nav-item" title="Analytics"><i data-lucide="bar-chart-2"></i></div>
+        <div class="hf-nav-item" id="navSettings" title="Settings"><i data-lucide="settings"></i></div>
+      </nav>
+      <div class="hf-bottom">
+        <div class="hf-nav-item" title="Account"><i data-lucide="user"></i></div>
+      </div>
+    </aside>
+    <div class="main-card">
+      <div class="inner">
+        <div class="top-bar">
+          <div class="page-title">Notifications</div>
+          <div style="display:flex;gap:8px;">
+            <button class="toolbar-btn" id="markAllReadBtn"><i data-lucide="check-check"></i> Mark all read</button>
+            <button class="toolbar-btn danger" id="clearAllBtn"><i data-lucide="trash-2"></i> Clear all</button>
+          </div>
+        </div>
+        <div class="filter-bar">
+          <div class="tabs">
+            <button class="tab-btn active" data-tab="all">All <span class="tab-count" id="countAll">0</span></button>
+            <button class="tab-btn" data-tab="unread">Unread <span class="tab-count" id="countUnread">0</span></button>
+            <button class="tab-btn" data-tab="action">Action needed <span class="tab-count"
+                id="countAction">0</span></button>
+          </div>
+          <span class="unread-count-label" id="unreadLabel"></span>
+        </div>
+        <div class="notif-feed" id="notifFeed"></div>
+      </div>
+    </div>
+  </div>
+  <div class="hf-toast" id="hfToast"></div>
+  <script>
+    window.addEventListener("load", () => {
+      lucide.createIcons();
+      const { ipcRenderer } = require("electron");
+      const applyTheme = t => { document.documentElement.setAttribute('data-theme', t); localStorage.setItem('hf-theme', t); };
+      ipcRenderer.on('apply-theme', (_e, t) => applyTheme(t));
+      document.getElementById("btn-minimize").addEventListener("click", () => ipcRenderer.send("window-minimize"));
+      document.getElementById("btn-maximize").addEventListener("click", () => ipcRenderer.send("window-maximize"));
+      document.getElementById("btn-close").addEventListener("click", () => ipcRenderer.send("window-close"));
+      function updateMaximizeIcon(v) { document.getElementById("maximizeIcon").setAttribute("data-lucide", v ? "minimize" : "maximize"); lucide.createIcons(); }
+      ipcRenderer.on("window-maximized", () => updateMaximizeIcon(true));
+      ipcRenderer.on("window-unmaximized", () => updateMaximizeIcon(false));
+      document.getElementById("navHome").addEventListener("click", () => ipcRenderer.send("navigate-home"));
+      document.getElementById("navPipeline").addEventListener("click", () => ipcRenderer.send("open-pipeline"));
+      document.getElementById("navSettings").addEventListener("click", () => ipcRenderer.send("open-settings"));
+      function showToast(msg) { const t = document.getElementById("hfToast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2400); }
+
+      let notifications = [], activeTab = 'all';
+      ipcRenderer.send("get-notifications");
+      ipcRenderer.on("notifications-data", (_e, data) => { notifications = data || []; render(); });
+      ipcRenderer.on("push-notification-ui", (_e, notif) => { notifications = [notif, ...notifications.filter(n => n.id !== notif.id)]; render(); });
+
+      function relTime(ts) { const diff = Date.now() - ts; const m = Math.floor(diff / 60000), h = Math.floor(diff / 3600000), d = Math.floor(diff / 86400000); if (m < 2) return 'just now'; if (m < 60) return `${m}m ago`; if (h < 24) return `${h}h ago`; if (d < 7) return `${d}d ago`; return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); }
+
+      const TYPE_META = {
+        followup: { icon: '⏰', iconClass: 'icon-amber', tagClass: 'tag-followup', tagLabel: 'Follow-up' },
+        thankyou: { icon: '💌', iconClass: 'icon-pink', tagClass: 'tag-thankyou', tagLabel: 'Thank-you' },
+        email: { icon: '📧', iconClass: 'icon-blue', tagClass: 'tag-email', tagLabel: 'Email' },
+        interview: { icon: '🎙️', iconClass: 'icon-green', tagClass: 'tag-interview', tagLabel: 'Interview' },
+        weekly: { icon: '📊', iconClass: 'icon-green', tagClass: 'tag-weekly', tagLabel: 'Weekly goal' },
+        deadline: { icon: '⏳', iconClass: 'icon-pink', tagClass: 'tag-deadline', tagLabel: 'Deadline' },
+        inactivity: { icon: '⚠️', iconClass: 'icon-red', tagClass: 'tag-inactivity', tagLabel: 'Inactivity' },
+        milestone: { icon: '🏆', iconClass: 'icon-purple', tagClass: 'tag-milestone', tagLabel: 'Milestone' },
+        daily: { icon: '☀️', iconClass: 'icon-gray', tagClass: 'tag-daily', tagLabel: 'Daily' },
+      };
+
+      function filteredNotifs() { return notifications.filter(n => { if (n.dismissed) return false; if (activeTab === 'unread') return n.unread; if (activeTab === 'action') return n.actionRequired; return true; }); }
+      function updateCounts() { const visible = notifications.filter(n => !n.dismissed); const unread = visible.filter(n => n.unread).length; const action = visible.filter(n => n.actionRequired).length; document.getElementById('countAll').textContent = visible.length; document.getElementById('countUnread').textContent = unread; document.getElementById('countAction').textContent = action; document.getElementById('unreadLabel').textContent = unread > 0 ? `${unread} unread` : 'All caught up'; document.getElementById('navBadge').style.display = unread > 0 ? 'block' : 'none'; }
+      function renderProgressBar(n) { if (!n.progress) return ''; const pct = Math.min(100, Math.round((n.progress.value / n.progress.max) * 100)); return `<div class="progress-bar-wrap"><div class="progress-bar-track"><div class="progress-bar-fill" style="width:${pct}%"></div></div><div class="progress-label">${n.progress.value} of ${n.progress.max} applications this week (${pct}%)</div></div>`; }
+      function renderActions(n) { if (!n.actions || !n.actions.length) return ''; return `<div class="notif-actions">${n.actions.map(a => { const cls = a.style === 'primary' ? 'n-btn-primary' : 'n-btn-ghost'; return `<button class="n-btn ${cls}" data-id="${n.id}" data-action="${a.action}">${a.label}</button>`; }).join('')}</div>`; }
+      function render() { updateCounts(); const feed = document.getElementById('notifFeed'); const list = filteredNotifs(); if (!list.length) { feed.innerHTML = `<div class="empty-state"><div class="empty-icon">🔔</div><div class="empty-title">No notifications</div><div class="empty-desc">You're all caught up. Notifications appear here as your job search progresses.</div></div>`; return; } feed.innerHTML = list.map(n => { const meta = TYPE_META[n.type] || TYPE_META.daily; return `<div class="notif-card${n.unread ? ' unread' : ''}" data-id="${n.id}">${n.unread ? '<span class="unread-dot"></span>' : ''}<div class="notif-icon ${meta.iconClass}">${meta.icon}</div><div class="notif-body"><div class="notif-header"><span class="notif-title">${n.title}</span><span class="notif-tag ${meta.tagClass}">${meta.tagLabel}</span></div><div class="notif-desc">${n.desc}</div>${renderProgressBar(n)}${renderActions(n)}<div class="notif-meta">${relTime(n.timestamp)}</div></div></div>`; }).join(''); }
+
+      document.getElementById('notifFeed').addEventListener('click', e => {
+        const card = e.target.closest('.notif-card[data-id]');
+        const btn = e.target.closest('[data-action]');
+        if (card && !btn) { const n = notifications.find(x => x.id === card.dataset.id); if (n && n.unread) { n.unread = false; ipcRenderer.send('mark-notification-read', n.id); render(); } return; }
+        if (!btn) return;
+        const { id, action } = btn.dataset;
+        const n = notifications.find(x => x.id === id);
+        switch (action) {
+          case 'dismiss': btn.closest('.notif-card').classList.add('dismissing'); setTimeout(() => { if (n) { n.dismissed = true; n.unread = false; n.actionRequired = false; } ipcRenderer.send('dismiss-notification', id); render(); }, 220); break;
+          case 'snooze': ipcRenderer.send('snooze-notification', id); notifications = notifications.filter(x => x.id !== id); showToast('Snoozed for 2 hours'); render(); break;
+          case 'open-pipeline': ipcRenderer.send('open-pipeline'); if (n) { n.unread = false; ipcRenderer.send('mark-notification-read', id); render(); } break;
+          case 'navigate-home': ipcRenderer.send('navigate-home'); if (n) { n.unread = false; ipcRenderer.send('mark-notification-read', id); render(); } break;
+          case 'open-url': if (n && n.jobUrl) ipcRenderer.send('open-url-in-home', n.jobUrl); if (n) { n.unread = false; ipcRenderer.send('mark-notification-read', id); render(); } break;
+          default: if (n) { n.unread = false; ipcRenderer.send('mark-notification-read', id); render(); }
+        }
+      });
+      document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => { btn.addEventListener('click', () => { activeTab = btn.dataset.tab; document.querySelectorAll('.tab-btn[data-tab]').forEach(b => b.classList.toggle('active', b === btn)); render(); }); });
+      document.getElementById('markAllReadBtn').addEventListener('click', () => { notifications.forEach(n => n.unread = false); ipcRenderer.send('mark-all-notifications-read'); render(); showToast('All marked as read'); });
+      document.getElementById('clearAllBtn').addEventListener('click', () => { if (confirm('Clear all notifications? This cannot be undone.')) { ipcRenderer.send('clear-all-notifications'); notifications = []; render(); showToast('Notifications cleared'); } });
+    });
+  </script>
+</body>
+
+</html>

@@ -3,6 +3,10 @@
 
 <head>
     <script>
+        (function () {
+            const t = localStorage.getItem('hf-theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', t);
+        })();
         window.lucide = require(
             require("path").join(__dirname, "..", "..", "node_modules", "lucide", "dist", "umd", "lucide.min.js"),
         );
@@ -10,7 +14,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pipeline — HiredFinally</title>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap"
         rel="stylesheet" />
     <style>
         *,
@@ -22,14 +27,19 @@
         }
 
         input,
-        textarea {
+        textarea,
+        select {
             -webkit-user-select: text;
             user-select: text;
         }
 
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+        }
+
         ::-webkit-scrollbar {
-            width: 3px;
-            height: 3px;
+            width: 4px;
+            height: 4px;
         }
 
         ::-webkit-scrollbar-track {
@@ -37,90 +47,173 @@
         }
 
         ::-webkit-scrollbar-thumb {
-            background: #e2e2e2;
+            background: rgba(255, 255, 255, 0.08);
             border-radius: 4px;
         }
 
-        input[type="number"]::-webkit-inner-spin-button,
-        input[type="number"]::-webkit-outer-spin-button {
-            -webkit-appearance: none;
+        [data-theme="light"] ::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.12);
         }
 
         :root {
-            --black: #111111;
-            --white: #ffffff;
-            --bg: #ffffff;
-            --card: #f0f0f0;
-            --border: #e2e2e2;
-            --gray-400: #aaaaaa;
-            --gray-600: #666666;
-            --radius: 14px;
-            --radius-sm: 9px;
-            --sidebar-w: 110px;
-            --gap: 22px;
+            --bg: #0c0e1a;
+            --surface: #111420;
+            --card: #1a1d2e;
+            --card-hover: #1e2135;
+            --border: rgba(255, 255, 255, 0.07);
+            --border-s: rgba(255, 255, 255, 0.05);
+            --text: #e4e6f0;
+            --text-2: #7880a0;
+            --text-3: #404565;
+            --accent: #6b5fff;
+            --accent-h: #7d72ff;
             --amber: #f0a05a;
             --green: #3ecf8e;
             --blue: #5ab0f0;
+            --red: #ef4444;
+            --radius: 16px;
+            --radius-sm: 10px;
+            --sidebar-w: 72px;
+            --gap: 14px;
+            --tb-icon: rgba(255, 255, 255, 0.35);
+            --tb-icon-h: rgba(255, 255, 255, 0.8);
+        }
+
+        [data-theme="light"] {
+            --bg: #eef0f8;
+            --surface: #ffffff;
+            --card: #f0f1fa;
+            --card-hover: #e8eaf6;
+            --border: rgba(0, 0, 0, 0.07);
+            --border-s: rgba(0, 0, 0, 0.04);
+            --text: #0f1128;
+            --text-2: #606880;
+            --text-3: #aab0cc;
+            --tb-icon: rgba(0, 0, 0, 0.45);
+            --tb-icon-h: rgba(0, 0, 0, 0.8);
         }
 
         html,
         body {
             width: 100%;
             height: 100%;
-            font-family: "Space Grotesk", sans-serif;
+            font-family: "DM Sans", sans-serif;
             background: var(--bg);
             overflow: hidden;
-            color: var(--black);
+            color: var(--text);
             -webkit-user-select: none;
             user-select: none;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .titlebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 38px;
+            z-index: 9999;
+            -webkit-app-region: drag;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+        }
+
+        .titlebar-drag-handle {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 3px;
+            background: var(--border);
+            border-radius: 99px;
+            pointer-events: none;
+        }
+
+        .tb-btn {
+            width: 46px;
+            height: 38px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s;
+            -webkit-app-region: no-drag;
+        }
+
+        .tb-btn svg {
+            width: 13px;
+            height: 13px;
+            stroke: var(--tb-icon);
+            stroke-width: 2.5;
+            pointer-events: none;
+            transition: stroke 0.15s;
+        }
+
+        .tb-minimize:hover,
+        .tb-maximize:hover {
+            background: rgba(128, 128, 128, 0.15);
+        }
+
+        .tb-minimize:hover svg,
+        .tb-maximize:hover svg {
+            stroke: var(--tb-icon-h);
+        }
+
+        .tb-close:hover {
+            background: #e81123;
+        }
+
+        .tb-close:hover svg {
+            stroke: #fff !important;
         }
 
         .app {
             display: flex;
             width: 100vw;
             height: 100vh;
-            padding: 38px var(--gap);
-            gap: var(--gap);
+            padding: 38px 18px 18px;
+            gap: 14px;
         }
 
-        /* ── Sidebar ── */
-        .sidebar {
+        .hf-sidebar {
             width: var(--sidebar-w);
             flex-shrink: 0;
-            background: var(--black);
-            border-radius: 18px;
+            background: #0a0c18;
+            border-radius: var(--radius);
+            border: 1px solid rgba(255, 255, 255, 0.04);
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 14px 0;
-            position: relative;
-            z-index: 50;
+            padding: 16px 0;
         }
 
-        .sidebar-logo {
-            font-size: 19px;
+        .hf-logo {
+            font-size: 16px;
             font-weight: 700;
-            color: var(--white);
+            color: #fff;
             letter-spacing: -0.5px;
-            margin-bottom: 28px;
+            margin-bottom: 24px;
         }
 
-        .sidebar-nav {
+        .hf-nav {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
             flex: 1;
         }
 
-        .sidebar-bottom {
+        .hf-bottom {
             margin-top: auto;
         }
 
-        .nav-item {
-            width: 44px;
-            height: 44px;
-            border-radius: 11px;
+        .hf-nav-item {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -128,110 +221,115 @@
             transition: background 0.15s;
         }
 
-        .nav-item:hover {
-            background: rgba(255, 255, 255, 0.1);
+        .hf-nav-item:hover {
+            background: rgba(255, 255, 255, 0.07);
         }
 
-        .nav-item.active {
-            background: rgba(255, 255, 255, 0.16);
+        .hf-nav-item.active {
+            background: rgba(107, 95, 255, 0.2);
         }
 
-        .nav-item svg {
-            width: 20px;
-            height: 20px;
-            stroke: rgba(255, 255, 255, 0.6);
+        .hf-nav-item svg {
+            width: 18px;
+            height: 18px;
+            stroke: rgba(255, 255, 255, 0.35);
             stroke-width: 2;
             transition: stroke 0.15s;
         }
 
-        .nav-item.active svg {
-            stroke: #ffffff;
+        .hf-nav-item.active svg {
+            stroke: var(--accent-h);
         }
 
-        .nav-item:hover svg {
-            stroke: #ffffff;
+        .hf-nav-item:hover svg {
+            stroke: rgba(255, 255, 255, 0.7);
         }
 
-        /* ── Main ── */
-        .main {
+        .main-card {
+            flex: 1;
+            min-width: 0;
+            background: var(--surface);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        .inner {
             flex: 1;
             display: flex;
             flex-direction: column;
-            min-width: 0;
-            padding-top: 22px;
-            padding-left: 32px;
-            padding-right: 32px;
+            min-height: 0;
+            padding: 22px 28px 0;
         }
 
         .top-bar {
             display: flex;
             align-items: center;
             gap: 12px;
-            padding-bottom: 14px;
+            padding-bottom: 16px;
             flex-shrink: 0;
         }
 
         .page-title {
             font-size: 22px;
             font-weight: 700;
-            color: var(--black);
+            color: var(--text);
             letter-spacing: -0.3px;
             flex: 1;
         }
 
-        .top-bar-right {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .tb-btn {
+        .toolbar-btn {
             display: flex;
             align-items: center;
             gap: 6px;
-            padding: 7px 14px;
-            border-radius: var(--radius-sm);
+            padding: 7px 16px;
+            border-radius: 99px;
             border: 1px solid var(--border);
-            background: var(--white);
-            font-family: "Space Grotesk", sans-serif;
+            background: transparent;
+            font-family: "DM Sans", sans-serif;
             font-size: 12px;
             font-weight: 500;
-            color: var(--gray-600);
+            color: var(--text-2);
             cursor: pointer;
-            transition: border-color 0.15s, color 0.15s;
+            transition: border-color 0.15s, color 0.15s, background 0.15s;
         }
 
-        .tb-btn:hover {
-            border-color: var(--black);
-            color: var(--black);
+        .toolbar-btn:hover {
+            border-color: var(--accent);
+            color: var(--text);
+            background: rgba(107, 95, 255, 0.06);
         }
 
-        .tb-btn svg {
+        .toolbar-btn svg {
             width: 14px;
             height: 14px;
             stroke: currentColor;
             stroke-width: 2;
         }
 
-        /* ── Stats ── */
         .stats-strip {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 10px;
-            margin-bottom: 14px;
+            margin-bottom: 16px;
             flex-shrink: 0;
         }
 
         .stat-card {
             background: var(--card);
-            border-radius: var(--radius);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-s);
             padding: 16px;
+            transition: background 0.2s;
         }
 
         .stat-number {
-            font-size: 32px;
+            font-size: 30px;
             font-weight: 700;
-            color: var(--black);
+            color: var(--text);
             line-height: 1;
             letter-spacing: -1px;
         }
@@ -250,12 +348,11 @@
 
         .stat-label {
             font-size: 11px;
-            color: var(--gray-600);
+            color: var(--text-2);
             margin-top: 4px;
             font-weight: 500;
         }
 
-        /* ── Controls ── */
         .table-controls {
             display: flex;
             align-items: center;
@@ -267,9 +364,10 @@
 
         .tabs {
             display: flex;
-            gap: 4px;
+            gap: 3px;
             background: var(--card);
             border-radius: var(--radius-sm);
+            border: 1px solid var(--border-s);
             padding: 3px;
         }
 
@@ -277,26 +375,25 @@
             display: flex;
             align-items: center;
             gap: 6px;
-            padding: 6px 13px;
+            padding: 5px 12px;
             border-radius: 7px;
-            font-family: "Space Grotesk", sans-serif;
+            font-family: "DM Sans", sans-serif;
             font-size: 12px;
             font-weight: 500;
-            color: var(--gray-600);
+            color: var(--text-2);
             border: none;
             background: transparent;
             cursor: pointer;
-            transition: color 0.15s, background 0.15s, box-shadow 0.15s;
+            transition: color 0.15s, background 0.15s;
         }
 
         .tab-btn:hover {
-            color: var(--black);
+            color: var(--text);
         }
 
         .tab-btn.active {
-            background: var(--white);
-            color: var(--black);
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+            background: var(--accent);
+            color: #fff;
         }
 
         .tab-count {
@@ -304,14 +401,15 @@
             font-weight: 700;
             padding: 1px 6px;
             border-radius: 20px;
-            background: var(--border);
-            color: var(--gray-600);
+            background: rgba(255, 255, 255, 0.15);
+            color: inherit;
             min-width: 18px;
             text-align: center;
         }
 
-        .tab-btn.active .tab-count {
-            background: var(--card);
+        .tab-btn:not(.active) .tab-count {
+            background: var(--border);
+            color: var(--text-3);
         }
 
         .search-input {
@@ -319,30 +417,33 @@
             max-width: 280px;
             height: 34px;
             background: var(--card);
-            border: none;
+            border: 1px solid var(--border-s);
             border-radius: var(--radius-sm);
             padding: 0 12px;
-            font-family: "Space Grotesk", sans-serif;
-            font-size: 12px;
-            color: var(--black);
+            font-family: "DM Sans", sans-serif;
+            font-size: 13px;
+            color: var(--text);
             outline: none;
-            -webkit-user-select: text;
-            user-select: text;
+            transition: border-color 0.15s;
         }
 
         .search-input::placeholder {
-            color: var(--gray-400);
+            color: var(--text-3);
+        }
+
+        .search-input:focus {
+            border-color: var(--accent);
         }
 
         .sort-select {
             height: 34px;
             padding: 0 10px;
             background: var(--card);
-            border: none;
+            border: 1px solid var(--border-s);
             border-radius: var(--radius-sm);
-            font-family: "Space Grotesk", sans-serif;
+            font-family: "DM Sans", sans-serif;
             font-size: 12px;
-            color: var(--gray-600);
+            color: var(--text-2);
             outline: none;
             cursor: pointer;
         }
@@ -350,16 +451,17 @@
         .item-count {
             margin-left: auto;
             font-size: 11px;
-            color: var(--gray-400);
+            color: var(--text-3);
             white-space: nowrap;
         }
 
-        /* ── Table ── */
         .table-wrap {
             flex: 1;
             overflow-y: auto;
-            border-radius: var(--radius);
-            border: 1px solid var(--border);
+            min-height: 0;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-s);
+            margin-bottom: 16px;
         }
 
         table {
@@ -376,7 +478,7 @@
 
         thead tr {
             background: var(--card);
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid var(--border-s);
         }
 
         th {
@@ -386,9 +488,8 @@
             font-weight: 700;
             letter-spacing: 0.1em;
             text-transform: uppercase;
-            color: var(--gray-400);
+            color: var(--text-3);
             white-space: nowrap;
-            overflow: hidden;
             cursor: pointer;
             transition: color 0.15s;
             -webkit-user-select: none;
@@ -396,11 +497,11 @@
         }
 
         th:hover {
-            color: var(--black);
+            color: var(--text);
         }
 
         th.sorted {
-            color: var(--black);
+            color: var(--text-2);
         }
 
         th .sort-arr {
@@ -410,7 +511,7 @@
         }
 
         tbody tr {
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid var(--border-s);
             transition: background 0.1s;
         }
 
@@ -419,13 +520,13 @@
         }
 
         tbody tr:hover {
-            background: var(--card);
+            background: var(--card-hover);
         }
 
         td {
             padding: 11px 14px;
-            font-size: 12px;
-            color: var(--gray-600);
+            font-size: 13px;
+            color: var(--text-2);
             vertical-align: middle;
             overflow: hidden;
             max-width: 0;
@@ -434,19 +535,19 @@
         .cell-title {
             font-size: 13px;
             font-weight: 600;
-            color: var(--black);
+            color: var(--text);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
         .cell-title.pending {
-            color: var(--gray-400);
+            color: var(--text-3);
         }
 
         .cell-sub {
             font-size: 11px;
-            color: var(--gray-400);
+            color: var(--text-3);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -458,12 +559,12 @@
             align-items: center;
             gap: 5px;
             padding: 3px 8px;
-            border-radius: 5px;
-            background: var(--white);
-            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--card);
+            border: 1px solid var(--border-s);
             font-size: 10px;
             font-weight: 500;
-            color: var(--gray-600);
+            color: var(--text-2);
             white-space: nowrap;
             max-width: 100%;
             overflow: hidden;
@@ -474,7 +575,7 @@
             width: 12px;
             height: 12px;
             border-radius: 2px;
-            opacity: 0.7;
+            opacity: 0.6;
             flex-shrink: 0;
         }
 
@@ -487,7 +588,7 @@
 
         .link-url {
             font-size: 10px;
-            color: var(--gray-400);
+            color: var(--text-3);
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -497,56 +598,53 @@
 
         .open-btn {
             flex-shrink: 0;
-            padding: 3px 8px;
-            border-radius: 5px;
-            background: var(--card);
-            border: 1px solid var(--border);
+            padding: 3px 10px;
+            border-radius: 99px;
+            background: rgba(107, 95, 255, 0.1);
+            border: 1px solid rgba(107, 95, 255, 0.25);
             font-size: 10px;
             font-weight: 600;
-            color: var(--gray-600);
+            color: var(--accent-h);
             cursor: pointer;
-            transition: background 0.15s, color 0.15s, border-color 0.15s;
+            transition: background 0.15s;
             white-space: nowrap;
         }
 
         .open-btn:hover {
-            background: var(--black);
-            color: var(--white);
-            border-color: var(--black);
+            background: rgba(107, 95, 255, 0.2);
         }
 
         .status-pill {
             display: inline-block;
-            padding: 3px 9px;
-            border-radius: 20px;
+            padding: 3px 10px;
+            border-radius: 99px;
             font-size: 10px;
             font-weight: 700;
             border: 1px solid;
             white-space: nowrap;
-            letter-spacing: 0.04em;
         }
 
         .status-IN_PROGRESS {
             background: rgba(240, 160, 90, 0.12);
-            color: #8a5510;
-            border-color: rgba(240, 160, 90, 0.35);
+            color: var(--amber);
+            border-color: rgba(240, 160, 90, 0.3);
         }
 
         .status-COMPLETED {
             background: rgba(62, 207, 142, 0.12);
-            color: #156a42;
-            border-color: rgba(62, 207, 142, 0.35);
+            color: var(--green);
+            border-color: rgba(62, 207, 142, 0.3);
         }
 
         .date-rel {
             font-size: 12px;
-            color: var(--gray-600);
+            color: var(--text-2);
             white-space: nowrap;
         }
 
         .date-abs {
             font-size: 10px;
-            color: var(--gray-400);
+            color: var(--text-3);
             margin-top: 2px;
             white-space: nowrap;
         }
@@ -559,18 +657,18 @@
             font-weight: 600;
             letter-spacing: 0.08em;
             text-transform: uppercase;
-            color: var(--gray-400);
+            color: var(--text-3);
             padding: 2px 7px;
             border-radius: 4px;
             background: var(--card);
-            border: 1px solid var(--border);
+            border: 1px solid var(--border-s);
         }
 
         .extracting-dot {
             width: 5px;
             height: 5px;
             border-radius: 50%;
-            background: var(--gray-400);
+            background: var(--text-3);
             animation: pulse-dot 1.2s ease-in-out infinite;
         }
 
@@ -592,10 +690,10 @@
             display: none;
             margin-top: 5px;
             padding: 2px 8px;
-            border-radius: 4px;
-            background: #fff0f0;
-            color: #c0392b;
-            border: 1px solid #f5c0c0;
+            border-radius: 99px;
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--red);
+            border: 1px solid rgba(239, 68, 68, 0.25);
             font-size: 10px;
             font-weight: 600;
             cursor: pointer;
@@ -607,7 +705,7 @@
         }
 
         .del-btn:hover {
-            background: #fde0e0;
+            background: rgba(239, 68, 68, 0.2);
         }
 
         .empty-state {
@@ -622,105 +720,44 @@
 
         .empty-icon {
             font-size: 40px;
-            opacity: 0.12;
+            opacity: 0.1;
             line-height: 1;
         }
 
         .empty-title {
             font-size: 13px;
             font-weight: 700;
-            color: var(--gray-400);
+            color: var(--text-3);
         }
 
         .empty-desc {
             font-size: 12px;
-            color: var(--gray-400);
+            color: var(--text-3);
             max-width: 260px;
             line-height: 1.6;
         }
 
         .hf-toast {
             position: fixed;
-            bottom: 24px;
-            right: 24px;
-            background: var(--black);
-            color: var(--white);
-            font-size: 12px;
-            font-weight: 500;
-            padding: 10px 18px;
-            border-radius: var(--radius-sm);
+            bottom: 22px;
+            right: 22px;
+            background: var(--accent);
+            color: #fff;
+            font-size: 12.5px;
+            font-weight: 600;
+            padding: 10px 20px;
+            border-radius: 99px;
             opacity: 0;
             transform: translateY(6px);
             transition: opacity 0.2s, transform 0.2s;
             pointer-events: none;
-            z-index: 9999;
+            z-index: 99999;
+            box-shadow: 0 4px 24px rgba(107, 95, 255, 0.4);
         }
 
         .hf-toast.show {
             opacity: 1;
             transform: translateY(0);
-        }
-
-        /* ── Titlebar ── */
-        .titlebar {
-            position: fixed;
-            top: 0;
-            right: 0;
-            display: flex;
-            z-index: 9999;
-            -webkit-app-region: drag;
-            width: 100%;
-            height: 38px;
-            justify-content: flex-end;
-            align-items: center;
-        }
-
-        .titlebar-drag-handle {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 48px;
-            height: 3px;
-            background: #d0d0d0;
-            border-radius: 99px;
-            pointer-events: none;
-        }
-
-        .win-btn {
-            width: 46px;
-            height: 38px;
-            border: none;
-            background: transparent;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.15s;
-            -webkit-app-region: no-drag;
-        }
-
-        .win-btn svg {
-            width: 14px;
-            height: 14px;
-            stroke: #555;
-            stroke-width: 2.5;
-            pointer-events: none;
-        }
-
-        .win-minimize:hover {
-            background: #e0e0e0;
-        }
-
-        .win-maximize:hover {
-            background: #e0e0e0;
-        }
-
-        .win-close:hover {
-            background: #e81123;
-        }
-
-        .win-close:hover svg {
-            stroke: #fff;
         }
     </style>
 </head>
@@ -728,276 +765,133 @@
 <body>
     <div class="titlebar">
         <div class="titlebar-drag-handle"></div>
-        <button class="win-btn win-minimize" id="btn-minimize"><svg viewBox="0 0 24 24" fill="none">
+        <button class="tb-btn tb-minimize" id="btn-minimize"><svg viewBox="0 0 24 24" fill="none"
+                stroke-linecap="round">
                 <line x1="5" y1="12" x2="19" y2="12" />
             </svg></button>
-        <button class="win-btn win-maximize" id="btn-maximize"><svg viewBox="0 0 24 24" fill="none">
-                <rect x="3" y="3" width="18" height="18" rx="2" />
-            </svg></button>
-        <button class="win-btn win-close" id="btn-close"><svg viewBox="0 0 24 24" fill="none">
+        <button class="tb-btn tb-maximize" id="btn-maximize"><i id="maximizeIcon" data-lucide="maximize"></i></button>
+        <button class="tb-btn tb-close" id="btn-close"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round">
                 <line x1="18" y1="6" x2="6" y2="18" />
                 <line x1="6" y1="6" x2="18" y2="18" />
             </svg></button>
     </div>
-
     <div class="app">
-        <aside class="sidebar">
-            <div class="sidebar-logo">HF.</div>
-            <nav class="sidebar-nav">
-                <div class="nav-item" id="navHome" title="Home"><i data-lucide="house"></i></div>
-                <div class="nav-item active" id="navPipeline" title="Applications"><i data-lucide="briefcase"></i></div>
-                <div class="nav-item" title="Notifications"><i data-lucide="bell"></i></div>
-                <div class="nav-item" title="Analytics"><i data-lucide="bar-chart-2"></i></div>
-                <div class="nav-item" id="navSettings" title="Settings"><i data-lucide="settings"></i></div>
+        <aside class="hf-sidebar">
+            <div class="hf-logo">HF.</div>
+            <nav class="hf-nav">
+                <div class="hf-nav-item" id="navHome" title="Home"><i data-lucide="house"></i></div>
+                <div class="hf-nav-item active" title="Applications"><i data-lucide="briefcase"></i></div>
+                <div class="hf-nav-item" id="navNotifications" title="Notifications"><i data-lucide="bell"></i></div>
+                <div class="hf-nav-item" title="Analytics"><i data-lucide="bar-chart-2"></i></div>
+                <div class="hf-nav-item" id="navSettings" title="Settings"><i data-lucide="settings"></i></div>
             </nav>
-            <div class="sidebar-bottom">
-                <div class="nav-item" title="Account"><i data-lucide="user"></i></div>
+            <div class="hf-bottom">
+                <div class="hf-nav-item" title="Account"><i data-lucide="user"></i></div>
             </div>
         </aside>
-
-        <div class="main">
-            <div class="top-bar">
-                <div class="page-title">Applications</div>
-                <div class="top-bar-right">
-                    <button class="tb-btn" id="refreshBtn"><i data-lucide="refresh-cw"></i> Refresh</button>
+        <div class="main-card">
+            <div class="inner">
+                <div class="top-bar">
+                    <div class="page-title">Applications</div>
+                    <button class="toolbar-btn" id="refreshBtn"><i data-lucide="refresh-cw"></i> Refresh</button>
                 </div>
-            </div>
-            <div class="stats-strip">
-                <div class="stat-card">
-                    <div class="stat-number" id="statTotal">—</div>
-                    <div class="stat-label">Total</div>
+                <div class="stats-strip">
+                    <div class="stat-card">
+                        <div class="stat-number" id="statTotal">—</div>
+                        <div class="stat-label">Total</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number amber" id="statInProgress">—</div>
+                        <div class="stat-label">In Progress</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number green" id="statCompleted">—</div>
+                        <div class="stat-label">Submitted</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number blue" id="statToday">—</div>
+                        <div class="stat-label">Today</div>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-number amber" id="statInProgress">—</div>
-                    <div class="stat-label">In Progress</div>
+                <div class="table-controls">
+                    <div class="tabs">
+                        <button class="tab-btn active" data-tab="all">All <span class="tab-count"
+                                id="countAll">0</span></button>
+                        <button class="tab-btn" data-tab="IN_PROGRESS">In Progress <span class="tab-count"
+                                id="countInProgress">0</span></button>
+                        <button class="tab-btn" data-tab="COMPLETED">Submitted <span class="tab-count"
+                                id="countCompleted">0</span></button>
+                    </div>
+                    <input class="search-input" id="searchInput" type="text" placeholder="Search role, company, URL…" />
+                    <select class="sort-select" id="sortSelect">
+                        <option value="date-desc">Newest first</option>
+                        <option value="date-asc">Oldest first</option>
+                        <option value="title">By job title</option>
+                        <option value="company">By company</option>
+                        <option value="domain">By domain</option>
+                        <option value="status">By status</option>
+                    </select>
+                    <span class="item-count" id="itemCount">— items</span>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-number green" id="statCompleted">—</div>
-                    <div class="stat-label">Submitted</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number blue" id="statToday">—</div>
-                    <div class="stat-label">Today</div>
-                </div>
-            </div>
-            <div class="table-controls">
-                <div class="tabs">
-                    <button class="tab-btn active" data-tab="all">All <span class="tab-count"
-                            id="countAll">0</span></button>
-                    <button class="tab-btn" data-tab="IN_PROGRESS">In Progress <span class="tab-count"
-                            id="countInProgress">0</span></button>
-                    <button class="tab-btn" data-tab="COMPLETED">Submitted <span class="tab-count"
-                            id="countCompleted">0</span></button>
-                </div>
-                <input class="search-input" id="searchInput" type="text" placeholder="Search role, company, URL…" />
-                <select class="sort-select" id="sortSelect">
-                    <option value="date-desc">Newest first</option>
-                    <option value="date-asc">Oldest first</option>
-                    <option value="title">By job title</option>
-                    <option value="company">By company</option>
-                    <option value="domain">By domain</option>
-                    <option value="status">By status</option>
-                </select>
-                <span class="item-count" id="itemCount">— items</span>
-            </div>
-            <div class="table-wrap">
-                <table>
-                    <thead>
-                        <tr>
-                            <th style="width:22%;" data-sort="title">Role <span class="sort-arr">↕</span></th>
-                            <th style="width:16%;" data-sort="company">Company <span class="sort-arr">↕</span></th>
-                            <th style="width:14%;" data-sort="domain">Source <span class="sort-arr">↕</span></th>
-                            <th style="width:22%;">Link</th>
-                            <th style="width:10%;" data-sort="status">Status <span class="sort-arr">↕</span></th>
-                            <th style="width:16%;" data-sort="date">Applied <span class="sort-arr">↕</span></th>
-                        </tr>
-                    </thead>
-                    <tbody id="appsBody"></tbody>
-                </table>
-                <div class="empty-state" id="emptyState" style="display:none;">
-                    <div class="empty-icon">📋</div>
-                    <div class="empty-title">No applications yet</div>
-                    <div class="empty-desc">Applications you start or complete on job boards will appear here
-                        automatically.</div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width:22%;" data-sort="title">Role <span class="sort-arr">↕</span></th>
+                                <th style="width:16%;" data-sort="company">Company <span class="sort-arr">↕</span></th>
+                                <th style="width:14%;" data-sort="domain">Source <span class="sort-arr">↕</span></th>
+                                <th style="width:22%;">Link</th>
+                                <th style="width:10%;" data-sort="status">Status <span class="sort-arr">↕</span></th>
+                                <th style="width:16%;" data-sort="date">Applied <span class="sort-arr">↕</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="appsBody"></tbody>
+                    </table>
+                    <div class="empty-state" id="emptyState" style="display:none;">
+                        <div class="empty-icon">📋</div>
+                        <div class="empty-title">No applications yet</div>
+                        <div class="empty-desc">Applications you start or complete on job boards will appear here
+                            automatically.</div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-
     <div class="hf-toast" id="hfToast"></div>
-
     <script>
         window.addEventListener("load", () => {
             lucide.createIcons();
             const { ipcRenderer } = require("electron");
-
+            const applyTheme = t => { document.documentElement.setAttribute('data-theme', t); localStorage.setItem('hf-theme', t); };
+            ipcRenderer.on('apply-theme', (_e, t) => applyTheme(t));
             document.getElementById("btn-minimize").addEventListener("click", () => ipcRenderer.send("window-minimize"));
             document.getElementById("btn-maximize").addEventListener("click", () => ipcRenderer.send("window-maximize"));
             document.getElementById("btn-close").addEventListener("click", () => ipcRenderer.send("window-close"));
-
-            document.getElementById("navPipeline").classList.add("active");
+            function updateMaximizeIcon(v) { document.getElementById("maximizeIcon").setAttribute("data-lucide", v ? "minimize" : "maximize"); lucide.createIcons(); }
+            ipcRenderer.on("window-maximized", () => updateMaximizeIcon(true));
+            ipcRenderer.on("window-unmaximized", () => updateMaximizeIcon(false));
             document.getElementById("navHome").addEventListener("click", () => ipcRenderer.send("navigate-home"));
+            document.getElementById("navNotifications").addEventListener("click", () => ipcRenderer.send("open-notifications"));
             document.getElementById("navSettings").addEventListener("click", () => ipcRenderer.send("open-settings"));
-
-            function showToast(msg) {
-                const t = document.getElementById("hfToast");
-                t.textContent = msg; t.classList.add("show");
-                setTimeout(() => t.classList.remove("show"), 2400);
-            }
-
-            function getDomain(url) {
-                try { const h = new URL(url).hostname; const p = h.split('.'); return p.length >= 2 ? p.slice(-2).join('.') : h; }
-                catch { return url; }
-            }
+            function showToast(msg) { const t = document.getElementById("hfToast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2400); }
+            function getDomain(url) { try { const h = new URL(url).hostname, p = h.split('.'); return p.length >= 2 ? p.slice(-2).join('.') : h; } catch { return url; } }
             function getFavicon(url) { try { return new URL(url).origin + "/favicon.ico"; } catch { return ""; } }
-            function relTime(iso) {
-                if (!iso) return "—";
-                const d = new Date(iso.includes("T") ? iso : iso.replace(" ", "T") + "Z");
-                const diff = Date.now() - d.getTime();
-                const m = Math.floor(diff / 60000), h = Math.floor(diff / 3600000), day = Math.floor(diff / 86400000);
-                if (m < 2) return "just now";
-                if (m < 60) return `${m}m ago`;
-                if (h < 24) return `${h}h ago`;
-                if (day < 7) return `${day}d ago`;
-                return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-            }
-            function absDate(iso) {
-                if (!iso) return "";
-                const d = new Date(iso.includes("T") ? iso : iso.replace(" ", "T") + "Z");
-                return d.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" });
-            }
-            function isToday(iso) {
-                if (!iso) return false;
-                const d = new Date(iso.includes("T") ? iso : iso.replace(" ", "T") + "Z"), n = new Date();
-                return d.getDate() === n.getDate() && d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear();
-            }
+            function relTime(iso) { if (!iso) return "—"; const d = new Date(iso.includes("T") ? iso : iso.replace(" ", "T") + "Z"); const diff = Date.now() - d.getTime(); const m = Math.floor(diff / 60000), h = Math.floor(diff / 3600000), day = Math.floor(diff / 86400000); if (m < 2) return "just now"; if (m < 60) return m + "m ago"; if (h < 24) return h + "h ago"; if (day < 7) return day + "d ago"; return d.toLocaleDateString("en-US", { month: "short", day: "numeric" }); }
+            function absDate(iso) { if (!iso) return ""; const d = new Date(iso.includes("T") ? iso : iso.replace(" ", "T") + "Z"); return d.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }); }
+            function isToday(iso) { if (!iso) return false; const d = new Date(iso.includes("T") ? iso : iso.replace(" ", "T") + "Z"), n = new Date(); return d.getDate() === n.getDate() && d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear(); }
             function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
-
-            let allApps = [], activeTab = "all", searchQ = "", sortMode = "date-desc";
-            let rafPending = false, searchTimer = null;
-
-            function filtered() {
-                let arr = [...allApps];
-                if (activeTab !== "all") arr = arr.filter(a => a.status === activeTab);
-                if (searchQ) {
-                    const q = searchQ.toLowerCase();
-                    arr = arr.filter(a =>
-                        a.url.toLowerCase().includes(q) ||
-                        getDomain(a.url).includes(q) ||
-                        (a.job_title || "").toLowerCase().includes(q) ||
-                        (a.company || "").toLowerCase().includes(q)
-                    );
-                }
-                switch (sortMode) {
-                    case "date-desc": arr.sort((a, b) => new Date(b.applied_at) - new Date(a.applied_at)); break;
-                    case "date-asc": arr.sort((a, b) => new Date(a.applied_at) - new Date(b.applied_at)); break;
-                    case "title": arr.sort((a, b) => (a.job_title || "").localeCompare(b.job_title || "")); break;
-                    case "company": arr.sort((a, b) => (a.company || "").localeCompare(b.company || "")); break;
-                    case "domain": arr.sort((a, b) => getDomain(a.url).localeCompare(getDomain(b.url))); break;
-                    case "status": arr.sort((a, b) => a.status.localeCompare(b.status)); break;
-                }
-                return arr;
-            }
-
-            function scheduleRender() {
-                if (rafPending) return;
-                rafPending = true;
-                requestAnimationFrame(() => { rafPending = false; render(); });
-            }
-
-            function render() {
-                const apps = filtered();
-                const inP = allApps.filter(a => a.status === "IN_PROGRESS").length;
-                const comp = allApps.filter(a => a.status === "COMPLETED").length;
-                const tod = allApps.filter(a => isToday(a.applied_at)).length;
-
-                document.getElementById("statTotal").textContent = allApps.length;
-                document.getElementById("statInProgress").textContent = inP;
-                document.getElementById("statCompleted").textContent = comp;
-                document.getElementById("statToday").textContent = tod;
-                document.getElementById("countAll").textContent = allApps.length;
-                document.getElementById("countInProgress").textContent = inP;
-                document.getElementById("countCompleted").textContent = comp;
-                document.getElementById("itemCount").textContent = `${apps.length} item${apps.length === 1 ? "" : "s"}`;
-
-                const tbody = document.getElementById("appsBody");
-                const empty = document.getElementById("emptyState");
-                if (apps.length === 0) {
-                    tbody.innerHTML = "";
-                    empty.style.display = "flex";
-                    empty.querySelector(".empty-title").textContent = searchQ ? "No matches" : activeTab !== "all" ? "Nothing here yet" : "No applications yet";
-                    empty.querySelector(".empty-desc").textContent = searchQ ? "Try a different search term." : "Applications you start or complete on job boards will appear here automatically.";
-                    return;
-                }
-                empty.style.display = "none";
-                tbody.innerHTML = apps.map(app => {
-                    const domain = getDomain(app.url);
-                    const favicon = getFavicon(app.url);
-                    const roleCell = app.job_title
-                        ? `<div class="cell-title">${esc(app.job_title)}</div>`
-                        : `<div class="cell-title pending"><span class="extracting-badge"><span class="extracting-dot"></span>extracting</span></div>`;
-                    const compCell = app.company
-                        ? `<span class="cell-sub" style="color:var(--gray-600);font-size:12px;">${esc(app.company)}</span>`
-                        : `<span style="color:var(--gray-400);font-size:11px;">—</span>`;
-                    const statusLabel = app.status === "IN_PROGRESS" ? "In Progress" : "Submitted";
-                    return `<tr data-url="${esc(app.url)}">
-                        <td>${roleCell}</td>
-                        <td>${compCell}</td>
-                        <td><div class="domain-chip"><img class="domain-favicon" src="${esc(favicon)}" onerror="this.style.display='none'" alt="">${esc(domain)}</div></td>
-                        <td><div class="link-wrap"><span class="link-url" title="${esc(app.url)}">${esc(app.url)}</span><button class="open-btn" data-url="${esc(app.url)}">↗ Open</button></div></td>
-                        <td><span class="status-pill status-${app.status}">${statusLabel}</span></td>
-                        <td><div class="date-rel">${relTime(app.applied_at)}</div><div class="date-abs">${absDate(app.applied_at)}</div><button class="del-btn" data-url="${esc(app.url)}">Remove</button></td>
-                    </tr>`;
-                }).join("");
-            }
-
+            let allApps = [], activeTab = "all", searchQ = "", sortMode = "date-desc", rafPending = false, searchTimer = null;
+            function filtered() { let arr = [...allApps]; if (activeTab !== "all") arr = arr.filter(a => a.status === activeTab); if (searchQ) { const q = searchQ.toLowerCase(); arr = arr.filter(a => a.url.toLowerCase().includes(q) || getDomain(a.url).includes(q) || (a.job_title || "").toLowerCase().includes(q) || (a.company || "").toLowerCase().includes(q)); } switch (sortMode) { case "date-desc": arr.sort((a, b) => new Date(b.applied_at) - new Date(a.applied_at)); break; case "date-asc": arr.sort((a, b) => new Date(a.applied_at) - new Date(b.applied_at)); break; case "title": arr.sort((a, b) => (a.job_title || "").localeCompare(b.job_title || "")); break; case "company": arr.sort((a, b) => (a.company || "").localeCompare(b.company || "")); break; case "domain": arr.sort((a, b) => getDomain(a.url).localeCompare(getDomain(b.url))); break; case "status": arr.sort((a, b) => a.status.localeCompare(b.status)); break; }return arr; }
+            function scheduleRender() { if (rafPending) return; rafPending = true; requestAnimationFrame(() => { rafPending = false; render(); }); }
+            function render() { const apps = filtered(); const inP = allApps.filter(a => a.status === "IN_PROGRESS").length; const comp = allApps.filter(a => a.status === "COMPLETED").length; const tod = allApps.filter(a => isToday(a.applied_at)).length; document.getElementById("statTotal").textContent = allApps.length; document.getElementById("statInProgress").textContent = inP; document.getElementById("statCompleted").textContent = comp; document.getElementById("statToday").textContent = tod; document.getElementById("countAll").textContent = allApps.length; document.getElementById("countInProgress").textContent = inP; document.getElementById("countCompleted").textContent = comp; document.getElementById("itemCount").textContent = `${apps.length} item${apps.length === 1 ? "" : "s"}`; const tbody = document.getElementById("appsBody"); const empty = document.getElementById("emptyState"); if (apps.length === 0) { tbody.innerHTML = ""; empty.style.display = "flex"; empty.querySelector(".empty-title").textContent = searchQ ? "No matches" : activeTab !== "all" ? "Nothing here yet" : "No applications yet"; empty.querySelector(".empty-desc").textContent = searchQ ? "Try a different search term." : "Applications you start or complete on job boards will appear here automatically."; return; } empty.style.display = "none"; tbody.innerHTML = apps.map(app => { const domain = getDomain(app.url), favicon = getFavicon(app.url); const roleCell = app.job_title ? `<div class="cell-title">${esc(app.job_title)}</div>` : `<div class="cell-title pending"><span class="extracting-badge"><span class="extracting-dot"></span>extracting</span></div>`; const compCell = app.company ? `<span class="cell-sub">${esc(app.company)}</span>` : `<span style="color:var(--text-3);font-size:11px;">—</span>`; const statusLabel = app.status === "IN_PROGRESS" ? "In Progress" : "Submitted"; return `<tr data-url="${esc(app.url)}"><td>${roleCell}</td><td>${compCell}</td><td><div class="domain-chip"><img class="domain-favicon" src="${esc(favicon)}" onerror="this.style.display='none'" alt="">${esc(domain)}</div></td><td><div class="link-wrap"><span class="link-url" title="${esc(app.url)}">${esc(app.url)}</span><button class="open-btn" data-url="${esc(app.url)}">↗ Open</button></div></td><td><span class="status-pill status-${app.status}">${statusLabel}</span></td><td><div class="date-rel">${relTime(app.applied_at)}</div><div class="date-abs">${absDate(app.applied_at)}</div><button class="del-btn" data-url="${esc(app.url)}">Remove</button></td></tr>`; }).join(""); }
             function loadData() { ipcRenderer.send("get-all-apps"); }
             ipcRenderer.on("all-apps-data", (_e, data) => { allApps = data || []; scheduleRender(); });
             ipcRenderer.on("app-status-updated", () => loadData());
-
-            document.querySelectorAll(".tab-btn[data-tab]").forEach(btn => {
-                btn.addEventListener("click", () => {
-                    activeTab = btn.dataset.tab;
-                    document.querySelectorAll(".tab-btn[data-tab]").forEach(b => b.classList.toggle("active", b === btn));
-                    scheduleRender();
-                });
-            });
-
-            document.getElementById("searchInput").addEventListener("input", e => {
-                clearTimeout(searchTimer);
-                const val = e.target.value.trim();
-                searchTimer = setTimeout(() => { searchQ = val; scheduleRender(); }, 120);
-            });
-
+            document.querySelectorAll(".tab-btn[data-tab]").forEach(btn => { btn.addEventListener("click", () => { activeTab = btn.dataset.tab; document.querySelectorAll(".tab-btn[data-tab]").forEach(b => b.classList.toggle("active", b === btn)); scheduleRender(); }); });
+            document.getElementById("searchInput").addEventListener("input", e => { clearTimeout(searchTimer); const val = e.target.value.trim(); searchTimer = setTimeout(() => { searchQ = val; scheduleRender(); }, 120); });
             document.getElementById("sortSelect").addEventListener("change", e => { sortMode = e.target.value; scheduleRender(); });
-            document.querySelectorAll("th[data-sort]").forEach(th => {
-                th.addEventListener("click", () => {
-                    const s = th.dataset.sort;
-                    if (s === "date") sortMode = sortMode === "date-desc" ? "date-asc" : "date-desc";
-                    else if (s === "title") sortMode = "title";
-                    else if (s === "company") sortMode = "company";
-                    else if (s === "domain") sortMode = "domain";
-                    else if (s === "status") sortMode = "status";
-                    document.getElementById("sortSelect").value = sortMode;
-                    document.querySelectorAll("th[data-sort]").forEach(t => t.classList.toggle("sorted", t === th));
-                    scheduleRender();
-                });
-            });
-
-            document.getElementById("appsBody").addEventListener("click", e => {
-                const openBtn = e.target.closest(".open-btn");
-                if (openBtn) { ipcRenderer.send("open-url-in-home", openBtn.dataset.url); return; }
-                const delBtn = e.target.closest(".del-btn");
-                if (delBtn) {
-                    const url = delBtn.dataset.url;
-                    if (confirm(`Remove this application?\n\n${url}`)) {
-                        ipcRenderer.send("delete-app", url);
-                        allApps = allApps.filter(a => a.url !== url);
-                        scheduleRender(); showToast("Removed");
-                    }
-                }
-            });
-
+            document.querySelectorAll("th[data-sort]").forEach(th => { th.addEventListener("click", () => { const s = th.dataset.sort; if (s === "date") sortMode = sortMode === "date-desc" ? "date-asc" : "date-desc"; else sortMode = s; document.getElementById("sortSelect").value = sortMode; document.querySelectorAll("th[data-sort]").forEach(t => t.classList.toggle("sorted", t === th)); scheduleRender(); }); });
+            document.getElementById("appsBody").addEventListener("click", e => { const openBtn = e.target.closest(".open-btn"); if (openBtn) { ipcRenderer.send("open-url-in-home", openBtn.dataset.url); return; } const delBtn = e.target.closest(".del-btn"); if (delBtn) { const url = delBtn.dataset.url; if (confirm(`Remove this application?\n\n${url}`)) { ipcRenderer.send("delete-app", url); allApps = allApps.filter(a => a.url !== url); scheduleRender(); showToast("Removed"); } } });
             document.getElementById("refreshBtn").addEventListener("click", () => { loadData(); showToast("Refreshed"); });
             loadData();
         });

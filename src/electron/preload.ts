@@ -18,6 +18,7 @@ interface SignalSnapshot {
     hasCompletionText:    boolean;
     hasResumeUpload:      boolean;
     hasOverlay:           boolean;
+    hasEmbeddedATS:       boolean;   // ← new
     buttonFingerprint:    string;
 }
 
@@ -153,6 +154,99 @@ function detectCompletionToast(): boolean {
     return !!completionPhrases.find(p => bodyLower.includes(p));
 }
 
+// -- Embedded ATS iframe detection --------------------------------------------
+//
+// Some company career pages (e.g. spothero.com/careers/123?gh_jid=456) embed
+// the actual application form in an iframe from a third-party ATS.
+// The preload script runs in the top-level page context and cannot see inside
+// cross-origin iframes, so form/input counts come back as zero even though a
+// full application form is visible on screen.
+//
+// We detect this by checking:
+//   1. Whether any iframe src matches a known ATS domain
+//   2. Whether the URL contains known ATS query parameters (gh_jid, lever_job etc.)
+//   3. Whether the page contains ATS-specific embed container elements
+//
+// Any of these is sufficient to conclude the page is hosting an embedded
+// application form and should be treated as IN_PROGRESS.
+
+const ATS_IFRAME_DOMAINS = [
+    'greenhouse.io',
+    'boards.greenhouse.io',
+    'lever.co',
+    'jobs.lever.co',
+    'myworkdayjobs.com',
+    'workday.com',
+    'icims.com',
+    'taleo.net',
+    'jobvite.com',
+    'apply.workable.com',
+    'bamboohr.com',
+    'smartapply.indeed.com',
+    'indeedapply.com',
+    'recruitingbypaycor.com',
+    'applicantpro.com',
+    'breezy.hr',
+    'jazz.co',
+];
+
+// Query parameters that ATS platforms inject when embedding on a host page
+const ATS_QUERY_PARAMS = [
+    'gh_jid',       // Greenhouse
+    'lever_job',    // Lever
+    'gh_src',       // Greenhouse source tracking
+    'jid',          // various
+    'ats=greenhouse',
+    'ats=lever',
+];
+
+// DOM containers that ATS platforms render their embed into
+const ATS_EMBED_SELECTORS = [
+    '#grnhse_app',              // Greenhouse
+    '#lever-jobs-container',    // Lever
+    '.greenhouse-job-board',
+    '[id*="greenhouse"]',
+    '[id*="lever-job"]',
+    '[class*="greenhouse"]',
+    'iframe[src*="greenhouse.io"]',
+    'iframe[src*="lever.co"]',
+    'iframe[src*="myworkdayjobs"]',
+    'iframe[src*="workday.com"]',
+    'iframe[src*="jobvite.com"]',
+    'iframe[src*="bamboohr.com"]',
+    'iframe[src*="icims.com"]',
+    'iframe[src*="taleo.net"]',
+    'iframe[src*="breezy.hr"]',
+    'iframe[src*="workable.com"]',
+];
+
+function detectEmbeddedATS(): boolean {
+    // 1. Check iframe src attributes
+    const iframes = document.querySelectorAll('iframe');
+    for (const iframe of Array.from(iframes)) {
+        const src = (iframe.getAttribute('src') || '').toLowerCase();
+        if (!src) continue;
+        if (ATS_IFRAME_DOMAINS.some(d => src.includes(d))) return true;
+    }
+
+    // 2. Check URL query parameters
+    const urlLower = window.location.href.toLowerCase();
+    if (ATS_QUERY_PARAMS.some(p => urlLower.includes(p))) return true;
+
+    // 3. Check for ATS embed container elements
+    for (const sel of ATS_EMBED_SELECTORS) {
+        try {
+            const el = document.querySelector(sel);
+            if (el) {
+                const style = window.getComputedStyle(el);
+                if (style.display !== 'none' && style.visibility !== 'hidden') return true;
+            }
+        } catch { /* invalid selector, skip */ }
+    }
+
+    return false;
+}
+
 // -- Collect full page signals -------------------------------------------------
 function collectSignals() {
     const forms      = document.querySelectorAll('form');
@@ -192,6 +286,7 @@ function collectSignals() {
         hasResumeUpload:      detectResumeUpload(),
         hasCompletionToast:   detectCompletionToast(),
         hasApplyButton:       detectApplyButton(),
+        hasEmbeddedATS:       detectEmbeddedATS(),   // ← new
     };
 }
 
@@ -224,6 +319,7 @@ function buildSnapshot(signals: ReturnType<typeof collectSignals>): SignalSnapsh
         hasCompletionText,
         hasResumeUpload:      signals.hasResumeUpload,
         hasOverlay:           signals.hasOverlay,
+        hasEmbeddedATS:       signals.hasEmbeddedATS,   // ← new
         buttonFingerprint:    signals.buttonTexts.slice(0, 8).join('|'),
     };
 }
@@ -241,6 +337,7 @@ function hasMeaningfulChange(prev: SignalSnapshot, next: SignalSnapshot): boolea
     if (!prev.hasOverlay && next.hasOverlay)                      return true;
     if (prev.hasOverlay && !next.hasOverlay)                      return true;
     if (!prev.hasResumeUpload && next.hasResumeUpload)            return true;
+    if (!prev.hasEmbeddedATS && next.hasEmbeddedATS)              return true;   // ← new
     if (Math.abs(next.inputCount - prev.inputCount) >= 4)         return true;
     if (prev.textareaCount !== next.textareaCount)                return true;
     if (prev.buttonFingerprint !== next.buttonFingerprint &&
