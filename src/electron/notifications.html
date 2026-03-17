@@ -26,6 +26,12 @@
       padding: 0;
     }
 
+    body,
+    body * {
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
     input,
     textarea {
       -webkit-user-select: text;
@@ -50,42 +56,46 @@
       background: rgba(0, 0, 0, 0.12);
     }
 
+    /* ══ DARK ══ */
     :root {
       --bg: #0c0e1a;
       --surface: #111420;
-      --card: #1a1d2e;
-      --card-hover: #1e2135;
-      --border: rgba(255, 255, 255, 0.07);
-      --border-s: rgba(255, 255, 255, 0.05);
+      --card: #1e2240;
+      --card-hover: #252848;
+      --border: rgba(255, 255, 255, 0.10);
+      --border-s: rgba(255, 255, 255, 0.08);
       --text: #e4e6f0;
-      --text-2: #7880a0;
-      --text-3: #404565;
+      --text-2: #8890b4;
+      --text-3: #505880;
       --accent: #6b5fff;
       --accent-h: #7d72ff;
+      --accent-soft: rgba(107, 95, 255, 0.15);
       --amber: #f0a05a;
       --green: #3ecf8e;
       --blue: #5ab0f0;
       --red: #ef4444;
       --purple: #a78bfa;
       --pink: #f472b6;
-      --radius: 16px;
-      --radius-sm: 10px;
+      --radius: 20px;
+      --radius-sm: 14px;
+      --radius-pill: 99px;
       --sidebar-w: 72px;
-      --gap: 14px;
       --tb-icon: rgba(255, 255, 255, 0.35);
       --tb-icon-h: rgba(255, 255, 255, 0.8);
     }
 
+    /* ══ LIGHT ══ */
     [data-theme="light"] {
       --bg: #eef0f8;
       --surface: #ffffff;
-      --card: #f0f1fa;
-      --card-hover: #e8eaf6;
-      --border: rgba(0, 0, 0, 0.07);
-      --border-s: rgba(0, 0, 0, 0.04);
+      --card: #ffffff;
+      --card-hover: #f4f5ff;
+      --border: rgba(0, 0, 0, 0.09);
+      --border-s: rgba(0, 0, 0, 0.06);
       --text: #0f1128;
-      --text-2: #606880;
-      --text-3: #aab0cc;
+      --text-2: #5a6280;
+      --text-3: #9aa0c0;
+      --accent-soft: rgba(107, 95, 255, 0.08);
       --tb-icon: rgba(0, 0, 0, 0.45);
       --tb-icon-h: rgba(0, 0, 0, 0.8);
     }
@@ -98,11 +108,10 @@
       background: var(--bg);
       overflow: hidden;
       color: var(--text);
-      -webkit-user-select: none;
-      user-select: none;
       transition: background 0.2s, color 0.2s;
     }
 
+    /* ── Titlebar ── */
     .titlebar {
       position: fixed;
       top: 0;
@@ -167,15 +176,17 @@
       stroke: #fff !important;
     }
 
+    /* ── App layout ── */
     .app {
       display: flex;
       width: 100vw;
       height: 100vh;
-      padding: 38px 18px 18px;
+      padding: 38px 14px 14px;
       gap: 14px;
     }
 
-    .hf-sidebar {
+    /* ══ SIDEBAR — always dark, canonical ══ */
+    .sidebar {
       width: var(--sidebar-w);
       flex-shrink: 0;
       background: #0a0c18;
@@ -184,18 +195,21 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 16px 0;
+      padding: 14px 0;
     }
 
-    .hf-logo {
+    .sidebar-logo {
       font-size: 16px;
       font-weight: 700;
-      color: #fff;
       letter-spacing: -0.5px;
       margin-bottom: 24px;
+      background: linear-gradient(135deg, #7d72ff, #f06292);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
-    .hf-nav {
+    .sidebar-nav {
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -203,11 +217,11 @@
       flex: 1;
     }
 
-    .hf-bottom {
+    .sidebar-bottom {
       margin-top: auto;
     }
 
-    .hf-nav-item {
+    .nav-item {
       width: 40px;
       height: 40px;
       border-radius: 10px;
@@ -219,15 +233,15 @@
       position: relative;
     }
 
-    .hf-nav-item:hover {
+    .nav-item:hover {
       background: rgba(255, 255, 255, 0.07);
     }
 
-    .hf-nav-item.active {
-      background: rgba(107, 95, 255, 0.2);
+    .nav-item.active {
+      background: rgba(107, 95, 255, 0.25);
     }
 
-    .hf-nav-item svg {
+    .nav-item svg {
       width: 18px;
       height: 18px;
       stroke: rgba(255, 255, 255, 0.35);
@@ -235,12 +249,9 @@
       transition: stroke 0.15s;
     }
 
-    .hf-nav-item.active svg {
-      stroke: var(--accent-h);
-    }
-
-    .hf-nav-item:hover svg {
-      stroke: rgba(255, 255, 255, 0.7);
+    .nav-item.active svg,
+    .nav-item:hover svg {
+      stroke: rgba(255, 255, 255, 0.85);
     }
 
     .nav-badge {
@@ -254,6 +265,7 @@
       border: 1.5px solid #0a0c18;
     }
 
+    /* ── Main card ── */
     .main-card {
       flex: 1;
       min-width: 0;
@@ -263,6 +275,7 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      box-shadow: 0 4px 32px rgba(0, 0, 0, 0.18);
       transition: background 0.2s, border-color 0.2s;
     }
 
@@ -271,36 +284,36 @@
       display: flex;
       flex-direction: column;
       min-height: 0;
-      padding: 22px 28px 0;
+      padding: 28px 32px 0;
     }
 
     .top-bar {
       display: flex;
       align-items: center;
       gap: 12px;
-      padding-bottom: 14px;
+      padding-bottom: 20px;
       flex-shrink: 0;
     }
 
     .page-title {
-      font-size: 22px;
+      font-size: 26px;
       font-weight: 700;
       color: var(--text);
-      letter-spacing: -0.3px;
+      letter-spacing: -0.4px;
       flex: 1;
     }
 
     .toolbar-btn {
       display: flex;
       align-items: center;
-      gap: 6px;
-      padding: 7px 16px;
-      border-radius: 99px;
+      gap: 7px;
+      padding: 8px 18px;
+      border-radius: var(--radius-pill);
       border: 1px solid var(--border);
-      background: transparent;
+      background: var(--card);
       font-family: "DM Sans", sans-serif;
       font-size: 12px;
-      font-weight: 500;
+      font-weight: 600;
       color: var(--text-2);
       cursor: pointer;
       transition: border-color 0.15s, color 0.15s, background 0.15s;
@@ -309,7 +322,7 @@
     .toolbar-btn:hover {
       border-color: var(--accent);
       color: var(--text);
-      background: rgba(107, 95, 255, 0.06);
+      background: var(--accent-soft);
     }
 
     .toolbar-btn svg {
@@ -322,39 +335,41 @@
     .toolbar-btn.danger {
       color: var(--red);
       border-color: rgba(239, 68, 68, 0.3);
+      background: rgba(239, 68, 68, 0.06);
     }
 
     .toolbar-btn.danger:hover {
-      background: rgba(239, 68, 68, 0.08);
+      background: rgba(239, 68, 68, 0.12);
       border-color: var(--red);
     }
 
+    /* ── Filter tabs ── */
     .filter-bar {
       display: flex;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 12px;
+      gap: 12px;
+      margin-bottom: 18px;
       flex-shrink: 0;
     }
 
     .tabs {
       display: flex;
-      gap: 3px;
+      gap: 4px;
       background: var(--card);
       border-radius: var(--radius-sm);
       border: 1px solid var(--border-s);
-      padding: 3px;
+      padding: 4px;
     }
 
     .tab-btn {
       display: flex;
       align-items: center;
-      gap: 6px;
-      padding: 5px 12px;
-      border-radius: 7px;
+      gap: 7px;
+      padding: 7px 16px;
+      border-radius: 10px;
       font-family: "DM Sans", sans-serif;
       font-size: 12px;
-      font-weight: 500;
+      font-weight: 600;
       color: var(--text-2);
       border: none;
       background: transparent;
@@ -374,9 +389,9 @@
     .tab-count {
       font-size: 10px;
       font-weight: 700;
-      padding: 1px 6px;
+      padding: 2px 7px;
       border-radius: 20px;
-      background: rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.18);
       color: inherit;
       min-width: 18px;
       text-align: center;
@@ -393,84 +408,104 @@
       color: var(--text-3);
     }
 
+    /* ── Notification feed ── */
     .notif-feed {
       flex: 1;
       overflow-y: auto;
       min-height: 0;
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      padding-bottom: 20px;
+      gap: 10px;
+      padding-bottom: 24px;
     }
 
+    /* ── Notification card ── */
     .notif-card {
-      background: var(--card);
-      border-radius: var(--radius-sm);
-      padding: 14px 16px;
+      background: #242850;
+      border-radius: var(--radius);
+      padding: 20px 22px;
       display: flex;
       align-items: flex-start;
-      gap: 13px;
+      gap: 16px;
       transition: background 0.15s;
-      border: 1px solid var(--border-s);
+      border: 1px solid rgba(255, 255, 255, 0.10);
       position: relative;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+      flex-shrink: 0;
+    }
+
+    [data-theme="light"] .notif-card {
+      background: #ffffff;
+      border-color: rgba(0, 0, 0, 0.07);
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
     }
 
     .notif-card.unread {
+      border-color: rgba(107, 95, 255, 0.35);
+      background: #282d56;
+    }
+
+    [data-theme="light"] .notif-card.unread {
+      background: #f4f5ff;
       border-color: rgba(107, 95, 255, 0.25);
-      background: var(--card-hover);
     }
 
     .notif-card:hover {
-      background: var(--card-hover);
+      background: #2c3260;
+    }
+
+    [data-theme="light"] .notif-card:hover {
+      background: #f0f1ff;
     }
 
     .unread-dot {
       position: absolute;
-      top: 14px;
-      right: 14px;
-      width: 7px;
-      height: 7px;
+      top: 16px;
+      right: 16px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
       background: var(--accent);
+      box-shadow: 0 0 0 3px rgba(107, 95, 255, 0.15);
     }
 
     .notif-icon {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      font-size: 16px;
+      font-size: 20px;
     }
 
     .icon-amber {
-      background: rgba(240, 160, 90, 0.14);
+      background: rgba(240, 160, 90, 0.16);
     }
 
     .icon-green {
-      background: rgba(62, 207, 142, 0.14);
+      background: rgba(62, 207, 142, 0.16);
     }
 
     .icon-blue {
-      background: rgba(90, 176, 240, 0.14);
+      background: rgba(90, 176, 240, 0.16);
     }
 
     .icon-red {
-      background: rgba(239, 68, 68, 0.14);
+      background: rgba(239, 68, 68, 0.16);
     }
 
     .icon-purple {
-      background: rgba(167, 139, 250, 0.14);
+      background: rgba(167, 139, 250, 0.16);
     }
 
     .icon-pink {
-      background: rgba(244, 114, 182, 0.14);
+      background: rgba(244, 114, 182, 0.16);
     }
 
     .icon-gray {
-      background: var(--card);
+      background: var(--border);
       border: 1px solid var(--border-s);
     }
 
@@ -483,13 +518,13 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-bottom: 3px;
+      margin-bottom: 5px;
       flex-wrap: wrap;
     }
 
     .notif-title {
       font-size: 14px;
-      font-weight: 600;
+      font-weight: 700;
       color: var(--text);
     }
 
@@ -498,8 +533,8 @@
       font-weight: 700;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      padding: 2px 7px;
-      border-radius: 99px;
+      padding: 3px 9px;
+      border-radius: var(--radius-pill);
       border: 1px solid;
     }
 
@@ -560,8 +595,8 @@
     .notif-desc {
       font-size: 13px;
       color: var(--text-2);
-      line-height: 1.55;
-      margin-bottom: 8px;
+      line-height: 1.6;
+      margin-bottom: 10px;
       -webkit-user-select: text;
       user-select: text;
     }
@@ -578,14 +613,14 @@
 
     .notif-actions {
       display: flex;
-      gap: 7px;
-      margin-top: 10px;
+      gap: 8px;
+      margin-top: 12px;
       flex-wrap: wrap;
     }
 
     .n-btn {
-      padding: 5px 14px;
-      border-radius: 99px;
+      padding: 6px 16px;
+      border-radius: var(--radius-pill);
       font-family: "DM Sans", sans-serif;
       font-size: 12px;
       font-weight: 600;
@@ -616,11 +651,11 @@
     }
 
     .progress-bar-wrap {
-      margin: 8px 0 4px;
+      margin: 10px 0 6px;
     }
 
     .progress-bar-track {
-      height: 4px;
+      height: 5px;
       background: var(--border);
       border-radius: 99px;
       overflow: hidden;
@@ -636,7 +671,7 @@
     .progress-label {
       font-size: 10px;
       color: var(--text-3);
-      margin-top: 4px;
+      margin-top: 5px;
     }
 
     .empty-state {
@@ -645,19 +680,19 @@
       align-items: center;
       justify-content: center;
       padding: 80px 40px;
-      gap: 10px;
+      gap: 12px;
       text-align: center;
       flex: 1;
     }
 
     .empty-icon {
-      font-size: 40px;
+      font-size: 44px;
       opacity: 0.1;
       line-height: 1;
     }
 
     .empty-title {
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 700;
       color: var(--text-3);
     }
@@ -677,7 +712,7 @@
       color: #fff;
       font-size: 12.5px;
       font-weight: 600;
-      padding: 10px 20px;
+      padding: 10px 22px;
       border-radius: 99px;
       opacity: 0;
       transform: translateY(6px);
@@ -695,7 +730,7 @@
     @keyframes slideOut {
       to {
         opacity: 0;
-        transform: translateX(12px);
+        transform: translateX(14px);
         max-height: 0;
         padding: 0;
         margin: 0;
@@ -721,28 +756,30 @@
         <line x1="6" y1="6" x2="18" y2="18" />
       </svg></button>
   </div>
+
   <div class="app">
-    <aside class="hf-sidebar">
-      <div class="hf-logo">HF.</div>
-      <nav class="hf-nav">
-        <div class="hf-nav-item" id="navHome" title="Home"><i data-lucide="house"></i></div>
-        <div class="hf-nav-item" id="navPipeline" title="Applications"><i data-lucide="briefcase"></i></div>
-        <div class="hf-nav-item active" title="Notifications">
+    <aside class="sidebar">
+      <div class="sidebar-logo">HF.</div>
+      <nav class="sidebar-nav">
+        <div class="nav-item" id="navHome"><i data-lucide="house"></i></div>
+        <div class="nav-item" id="navPipeline"><i data-lucide="briefcase"></i></div>
+        <div class="nav-item active">
           <i data-lucide="bell"></i>
           <span class="nav-badge" id="navBadge" style="display:none;"></span>
         </div>
-        <div class="hf-nav-item" title="Analytics"><i data-lucide="bar-chart-2"></i></div>
-        <div class="hf-nav-item" id="navSettings" title="Settings"><i data-lucide="settings"></i></div>
+        <div class="nav-item"><i data-lucide="bar-chart-2"></i></div>
+        <div class="nav-item" id="navSettings"><i data-lucide="settings"></i></div>
       </nav>
-      <div class="hf-bottom">
-        <div class="hf-nav-item" title="Account"><i data-lucide="user"></i></div>
+      <div class="sidebar-bottom">
+        <div class="nav-item"><i data-lucide="user"></i></div>
       </div>
     </aside>
+
     <div class="main-card">
       <div class="inner">
         <div class="top-bar">
           <div class="page-title">Notifications</div>
-          <div style="display:flex;gap:8px;">
+          <div style="display:flex;gap:10px;">
             <button class="toolbar-btn" id="markAllReadBtn"><i data-lucide="check-check"></i> Mark all read</button>
             <button class="toolbar-btn danger" id="clearAllBtn"><i data-lucide="trash-2"></i> Clear all</button>
           </div>
@@ -760,22 +797,27 @@
       </div>
     </div>
   </div>
+
   <div class="hf-toast" id="hfToast"></div>
+
   <script>
     window.addEventListener("load", () => {
       lucide.createIcons();
       const { ipcRenderer } = require("electron");
       const applyTheme = t => { document.documentElement.setAttribute('data-theme', t); localStorage.setItem('hf-theme', t); };
       ipcRenderer.on('apply-theme', (_e, t) => applyTheme(t));
+
       document.getElementById("btn-minimize").addEventListener("click", () => ipcRenderer.send("window-minimize"));
       document.getElementById("btn-maximize").addEventListener("click", () => ipcRenderer.send("window-maximize"));
       document.getElementById("btn-close").addEventListener("click", () => ipcRenderer.send("window-close"));
       function updateMaximizeIcon(v) { document.getElementById("maximizeIcon").setAttribute("data-lucide", v ? "minimize" : "maximize"); lucide.createIcons(); }
       ipcRenderer.on("window-maximized", () => updateMaximizeIcon(true));
       ipcRenderer.on("window-unmaximized", () => updateMaximizeIcon(false));
+
       document.getElementById("navHome").addEventListener("click", () => ipcRenderer.send("navigate-home"));
       document.getElementById("navPipeline").addEventListener("click", () => ipcRenderer.send("open-pipeline"));
       document.getElementById("navSettings").addEventListener("click", () => ipcRenderer.send("open-settings"));
+
       function showToast(msg) { const t = document.getElementById("hfToast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2400); }
 
       let notifications = [], activeTab = 'all';
@@ -783,7 +825,11 @@
       ipcRenderer.on("notifications-data", (_e, data) => { notifications = data || []; render(); });
       ipcRenderer.on("push-notification-ui", (_e, notif) => { notifications = [notif, ...notifications.filter(n => n.id !== notif.id)]; render(); });
 
-      function relTime(ts) { const diff = Date.now() - ts; const m = Math.floor(diff / 60000), h = Math.floor(diff / 3600000), d = Math.floor(diff / 86400000); if (m < 2) return 'just now'; if (m < 60) return `${m}m ago`; if (h < 24) return `${h}h ago`; if (d < 7) return `${d}d ago`; return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); }
+      function relTime(ts) {
+        const diff = Date.now() - ts, m = Math.floor(diff / 60000), h = Math.floor(diff / 3600000), d = Math.floor(diff / 86400000);
+        if (m < 2) return 'just now'; if (m < 60) return `${m}m ago`; if (h < 24) return `${h}h ago`;
+        if (d < 7) return `${d}d ago`; return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }
 
       const TYPE_META = {
         followup: { icon: '⏰', iconClass: 'icon-amber', tagClass: 'tag-followup', tagLabel: 'Follow-up' },
@@ -797,11 +843,66 @@
         daily: { icon: '☀️', iconClass: 'icon-gray', tagClass: 'tag-daily', tagLabel: 'Daily' },
       };
 
-      function filteredNotifs() { return notifications.filter(n => { if (n.dismissed) return false; if (activeTab === 'unread') return n.unread; if (activeTab === 'action') return n.actionRequired; return true; }); }
-      function updateCounts() { const visible = notifications.filter(n => !n.dismissed); const unread = visible.filter(n => n.unread).length; const action = visible.filter(n => n.actionRequired).length; document.getElementById('countAll').textContent = visible.length; document.getElementById('countUnread').textContent = unread; document.getElementById('countAction').textContent = action; document.getElementById('unreadLabel').textContent = unread > 0 ? `${unread} unread` : 'All caught up'; document.getElementById('navBadge').style.display = unread > 0 ? 'block' : 'none'; }
-      function renderProgressBar(n) { if (!n.progress) return ''; const pct = Math.min(100, Math.round((n.progress.value / n.progress.max) * 100)); return `<div class="progress-bar-wrap"><div class="progress-bar-track"><div class="progress-bar-fill" style="width:${pct}%"></div></div><div class="progress-label">${n.progress.value} of ${n.progress.max} applications this week (${pct}%)</div></div>`; }
-      function renderActions(n) { if (!n.actions || !n.actions.length) return ''; return `<div class="notif-actions">${n.actions.map(a => { const cls = a.style === 'primary' ? 'n-btn-primary' : 'n-btn-ghost'; return `<button class="n-btn ${cls}" data-id="${n.id}" data-action="${a.action}">${a.label}</button>`; }).join('')}</div>`; }
-      function render() { updateCounts(); const feed = document.getElementById('notifFeed'); const list = filteredNotifs(); if (!list.length) { feed.innerHTML = `<div class="empty-state"><div class="empty-icon">🔔</div><div class="empty-title">No notifications</div><div class="empty-desc">You're all caught up. Notifications appear here as your job search progresses.</div></div>`; return; } feed.innerHTML = list.map(n => { const meta = TYPE_META[n.type] || TYPE_META.daily; return `<div class="notif-card${n.unread ? ' unread' : ''}" data-id="${n.id}">${n.unread ? '<span class="unread-dot"></span>' : ''}<div class="notif-icon ${meta.iconClass}">${meta.icon}</div><div class="notif-body"><div class="notif-header"><span class="notif-title">${n.title}</span><span class="notif-tag ${meta.tagClass}">${meta.tagLabel}</span></div><div class="notif-desc">${n.desc}</div>${renderProgressBar(n)}${renderActions(n)}<div class="notif-meta">${relTime(n.timestamp)}</div></div></div>`; }).join(''); }
+      function filteredNotifs() {
+        return notifications.filter(n => {
+          if (n.dismissed) return false;
+          if (activeTab === 'unread') return n.unread;
+          if (activeTab === 'action') return n.actionRequired;
+          return true;
+        });
+      }
+
+      function updateCounts() {
+        const visible = notifications.filter(n => !n.dismissed);
+        const unread = visible.filter(n => n.unread).length;
+        const action = visible.filter(n => n.actionRequired).length;
+        document.getElementById('countAll').textContent = visible.length;
+        document.getElementById('countUnread').textContent = unread;
+        document.getElementById('countAction').textContent = action;
+        document.getElementById('unreadLabel').textContent = unread > 0 ? `${unread} unread` : 'All caught up';
+        document.getElementById('navBadge').style.display = unread > 0 ? 'block' : 'none';
+      }
+
+      function renderProgressBar(n) {
+        if (!n.progress) return '';
+        const pct = Math.min(100, Math.round((n.progress.value / n.progress.max) * 100));
+        return `<div class="progress-bar-wrap"><div class="progress-bar-track"><div class="progress-bar-fill" style="width:${pct}%"></div></div><div class="progress-label">${n.progress.value} of ${n.progress.max} applications this week (${pct}%)</div></div>`;
+      }
+
+      function renderActions(n) {
+        if (!n.actions || !n.actions.length) return '';
+        return `<div class="notif-actions">${n.actions.map(a => {
+          const cls = a.style === 'primary' ? 'n-btn-primary' : 'n-btn-ghost';
+          return `<button class="n-btn ${cls}" data-id="${n.id}" data-action="${a.action}">${a.label}</button>`;
+        }).join('')}</div>`;
+      }
+
+      function render() {
+        updateCounts();
+        const feed = document.getElementById('notifFeed');
+        const list = filteredNotifs();
+        if (!list.length) {
+          feed.innerHTML = `<div class="empty-state"><div class="empty-icon">🔔</div><div class="empty-title">No notifications</div><div class="empty-desc">You're all caught up. Notifications appear here as your job search progresses.</div></div>`;
+          return;
+        }
+        feed.innerHTML = list.map(n => {
+          const meta = TYPE_META[n.type] || TYPE_META.daily;
+          return `<div class="notif-card${n.unread ? ' unread' : ''}" data-id="${n.id}">
+            ${n.unread ? '<span class="unread-dot"></span>' : ''}
+            <div class="notif-icon ${meta.iconClass}">${meta.icon}</div>
+            <div class="notif-body">
+              <div class="notif-header">
+                <span class="notif-title">${n.title}</span>
+                <span class="notif-tag ${meta.tagClass}">${meta.tagLabel}</span>
+              </div>
+              <div class="notif-desc">${n.desc}</div>
+              ${renderProgressBar(n)}
+              ${renderActions(n)}
+              <div class="notif-meta">${relTime(n.timestamp)}</div>
+            </div>
+          </div>`;
+        }).join('');
+      }
 
       document.getElementById('notifFeed').addEventListener('click', e => {
         const card = e.target.closest('.notif-card[data-id]');
@@ -819,9 +920,27 @@
           default: if (n) { n.unread = false; ipcRenderer.send('mark-notification-read', id); render(); }
         }
       });
-      document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => { btn.addEventListener('click', () => { activeTab = btn.dataset.tab; document.querySelectorAll('.tab-btn[data-tab]').forEach(b => b.classList.toggle('active', b === btn)); render(); }); });
-      document.getElementById('markAllReadBtn').addEventListener('click', () => { notifications.forEach(n => n.unread = false); ipcRenderer.send('mark-all-notifications-read'); render(); showToast('All marked as read'); });
-      document.getElementById('clearAllBtn').addEventListener('click', () => { if (confirm('Clear all notifications? This cannot be undone.')) { ipcRenderer.send('clear-all-notifications'); notifications = []; render(); showToast('Notifications cleared'); } });
+
+      document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          activeTab = btn.dataset.tab;
+          document.querySelectorAll('.tab-btn[data-tab]').forEach(b => b.classList.toggle('active', b === btn));
+          render();
+        });
+      });
+
+      document.getElementById('markAllReadBtn').addEventListener('click', () => {
+        notifications.forEach(n => n.unread = false);
+        ipcRenderer.send('mark-all-notifications-read');
+        render(); showToast('All marked as read');
+      });
+
+      document.getElementById('clearAllBtn').addEventListener('click', () => {
+        if (confirm('Clear all notifications? This cannot be undone.')) {
+          ipcRenderer.send('clear-all-notifications');
+          notifications = []; render(); showToast('Notifications cleared');
+        }
+      });
     });
   </script>
 </body>

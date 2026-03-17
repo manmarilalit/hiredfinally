@@ -76,9 +76,8 @@
       --border: rgba(0, 0, 0, 0.07);
       --border-s: rgba(0, 0, 0, 0.04);
       --text: #0f1128;
-      --text-2: #6066880;
-      --text-3: #aab0cc;
       --text-2: #606880;
+      --text-3: #aab0cc;
     }
 
     html,
@@ -157,12 +156,12 @@
       display: flex;
       width: 100vw;
       height: 100vh;
-      padding: 38px 18px 18px;
+      padding: 38px 14px 14px;
       gap: 14px;
     }
 
-    /* ── HF icon sidebar ── */
-    .hf-sidebar {
+    /* ══ SIDEBAR — always dark, canonical ══ */
+    .sidebar {
       width: var(--sidebar-w);
       flex-shrink: 0;
       background: #0a0c18;
@@ -171,18 +170,21 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 16px 0;
+      padding: 14px 0;
     }
 
-    .hf-logo {
+    .sidebar-logo {
       font-size: 16px;
       font-weight: 700;
-      color: #fff;
       letter-spacing: -0.5px;
       margin-bottom: 24px;
+      background: linear-gradient(135deg, #7d72ff, #f06292);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
-    .hf-nav {
+    .sidebar-nav {
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -190,11 +192,11 @@
       flex: 1;
     }
 
-    .hf-bottom {
+    .sidebar-bottom {
       margin-top: auto;
     }
 
-    .hf-nav-item {
+    .nav-item {
       width: 40px;
       height: 40px;
       border-radius: 10px;
@@ -203,17 +205,18 @@
       justify-content: center;
       cursor: pointer;
       transition: background 0.15s;
+      position: relative;
     }
 
-    .hf-nav-item:hover {
+    .nav-item:hover {
       background: rgba(255, 255, 255, 0.07);
     }
 
-    .hf-nav-item.active {
-      background: rgba(107, 95, 255, 0.2);
+    .nav-item.active {
+      background: rgba(107, 95, 255, 0.25);
     }
 
-    .hf-nav-item svg {
+    .nav-item svg {
       width: 18px;
       height: 18px;
       stroke: rgba(255, 255, 255, 0.35);
@@ -221,12 +224,9 @@
       transition: stroke 0.15s;
     }
 
-    .hf-nav-item.active svg {
-      stroke: var(--accent-h);
-    }
-
-    .hf-nav-item:hover svg {
-      stroke: rgba(255, 255, 255, 0.7);
+    .nav-item.active svg,
+    .nav-item:hover svg {
+      stroke: rgba(255, 255, 255, 0.85);
     }
 
     /* ── Main card ── */
@@ -398,6 +398,8 @@
       flex: 1;
       overflow-y: auto;
       padding: 0 28px 40px;
+      /* Cap content width so it looks clean on ultrawide/fullscreen */
+      max-width: 860px;
     }
 
     .s-panel {
@@ -432,23 +434,41 @@
       letter-spacing: 0.1em;
       text-transform: uppercase;
       color: var(--text-3);
-      padding: 20px 0 6px;
+      padding: 20px 0 8px;
     }
 
-    /* ── Setting row — flat, separated by lines, no bubbles ── */
+    /* ── Setting row ──
+       Each row is its own card-like block with gap between them.
+       No border-bottom separator — spacing does the job instead.
+       Hover = background highlight only, no size/position change.
+    */
     .s-row {
       display: flex;
       align-items: center;
       gap: 16px;
-      padding: 16px 0;
-      border-bottom: 1px solid var(--border-s);
+      padding: 14px 16px;
+      border-radius: var(--radius-sm);
+      /* Spacing between rows */
+      margin-bottom: 6px;
+      /* Stable border so the row never shifts on hover */
+      border: 1px solid transparent;
+      transition: background 0.15s, border-color 0.15s;
     }
 
     .s-row:last-child {
-      border-bottom: none;
+      margin-bottom: 0;
     }
 
-    /* Toggle LEFT */
+    .s-row:hover {
+      background: rgba(255, 255, 255, 0.03);
+      border-color: var(--border-s);
+    }
+
+    [data-theme="light"] .s-row:hover {
+      background: rgba(0, 0, 0, 0.025);
+    }
+
+    /* Toggle */
     .s-toggle {
       position: relative;
       width: 44px;
@@ -505,7 +525,6 @@
       cursor: not-allowed;
     }
 
-    /* Info in the middle */
     .s-row-info {
       flex: 1;
       min-width: 0;
@@ -524,7 +543,6 @@
       line-height: 1.55;
     }
 
-    /* Pill control on the RIGHT — matches screenshot bubble dropdowns */
     .s-pill {
       display: flex;
       align-items: center;
@@ -558,7 +576,6 @@
       opacity: 0.6;
     }
 
-    /* Pill with editable input inside */
     .s-pill-input {
       display: flex;
       align-items: center;
@@ -599,7 +616,6 @@
       color: var(--text-3);
     }
 
-    /* Time pill */
     .s-pill-time {
       display: flex;
       align-items: center;
@@ -634,12 +650,10 @@
       user-select: text;
     }
 
-    /* Hidden inputs that remain in DOM for data collection */
     .s-hidden {
       display: none;
     }
 
-    /* Action buttons */
     .s-btn {
       padding: 7px 18px;
       border-radius: 99px;
@@ -698,7 +712,6 @@
       background: rgba(62, 207, 142, 0.18);
     }
 
-    /* Badge */
     .s-badge {
       font-size: 9px;
       letter-spacing: 0.07em;
@@ -712,7 +725,6 @@
       margin-left: 8px;
     }
 
-    /* Footer save row */
     .s-footer {
       display: flex;
       gap: 10px;
@@ -884,7 +896,6 @@
       transform: translateY(0);
     }
 
-    /* Dimmed rows */
     .s-row.dimmed {
       opacity: 0.4;
       pointer-events: none;
@@ -907,18 +918,18 @@
 
   <div class="app">
 
-    <!-- HF icon sidebar -->
-    <aside class="hf-sidebar">
-      <div class="hf-logo">HF.</div>
-      <nav class="hf-nav">
-        <div class="hf-nav-item" id="navHome" title="Home"><i data-lucide="house"></i></div>
-        <div class="hf-nav-item" id="navPipeline" title="Applications"><i data-lucide="briefcase"></i></div>
-        <div class="hf-nav-item" id="navNotifications" title="Notifications"><i data-lucide="bell"></i></div>
-        <div class="hf-nav-item" title="Analytics"><i data-lucide="bar-chart-2"></i></div>
-        <div class="hf-nav-item active" title="Settings"><i data-lucide="settings"></i></div>
+    <!-- ══ CANONICAL SIDEBAR ══ -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">HF.</div>
+      <nav class="sidebar-nav">
+        <div class="nav-item" id="navHome"><i data-lucide="house"></i></div>
+        <div class="nav-item" id="navPipeline"><i data-lucide="briefcase"></i></div>
+        <div class="nav-item" id="navNotifications"><i data-lucide="bell"></i></div>
+        <div class="nav-item"><i data-lucide="bar-chart-2"></i></div>
+        <div class="nav-item active"><i data-lucide="settings"></i></div>
       </nav>
-      <div class="hf-bottom">
-        <div class="hf-nav-item" title="Account"><i data-lucide="user"></i></div>
+      <div class="sidebar-bottom">
+        <div class="nav-item"><i data-lucide="user"></i></div>
       </div>
     </aside>
 
@@ -1229,7 +1240,6 @@
       lucide.createIcons();
       const { ipcRenderer } = require("electron");
 
-      // ── Theme ────────────────────────────────────────────────────────
       function applyTheme(theme) {
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('hf-theme', theme);
@@ -1251,7 +1261,6 @@
         });
       });
 
-      // ── Window controls ──────────────────────────────────────────────
       document.getElementById("btn-minimize").addEventListener("click", () => ipcRenderer.send("window-minimize"));
       document.getElementById("btn-maximize").addEventListener("click", () => ipcRenderer.send("window-maximize"));
       document.getElementById("btn-close").addEventListener("click", () => ipcRenderer.send("window-close"));
@@ -1262,19 +1271,16 @@
       ipcRenderer.on("window-maximized", () => updateMaximizeIcon(true));
       ipcRenderer.on("window-unmaximized", () => updateMaximizeIcon(false));
 
-      // ── HF sidebar nav ───────────────────────────────────────────────
       document.getElementById("navHome").addEventListener("click", () => ipcRenderer.send("navigate-home"));
       document.getElementById("navPipeline").addEventListener("click", () => ipcRenderer.send("open-pipeline"));
       document.getElementById("navNotifications").addEventListener("click", () => ipcRenderer.send("open-notifications"));
 
-      // ── Toast ────────────────────────────────────────────────────────
       function showToast(msg) {
         const t = document.getElementById("hfToast");
         t.textContent = msg; t.classList.add("show");
         setTimeout(() => t.classList.remove("show"), 2400);
       }
 
-      // ── Settings left nav ────────────────────────────────────────────
       document.querySelectorAll(".s-nav-item[data-panel]").forEach(item => {
         item.addEventListener("click", () => {
           document.querySelectorAll(".s-nav-item[data-panel]").forEach(i => i.classList.remove("active"));
@@ -1284,7 +1290,6 @@
         });
       });
 
-      // ── Search (filters visible rows by name) ────────────────────────
       document.getElementById("settingsSearch").addEventListener("input", e => {
         const q = e.target.value.toLowerCase().trim();
         document.querySelectorAll(".s-row").forEach(row => {
@@ -1294,7 +1299,6 @@
         });
       });
 
-      // ── Load settings ────────────────────────────────────────────────
       ipcRenderer.on("settings-loaded", (_e, s) => {
         const set = (id, val, prop = "checked") => {
           const el = document.getElementById(id); if (el) el[prop] = val;
@@ -1318,7 +1322,6 @@
       });
       ipcRenderer.send("get-settings");
 
-      // ── Version ──────────────────────────────────────────────────────
       try {
         const v = ipcRenderer.sendSync("get-version");
         ["appVersion", "aboutVersion"].forEach(id => {
@@ -1327,7 +1330,6 @@
         });
       } catch { }
 
-      // ── Collect & save ───────────────────────────────────────────────
       function collectSettings() {
         const g = id => document.getElementById(id);
         return {
