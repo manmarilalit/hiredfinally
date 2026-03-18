@@ -1,6 +1,6 @@
 {
   "name": "hiredfinally",
-  "version": "1.0.1",
+  "version": "1.0.4",
   "description": "A job application tracker",
   "license": "ISC",
   "author": "Lalit Manmari",
@@ -80,8 +80,10 @@
   "dependencies": {
     "better-sqlite3": "^12.5.0",
     "electron-log": "^5.4.3",
+    "electron-store": "^11.0.2",
     "electron-updater": "^6.3.9",
     "lucide": "^0.577.0",
+    "posthog-node": "^5.21.2",
     "sql.js": "^1.13.0"
   }
 }

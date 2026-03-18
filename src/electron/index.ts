@@ -32,13 +32,29 @@ const {
   upsertCompleted,
 } = require("./storage");
 const { NotificationManager } = require("./notifications");
-const { NotificationStore }   = require("./notification-store"); // ← NEW
+const { NotificationStore } = require("./notification-store");
 const { extractJobMeta, checkOllamaAvailable } = require("./extractor");
+
+// ── Analytics ────────────────────────────────────────────────────────────────
+const { PostHog } = require("posthog-node");
+const Store = require("electron-store").default;
+
+const _store = new Store();
+let anonymousId = _store.get("anonymousId") as string | undefined;
+if (!anonymousId) {
+  anonymousId = require("crypto").randomUUID();
+  _store.set("anonymousId", anonymousId);
+}
+
+const analytics = new PostHog("phc_efOMKNtp4FFBoiYMRRXqvvp5kFrApiY0F1NMmPUJdy1", {
+  host: "https://us.i.posthog.com",
+});
+// ─────────────────────────────────────────────────────────────────────────────
 
 if (process.platform === "win32") {
   try {
     require("child_process").execSync("chcp 65001", { stdio: "ignore" });
-  } catch {}
+  } catch { }
 }
 
 const gotTheLock = app.requestSingleInstanceLock();
@@ -105,25 +121,25 @@ interface BoardRow {
 }
 
 const DEFAULT_BOARDS: BoardRow[] = [
-  { name: "Indeed",       url: "https://www.indeed.com/" },
-  { name: "LinkedIn",     url: "https://www.linkedin.com/jobs/" },
-  { name: "Handshake",    url: "https://app.joinhandshake.com/explore" },
-  { name: "Glassdoor",    url: "https://www.glassdoor.com/Job/index.htm" },
+  { name: "Indeed", url: "https://www.indeed.com/" },
+  { name: "LinkedIn", url: "https://www.linkedin.com/jobs/" },
+  { name: "Handshake", url: "https://app.joinhandshake.com/explore" },
+  { name: "Glassdoor", url: "https://www.glassdoor.com/Job/index.htm" },
   { name: "ZipRecruiter", url: "https://www.ziprecruiter.com/" },
-  { name: "Wellfound",    url: "https://wellfound.com/jobs" },
-  { name: "Dice",         url: "https://www.dice.com/" },
-  { name: "Lever",        url: "https://www.lever.co/" },
-  { name: "Greenhouse",   url: "https://www.greenhouse.io/" },
-  { name: "Built In",     url: "https://builtin.com/jobs" },
-  { name: "Remote.co",    url: "https://remote.co/remote-jobs/" },
+  { name: "Wellfound", url: "https://wellfound.com/jobs" },
+  { name: "Dice", url: "https://www.dice.com/" },
+  { name: "Lever", url: "https://www.lever.co/" },
+  { name: "Greenhouse", url: "https://www.greenhouse.io/" },
+  { name: "Built In", url: "https://builtin.com/jobs" },
+  { name: "Remote.co", url: "https://remote.co/remote-jobs/" },
   { name: "Y Combinator", url: "https://www.ycombinator.com/jobs" },
 ];
 
-let mainWindow: any           = null;
-let tray: any                 = null;
-let notificationManager: any  = null;
-let notifStore: any           = null; // ← NEW
-let db: any                   = null;
+let mainWindow: any = null;
+let tray: any = null;
+let notificationManager: any = null;
+let notifStore: any = null;
+let db: any = null;
 
 let updateDownloaded = false;
 
@@ -134,7 +150,7 @@ function sendNativeNotification(title: string, body: string): void {
   n.show();
 }
 
-let runExtractionWorkerFn: () => void = () => {};
+let runExtractionWorkerFn: () => void = () => { };
 
 const log = require("electron-log");
 autoUpdater.logger = log;
@@ -235,6 +251,7 @@ function installOllamaWindows(): Promise<void> {
     wg.on("error", () => installOllamaWindowsDirect().then(resolve).catch(reject));
   });
 }
+
 async function installOllamaWindowsDirect(): Promise<void> {
   const os = require("os"), tmp = path.join(os.tmpdir(), "OllamaSetup.exe");
   mainWindow?.webContents.send("ollama-status", { status: "downloading" });
@@ -245,6 +262,7 @@ async function installOllamaWindowsDirect(): Promise<void> {
     i.on("error", reject);
   });
 }
+
 function installOllamaMac(): Promise<void> {
   return new Promise((resolve, reject) => {
     const b = spawn("brew", ["install", "ollama"], { stdio: "pipe", shell: true });
@@ -252,6 +270,7 @@ function installOllamaMac(): Promise<void> {
     b.on("error", () => installOllamaMacDirect().then(resolve).catch(reject));
   });
 }
+
 async function installOllamaMacDirect(): Promise<void> {
   const os = require("os"), tmp = path.join(os.tmpdir(), "Ollama.dmg");
   mainWindow?.webContents.send("ollama-status", { status: "downloading" });
@@ -260,6 +279,7 @@ async function installOllamaMacDirect(): Promise<void> {
   mainWindow?.webContents.send("ollama-status", { status: "manual-install-required" });
   throw new Error("Manual install required");
 }
+
 function installOllamaLinux(): Promise<void> {
   return new Promise((resolve, reject) => {
     const sh = spawn("sh", ["-c", "curl -fsSL https://ollama.com/install.sh | sh"], { stdio: "pipe", shell: true });
@@ -267,19 +287,23 @@ function installOllamaLinux(): Promise<void> {
     sh.on("error", reject);
   });
 }
+
 function downloadFile(url: string, dest: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const https = require("https"), fsSync = require("fs"), file = fsSync.createWriteStream(dest);
     https.get(url, (res: any) => {
       res.pipe(file);
       file.on("finish", () => { file.close(); resolve(); });
-    }).on("error", (e: any) => { fsSync.unlink(dest, () => {}); reject(e); });
+    }).on("error", (e: any) => { fsSync.unlink(dest, () => { }); reject(e); });
   });
 }
 
 // -- App ready -----------------------------------------------------------------
 app.on("ready", async () => {
   if (process.platform === "win32") app.setAppUserModelId(app.name);
+
+  // ── Track app open ─────────────────────────────────────────────────────────
+  analytics.capture({ distinctId: anonymousId, event: "app_opened" });
 
   const iconPath = path.join(__dirname, "icon.png");
 
@@ -333,7 +357,7 @@ app.on("ready", async () => {
     if (!app.isQuiting) { e.preventDefault(); mainWindow.hide(); }
   });
 
-  mainWindow.on("maximize",   () => mainWindow.webContents.send("window-maximized"));
+  mainWindow.on("maximize", () => mainWindow.webContents.send("window-maximized"));
   mainWindow.on("unmaximize", () => mainWindow.webContents.send("window-unmaximized"));
 
   app.on("activate", () => { mainWindow?.show(); mainWindow?.focus(); });
@@ -406,38 +430,38 @@ app.on("ready", async () => {
     }
   });
 
-  // ── Notification store (in-app feed) — create BEFORE NotificationManager ──
+  // ── Notification store (in-app feed) ──────────────────────────────────────
   const notifStorePath = app.isPackaged
     ? path.join(app.getPath("userData"), "notifications-store.json")
     : "./src/electron/notifications-store.json";
 
-  notifStore = new NotificationStore(notifStorePath, mainWindow); // ← NEW
+  notifStore = new NotificationStore(notifStorePath, mainWindow);
 
-  // ── Notification manager (OS-level alerts) — receives notifStore ──────────
+  // ── Notification manager (OS-level alerts) ────────────────────────────────
   const settingsPath = app.isPackaged
     ? path.join(app.getPath("userData"), "notification-settings.json")
     : "./src/electron/notification-settings.json";
 
-  notificationManager = new NotificationManager(db, settingsPath, notifStore); // ← pass notifStore
+  notificationManager = new NotificationManager(db, settingsPath, notifStore);
 
   ensureOllamaRunning();
 
   // -- Session state ---------------------------------------------------------
-  let lastLoggedURL: string           = "";
-  let currentStatus: Status           = "NOT_STARTED";
-  let startingURL: string             = "";
-  let lastNotStartedURL: string       = "";
-  let hasStartedApplication: boolean  = false;
-  let currentJobBoard: string         = "";
-  let previousURL: string             = "";
+  let lastLoggedURL: string = "";
+  let currentStatus: Status = "NOT_STARTED";
+  let startingURL: string = "";
+  let lastNotStartedURL: string = "";
+  let hasStartedApplication: boolean = false;
+  let currentJobBoard: string = "";
+  let previousURL: string = "";
   let pendingConfirmation: PendingConfirmation | null = null;
-  let currentJobTitle: string         = "";
+  let currentJobTitle: string = "";
   let lastPageSignals: PageSignals | null = null;
-  let lastResetDomain: string         = "";
+  let lastResetDomain: string = "";
 
-  let listingScreenshot: Buffer | null  = null;
+  let listingScreenshot: Buffer | null = null;
   let previousScreenshot: Buffer | null = null;
-  let screenshotFrozen: boolean         = false;
+  let screenshotFrozen: boolean = false;
 
   // -- Helpers ---------------------------------------------------------------
   async function waitForPageReady(webview: any): Promise<void> {
@@ -498,74 +522,99 @@ app.on("ready", async () => {
       const webview = allContents.find((wc: any) => wc.getType() === "webview");
       if (!webview) return;
       await waitForPageReady(webview);
-      const image   = await webview.capturePage();
-      const size    = image.getSize();
+      const image = await webview.capturePage();
+      const size = image.getSize();
       const resized = image.resize({ width: Math.min(size.width, 1280) });
       previousScreenshot = listingScreenshot;
-      listingScreenshot  = resized.toJPEG(70);
+      listingScreenshot = resized.toJPEG(70);
     } catch { /* ignore */ }
   }
 
   function resetStatus(clearScreenshots = true): void {
     console.log(`[RESET] status reset NOT_STARTED (clearScreenshots=${clearScreenshots}) | was: ${currentStatus}`);
-    currentStatus         = "NOT_STARTED";
+    currentStatus = "NOT_STARTED";
     hasStartedApplication = false;
-    startingURL           = "";
-    pendingConfirmation   = null;
-    lastPageSignals       = null;
+    startingURL = "";
+    pendingConfirmation = null;
+    lastPageSignals = null;
     if (clearScreenshots) {
-      lastNotStartedURL  = "";
-      lastLoggedURL      = "";
-      previousURL        = "";
-      listingScreenshot  = null;
+      lastNotStartedURL = "";
+      lastLoggedURL = "";
+      previousURL = "";
+      listingScreenshot = null;
       previousScreenshot = null;
-      screenshotFrozen   = false;
+      screenshotFrozen = false;
     }
     updateStatusBadge("NOT_STARTED");
     mainWindow?.webContents.send("hide-confirmation-dialog");
   }
 
   function clearScreenshotState(): void {
-    listingScreenshot  = null;
+    listingScreenshot = null;
     previousScreenshot = null;
-    screenshotFrozen   = false;
+    screenshotFrozen = false;
   }
 
   app.on("web-contents-created", (_e: any, contents: any) => {
     if (contents.getType() === "webview") {
       contents.setWindowOpenHandler(({ url }: { url: string }) => {
-        mainWindow?.webContents.send("load-in-webview", url);
+        console.log(`[POPUP] intercepted window open: ${url}`);
+        if (url === 'about:blank') {
+          return {
+            action: "allow",
+            overrideBrowserWindowOptions: { show: false }
+          };
+        }
+        if (url && url !== 'about:blank') {
+          mainWindow?.webContents.send("load-in-webview", url);
+        }
         return { action: "deny" };
+      });
+
+      contents.on("did-create-window" as any, (childWin: any) => {
+        console.log(`[CHILD-WIN] created`);
+
+        // Poll the child window's URL — Handshake sets location.href
+        // inside the blank window which doesn't fire navigation events
+        let pollCount = 0;
+        const poll = setInterval(() => {
+          pollCount++;
+          if (pollCount > 40) { clearInterval(poll); return; } // 4s timeout
+          try {
+            const childUrl = childWin.webContents.getURL();
+            console.log(`[CHILD-WIN] poll url: ${childUrl}`);
+            if (childUrl && childUrl !== 'about:blank' && childUrl !== '') {
+              clearInterval(poll);
+              childWin.destroy();
+              mainWindow?.webContents.send("load-in-webview", childUrl);
+            }
+          } catch {
+            clearInterval(poll);
+          }
+        }, 100);
+
+        // Also catch it if navigation events DO fire
+        childWin.webContents.on("will-navigate", (_e: any, url: string) => {
+          console.log(`[CHILD-WIN] will-navigate: ${url}`);
+          if (url && url !== 'about:blank') {
+            childWin.destroy();
+            mainWindow?.webContents.send("load-in-webview", url);
+          }
+        });
+        childWin.webContents.on("did-navigate", (_e: any, url: string) => {
+          console.log(`[CHILD-WIN] did-navigate: ${url}`);
+          if (url && url !== 'about:blank') {
+            childWin.destroy();
+            mainWindow?.webContents.send("load-in-webview", url);
+          }
+        });
       });
     }
   });
 
-  // -- IPC -------------------------------------------------------------------
   ipcMain.on("webview-data", async (_e: any, data: PageSignals) => {
     lastPageSignals = data;
     await processPageStatus(data);
-  });
-
-  ipcMain.on("reset-status", () => {
-    console.log(`[RESET] manual browser close reset`);
-    resetStatus(true);
-  });
-
-  ipcMain.on("status-confirmation", (_e: any, payload: any) => {
-    const isCorrect      = typeof payload === "boolean" ? payload : payload.correct;
-    const d              = typeof payload === "boolean" ? pendingConfirmation : (payload.data ?? pendingConfirmation);
-    if (!d) return;
-    const detectedStatus = (d.newStatus ?? (d as any).status) as Status;
-    console.log(`[CONFIRMATION] user said ${isCorrect ? "CORRECT" : "WRONG"} for detected status: ${detectedStatus}`);
-    if (isCorrect) {
-      applyStatusChange(detectedStatus, d.url);
-      mainWindow?.webContents.send("app-status-updated");
-    } else {
-      console.log(`[CONFIRMATION] user rejected detection, resetting lastLoggedURL`);
-      lastLoggedURL = "";
-    }
-    pendingConfirmation = null;
-    mainWindow?.webContents.send("hide-confirmation-dialog");
   });
 
   // -- Manual Status Override ------------------------------------------------
@@ -590,25 +639,25 @@ app.on("ready", async () => {
           console.log(`[MANUAL OVERRIDE] deleting app record for: ${urlToRemove}`);
           deleteApp(urlToRemove);
         }
-        currentStatus         = "NOT_STARTED";
+        currentStatus = "NOT_STARTED";
         hasStartedApplication = false;
-        startingURL           = "";
-        lastNotStartedURL     = url;
-        lastLoggedURL         = url;
-        pendingConfirmation   = null;
-        listingScreenshot     = null;
-        previousScreenshot    = null;
-        screenshotFrozen      = false;
+        startingURL = "";
+        lastNotStartedURL = url;
+        lastLoggedURL = url;
+        pendingConfirmation = null;
+        listingScreenshot = null;
+        previousScreenshot = null;
+        screenshotFrozen = false;
         updateStatusBadge("NOT_STARTED");
         mainWindow?.webContents.send("app-status-updated");
         mainWindow?.webContents.send("manual-override-result", { success: true, newStatus: "NOT_STARTED" });
 
       } else if (newStatus === "IN_PROGRESS") {
         const snapshotPrevious = previousScreenshot as Buffer | null;
-        const snapshotListing  = listingScreenshot  as Buffer | null;
+        const snapshotListing = listingScreenshot as Buffer | null;
         let screenshotToUse: Buffer | null;
-        if (snapshotPrevious)      screenshotToUse = snapshotPrevious;
-        else if (snapshotListing)  screenshotToUse = snapshotListing;
+        if (snapshotPrevious) screenshotToUse = snapshotPrevious;
+        else if (snapshotListing) screenshotToUse = snapshotListing;
         else {
           await captureCurrentPage(url);
           screenshotToUse = listingScreenshot as Buffer | null;
@@ -616,10 +665,10 @@ app.on("ready", async () => {
         const urlToRecord = lastNotStartedURL || url;
         console.log(`[MANUAL OVERRIDE] upsertInProgress: ${urlToRecord}`);
         upsertInProgress(urlToRecord, screenshotToUse);
-        startingURL           = urlToRecord;
+        startingURL = urlToRecord;
         hasStartedApplication = true;
-        currentStatus         = "IN_PROGRESS";
-        screenshotFrozen      = true;
+        currentStatus = "IN_PROGRESS";
+        screenshotFrozen = true;
         runExtractionWorker();
         updateStatusBadge("IN_PROGRESS");
         mainWindow?.webContents.send("app-status-updated");
@@ -631,11 +680,11 @@ app.on("ready", async () => {
         upsertCompleted(urlToComplete);
         if (currentJobTitle) notificationManager?.onApplicationCompleted(urlToComplete, currentJobTitle);
         hasStartedApplication = false;
-        startingURL           = "";
-        lastNotStartedURL     = "";
-        screenshotFrozen      = false;
-        pendingConfirmation   = null;
-        currentStatus         = "COMPLETED";
+        startingURL = "";
+        lastNotStartedURL = "";
+        screenshotFrozen = false;
+        pendingConfirmation = null;
+        currentStatus = "COMPLETED";
         updateStatusBadge("COMPLETED");
         mainWindow?.webContents.send("app-status-updated");
         mainWindow?.webContents.send("manual-override-result", { success: true, newStatus: "COMPLETED" });
@@ -694,10 +743,10 @@ app.on("ready", async () => {
       mainWindow?.webContents.send("load-in-webview", url)
     );
   });
-  ipcMain.on("open-pipeline",      () => mainWindow?.loadFile(path.join(__dirname, "pipeline.html")));
-  ipcMain.on("open-settings",      () => mainWindow?.loadFile(path.join(__dirname, "settings.html")));
-  ipcMain.on("open-notifications", () => mainWindow?.loadFile(path.join(__dirname, "notifications.html"))); // ← NEW
-  ipcMain.on("window-close",    () => mainWindow?.close());
+  ipcMain.on("open-pipeline", () => mainWindow?.loadFile(path.join(__dirname, "pipeline.html")));
+  ipcMain.on("open-settings", () => mainWindow?.loadFile(path.join(__dirname, "settings.html")));
+  ipcMain.on("open-notifications", () => mainWindow?.loadFile(path.join(__dirname, "notifications.html")));
+  ipcMain.on("window-close", () => mainWindow?.close());
   ipcMain.on("window-minimize", () => mainWindow?.minimize());
   ipcMain.on("window-maximize", () => {
     if (mainWindow?.isMaximized()) mainWindow.unmaximize();
@@ -706,7 +755,7 @@ app.on("ready", async () => {
 
   function exportApplicationData(): void {
     const rows = db.prepare("SELECT * FROM job_apps ORDER BY rowid DESC").all() as any[];
-    const csv  = [
+    const csv = [
       "URL,Status,Applied At,Completed At,Job Title,Company",
       ...rows.map((r: any) =>
         `"${r.url}",${r.status},"${r.applied_at}","${r.completed_at || ""}","${r.job_title || ""}","${r.company || ""}"`
@@ -749,15 +798,15 @@ app.on("ready", async () => {
   function isExcludedFromTracking(url: string): boolean {
     const u = url.toLowerCase();
     return (
-      /joinhandshake\.com\/inbox/i.test(u)         ||
+      /joinhandshake\.com\/inbox/i.test(u) ||
       /joinhandshake\.com\/notifications/i.test(u) ||
-      /linkedin\.com\/messaging/i.test(u)          ||
-      /linkedin\.com\/notifications/i.test(u)      ||
-      /indeed\.com\/account/i.test(u)              ||
-      /chrome-error:\/\//i.test(u)                 ||
-      /\/login(\?|$|\/)/i.test(u)                  ||
-      /\/signin(\?|$|\/)/i.test(u)                 ||
-      /\/auth(\?|$|\/)/i.test(u)                   ||
+      /linkedin\.com\/messaging/i.test(u) ||
+      /linkedin\.com\/notifications/i.test(u) ||
+      /indeed\.com\/account/i.test(u) ||
+      /chrome-error:\/\//i.test(u) ||
+      /\/login(\?|$|\/)/i.test(u) ||
+      /\/signin(\?|$|\/)/i.test(u) ||
+      /\/auth(\?|$|\/)/i.test(u) ||
       /\/sso(\?|$|\/)/i.test(u)
     );
   }
@@ -765,13 +814,13 @@ app.on("ready", async () => {
   function isJobDetailUrl(url: string): boolean {
     const u = url.toLowerCase();
     return (
-      /[?&]vjk=[a-z0-9]+/i.test(u)                                    ||
-      /indeed\.com\/viewjob/i.test(u)                                  ||
-      /linkedin\.com\/jobs\/view\/\d+/i.test(u)                        ||
-      /[?&]currentjobid=\d+/i.test(u)                                  ||
-      /glassdoor\.com\/job-listing\/.*-\d+\.htm/i.test(u)              ||
-      /ziprecruiter\.com\/jobs\/[^/]+\/[a-f0-9-]{8,}/i.test(u)        ||
-      /joinhandshake\.com\/job-search\/\d+/i.test(u)                   ||
+      /[?&]vjk=[a-z0-9]+/i.test(u) ||
+      /indeed\.com\/viewjob/i.test(u) ||
+      /linkedin\.com\/jobs\/view\/\d+/i.test(u) ||
+      /[?&]currentjobid=\d+/i.test(u) ||
+      /glassdoor\.com\/job-listing\/.*-\d+\.htm/i.test(u) ||
+      /ziprecruiter\.com\/jobs\/[^/]+\/[a-f0-9-]{8,}/i.test(u) ||
+      /joinhandshake\.com\/job-search\/\d+/i.test(u) ||
       /joinhandshake\.com\/jobs\/\d+/i.test(u)
     );
   }
@@ -784,7 +833,7 @@ app.on("ready", async () => {
   function hasLeftJobBoard(newUrl: string): boolean {
     if (!currentJobBoard) return false;
     const newDomain = getJobBoardDomain(newUrl);
-    const newHost   = new URL(newUrl).hostname.toLowerCase();
+    const newHost = new URL(newUrl).hostname.toLowerCase();
     if (newHost.includes(currentJobBoard) || currentJobBoard.includes(newDomain)) return false;
     return !!(newDomain && newDomain !== currentJobBoard);
   }
@@ -805,9 +854,9 @@ app.on("ready", async () => {
     if (handshakeMatch) return `Handshake Job #${handshakeMatch[1]}`;
     try {
       const parts = new URL(url).pathname.split("/").filter(Boolean);
-      const last  = parts[parts.length - 1];
+      const last = parts[parts.length - 1];
       if (last && !/^\d+$/.test(last)) return last.replace(/[-_]/g, " ").substring(0, 50);
-    } catch {}
+    } catch { }
     return "Job Position";
   }
 
@@ -818,19 +867,21 @@ app.on("ready", async () => {
     if (status === "NOT_STARTED") {
       if (!screenshotFrozen) lastNotStartedURL = url;
       hasStartedApplication = false;
-      currentStatus         = "NOT_STARTED";
+      currentStatus = "NOT_STARTED";
       if (url !== lastNotStartedURL && currentJobTitle) {
         console.log(`[STATUS CHANGE] scheduling follow-up notification for: ${currentJobTitle}`);
         notificationManager.scheduleFollowUpNotification(url, currentJobTitle);
       }
     } else if (status === "IN_PROGRESS") {
       if (!hasStartedApplication) {
-        const urlToRecord    = lastNotStartedURL || url;
+        const urlToRecord = lastNotStartedURL || url;
         const screenshotUsed = previousScreenshot ?? listingScreenshot;
         console.log(`[STATUS CHANGE] addInProgress: ${urlToRecord} | hasScreenshot: ${!!screenshotUsed}`);
         addInProgress(urlToRecord, screenshotUsed);
-        startingURL           = urlToRecord;
+        startingURL = urlToRecord;
         hasStartedApplication = true;
+        // ── Track application started ───────────────────────────────────────
+        analytics.capture({ distinctId: anonymousId, event: "application_started" });
         sendNativeNotification("HiredFinally", `Application started: ${currentJobTitle || url}`);
         runExtractionWorker();
       } else {
@@ -844,14 +895,16 @@ app.on("ready", async () => {
         console.log(`[STATUS CHANGE] updateCompleted: ${urlToComplete}`);
         updateCompleted(urlToComplete);
         if (currentJobTitle) notificationManager.onApplicationCompleted(urlToComplete, currentJobTitle);
+        // ── Track application completed ─────────────────────────────────────
+        analytics.capture({ distinctId: anonymousId, event: "application_completed" });
         sendNativeNotification("HiredFinally", `Application submitted: ${currentJobTitle || urlToComplete}`);
       }
       hasStartedApplication = false;
-      lastNotStartedURL     = "";
-      startingURL           = "";
-      screenshotFrozen      = false;
-      pendingConfirmation   = null;
-      currentStatus         = "COMPLETED";
+      lastNotStartedURL = "";
+      startingURL = "";
+      screenshotFrozen = false;
+      pendingConfirmation = null;
+      currentStatus = "COMPLETED";
     }
 
     updateStatusBadge(currentStatus);
@@ -893,8 +946,8 @@ app.on("ready", async () => {
     const map: Record<Status, { label: string; cls: string }> = {
       NOT_STARTED: { label: "Not Started", cls: "not-started" },
       IN_PROGRESS: { label: "In Progress", cls: "in-progress" },
-      COMPLETED:   { label: "Completed",   cls: "completed"   },
-      UNKNOWN:     { label: "Unknown",     cls: "not-started" },
+      COMPLETED: { label: "Completed", cls: "completed" },
+      UNKNOWN: { label: "Unknown", cls: "not-started" },
     };
     const { label, cls } = map[status];
     mainWindow?.webContents.send("update-status-badge", label, cls);
@@ -924,13 +977,13 @@ app.on("ready", async () => {
         previousScreenshot = null;
       }
 
-      const urlChanged            = previousURL !== "" && previousURL !== url;
+      const urlChanged = previousURL !== "" && previousURL !== url;
       const firstSignalAfterReset = previousURL === "" && url !== "";
 
       if ((urlChanged || firstSignalAfterReset) && !screenshotFrozen) {
         await captureCurrentPage(url);
         if (isJobDetailUrl(url)) {
-          screenshotFrozen  = true;
+          screenshotFrozen = true;
           lastNotStartedURL = canonicaliseUrl(url);
           console.log(`[DETECT] job detail url detected, screenshot frozen | lastNotStartedURL: ${lastNotStartedURL}`);
         }
@@ -938,7 +991,7 @@ app.on("ready", async () => {
         console.log(`[DETECT] new job detail url (not in progress), refreshing screenshot`);
         clearScreenshotState();
         await captureCurrentPage(url);
-        screenshotFrozen  = true;
+        screenshotFrozen = true;
         lastNotStartedURL = canonicaliseUrl(url);
       } else if (urlChanged && screenshotFrozen && currentStatus === "IN_PROGRESS") {
         console.log(`[DETECT] url changed mid-application (IN_PROGRESS), preserving screenshots`);
@@ -959,10 +1012,10 @@ app.on("ready", async () => {
         if (d !== lastResetDomain) lastResetDomain = "";
       }
 
-      const dom            = detectApplicationStatus(signals) as DetectionResult;
+      const dom = detectApplicationStatus(signals) as DetectionResult;
       const detectedStatus = dom.status as Status;
-      const confidence     = dom.confidence;
-      let effectiveStatus  = detectedStatus;
+      const confidence = dom.confidence;
+      let effectiveStatus = detectedStatus;
 
       console.log(`[DETECT] url: ${url}`);
       console.log(`  signals: forms=${signals.formCount} inputs=${signals.inputCount} required=${signals.requiredFieldCount} fileInputs=${signals.fileInputCount} selects=${signals.selectCount} textareas=${signals.textareaCount}`);
@@ -976,8 +1029,8 @@ app.on("ready", async () => {
       }
 
       const isCompletionSignal = effectiveStatus === "COMPLETED" && signals.hasCompletionToast === true;
-      const isNewPage          = url !== lastLoggedURL;
-      lastLoggedURL            = url;
+      const isNewPage = url !== lastLoggedURL;
+      lastLoggedURL = url;
 
       if (effectiveStatus !== "UNKNOWN" && (isNewPage || isCompletionSignal)) {
         const changed = effectiveStatus !== currentStatus;
@@ -993,7 +1046,7 @@ app.on("ready", async () => {
           mainWindow?.webContents.send("app-status-updated");
         } else {
           if (!changed) console.log(`  → no-op (status unchanged: ${currentStatus})`);
-          else          console.log(`  → NOT applying (confidence=${confidence}, effectiveStatus=${effectiveStatus})`);
+          else console.log(`  → NOT applying (confidence=${confidence}, effectiveStatus=${effectiveStatus})`);
         }
       } else if (effectiveStatus === "UNKNOWN") {
         console.log(`  → UNKNOWN detection, ignoring`);
@@ -1008,6 +1061,7 @@ app.on("ready", async () => {
 
 app.on("before-quit", () => {
   app.isQuiting = true;
+  analytics.shutdown();
   notificationManager?.cleanup();
-  notifStore?.cleanup(); // ← NEW
+  notifStore?.cleanup();
 });

@@ -1,25 +1,43 @@
 const { ipcRenderer } = require('electron');
 
+const _originalOpen = window.open.bind(window);
+window.open = function (url?: string | URL, target?: string, features?: string) {
+    if (url && url !== 'about:blank' && url !== '') {
+        ipcRenderer.sendToHost('page-popup', url.toString());
+        return null;
+    }
+    return _originalOpen(url, target, features);
+};
+
+document.addEventListener('click', (e) => {
+    const a = (e.target as HTMLElement).closest('a[target="_blank"]') as HTMLAnchorElement | null;
+    if (a && a.href && !a.href.startsWith('javascript') && a.href !== 'about:blank') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        ipcRenderer.sendToHost('page-popup', a.href);
+    }
+}, true); // capture phase — runs before Handshake's own handlers
+
 let lastSentUrl = '';
-let sendTimer:   ReturnType<typeof setTimeout> | null = null;
+let sendTimer: ReturnType<typeof setTimeout> | null = null;
 let visionTimer: ReturnType<typeof setTimeout> | null = null;
 
 interface SignalSnapshot {
-    url:                  string;
-    formCount:            number;
-    inputCount:           number;
-    fileInputCount:       number;
-    selectCount:          number;
-    textareaCount:        number;
-    requiredFieldCount:   number;
+    url: string;
+    formCount: number;
+    inputCount: number;
+    fileInputCount: number;
+    selectCount: number;
+    textareaCount: number;
+    requiredFieldCount: number;
     hasProgressIndicator: boolean;
-    hasSubmitButton:      boolean;
-    hasApplyButton:       boolean;
-    hasCompletionText:    boolean;
-    hasResumeUpload:      boolean;
-    hasOverlay:           boolean;
-    hasEmbeddedATS:       boolean;   // ← new
-    buttonFingerprint:    string;
+    hasSubmitButton: boolean;
+    hasApplyButton: boolean;
+    hasCompletionText: boolean;
+    hasResumeUpload: boolean;
+    hasOverlay: boolean;
+    hasEmbeddedATS: boolean;   // ← new
+    buttonFingerprint: string;
 }
 
 let lastSnapshot: SignalSnapshot | null = null;
@@ -82,9 +100,9 @@ function detectApplyButton(): boolean {
     for (const el of Array.from(candidates)) {
         const style = window.getComputedStyle(el);
         if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') continue;
-        const text      = (el.innerText || (el as HTMLInputElement).value || '').toLowerCase().trim();
+        const text = (el.innerText || (el as HTMLInputElement).value || '').toLowerCase().trim();
         const ariaLabel = (el.getAttribute('aria-label') || '').toLowerCase();
-        const combined  = `${text} ${ariaLabel}`;
+        const combined = `${text} ${ariaLabel}`;
         if (APPLY_PATTERNS.find(p => combined.includes(p))) return true;
     }
     return false;
@@ -135,6 +153,20 @@ function detectCompletionToast(): boolean {
         'application complete', 'you have applied', 'applied successfully',
         'your application was submitted', 'application was received',
     ];
+
+    const falsePositivePhrases = [
+        'apply on company website',
+        'apply externally',
+        'application started',
+        'start your application',
+        'continue your application',
+    ];
+
+    const bodyLower = getBodyText().toLowerCase();
+
+    // If any false positive phrase is present, bail out early
+    if (falsePositivePhrases.some(p => bodyLower.includes(p))) return false;
+
     const toastSelectors = [
         '[role="alert"]', '[role="status"]',
         '[class*="toast"]', '[class*="snackbar"]', '[class*="notification"]',
@@ -150,7 +182,6 @@ function detectCompletionToast(): boolean {
             }
         } catch { /* skip */ }
     }
-    const bodyLower = getBodyText().toLowerCase();
     return !!completionPhrases.find(p => bodyLower.includes(p));
 }
 
@@ -249,12 +280,12 @@ function detectEmbeddedATS(): boolean {
 
 // -- Collect full page signals -------------------------------------------------
 function collectSignals() {
-    const forms      = document.querySelectorAll('form');
-    const inputs     = document.querySelectorAll('input:not([type="hidden"])');
+    const forms = document.querySelectorAll('form');
+    const inputs = document.querySelectorAll('input:not([type="hidden"])');
     const fileInputs = document.querySelectorAll('input[type="file"]');
-    const selects    = document.querySelectorAll('select');
-    const textareas  = document.querySelectorAll('textarea');
-    const buttons    = document.querySelectorAll<HTMLButtonElement | HTMLInputElement>(
+    const selects = document.querySelectorAll('select');
+    const textareas = document.querySelectorAll('textarea');
+    const buttons = document.querySelectorAll<HTMLButtonElement | HTMLInputElement>(
         'button, input[type="submit"], input[type="button"]'
     );
     const required = document.querySelectorAll('[required], [aria-required="true"]');
@@ -263,30 +294,30 @@ function collectSignals() {
     );
     const hasProgressText = /step \d+ of \d+|page \d+ of \d+/i.test(getBodyText());
 
-    const bodyText    = getBodyText();
+    const bodyText = getBodyText();
     const visibleText = getVisibleText();
     const buttonTexts = Array.from(buttons)
         .map(b => (b.innerText || b.value || '').toLowerCase().trim())
         .filter(t => t.length > 0 && t.length < 60);
 
     return {
-        url:                  window.location.href,
-        pageTitle:            document.title || '',
+        url: window.location.href,
+        pageTitle: document.title || '',
         bodyText,
         visibleText,
-        formCount:            forms.length,
-        inputCount:           inputs.length,
-        fileInputCount:       fileInputs.length,
-        selectCount:          selects.length,
-        textareaCount:        textareas.length,
+        formCount: forms.length,
+        inputCount: inputs.length,
+        fileInputCount: fileInputs.length,
+        selectCount: selects.length,
+        textareaCount: textareas.length,
         buttonTexts,
         hasProgressIndicator: progress.length > 0 || hasProgressText,
-        requiredFieldCount:   required.length,
-        hasOverlay:           detectOverlay(),
-        hasResumeUpload:      detectResumeUpload(),
-        hasCompletionToast:   detectCompletionToast(),
-        hasApplyButton:       detectApplyButton(),
-        hasEmbeddedATS:       detectEmbeddedATS(),   // ← new
+        requiredFieldCount: required.length,
+        hasOverlay: detectOverlay(),
+        hasResumeUpload: detectResumeUpload(),
+        hasCompletionToast: detectCompletionToast(),
+        hasApplyButton: detectApplyButton(),
+        hasEmbeddedATS: detectEmbeddedATS(),   // ← new
     };
 }
 
@@ -306,43 +337,43 @@ function buildSnapshot(signals: ReturnType<typeof collectSignals>): SignalSnapsh
     ].some(p => bodyLower.includes(p));
 
     return {
-        url:                  signals.url,
-        formCount:            signals.formCount,
-        inputCount:           signals.inputCount,
-        fileInputCount:       signals.fileInputCount,
-        selectCount:          signals.selectCount,
-        textareaCount:        signals.textareaCount,
-        requiredFieldCount:   signals.requiredFieldCount,
+        url: signals.url,
+        formCount: signals.formCount,
+        inputCount: signals.inputCount,
+        fileInputCount: signals.fileInputCount,
+        selectCount: signals.selectCount,
+        textareaCount: signals.textareaCount,
+        requiredFieldCount: signals.requiredFieldCount,
         hasProgressIndicator: signals.hasProgressIndicator,
         hasSubmitButton,
-        hasApplyButton:       signals.hasApplyButton,
+        hasApplyButton: signals.hasApplyButton,
         hasCompletionText,
-        hasResumeUpload:      signals.hasResumeUpload,
-        hasOverlay:           signals.hasOverlay,
-        hasEmbeddedATS:       signals.hasEmbeddedATS,   // ← new
-        buttonFingerprint:    signals.buttonTexts.slice(0, 8).join('|'),
+        hasResumeUpload: signals.hasResumeUpload,
+        hasOverlay: signals.hasOverlay,
+        hasEmbeddedATS: signals.hasEmbeddedATS,   // ← new
+        buttonFingerprint: signals.buttonTexts.slice(0, 8).join('|'),
     };
 }
 
 // -- Detect meaningful change --------------------------------------------------
 function hasMeaningfulChange(prev: SignalSnapshot, next: SignalSnapshot): boolean {
-    if (prev.url !== next.url)                                    return true;
-    if (prev.formCount !== next.formCount)                        return true;
-    if (prev.requiredFieldCount !== next.requiredFieldCount)      return true;
-    if (prev.fileInputCount !== next.fileInputCount)              return true;
-    if (prev.hasSubmitButton !== next.hasSubmitButton)            return true;
-    if (prev.hasApplyButton && !next.hasApplyButton)              return true;
-    if (!prev.hasCompletionText && next.hasCompletionText)        return true;
-    if (!prev.hasProgressIndicator && next.hasProgressIndicator)  return true;
-    if (!prev.hasOverlay && next.hasOverlay)                      return true;
-    if (prev.hasOverlay && !next.hasOverlay)                      return true;
-    if (!prev.hasResumeUpload && next.hasResumeUpload)            return true;
-    if (!prev.hasEmbeddedATS && next.hasEmbeddedATS)              return true;   // ← new
-    if (Math.abs(next.inputCount - prev.inputCount) >= 4)         return true;
-    if (prev.textareaCount !== next.textareaCount)                return true;
+    if (prev.url !== next.url) return true;
+    if (prev.formCount !== next.formCount) return true;
+    if (prev.requiredFieldCount !== next.requiredFieldCount) return true;
+    if (prev.fileInputCount !== next.fileInputCount) return true;
+    if (prev.hasSubmitButton !== next.hasSubmitButton) return true;
+    if (prev.hasApplyButton && !next.hasApplyButton) return true;
+    if (!prev.hasCompletionText && next.hasCompletionText) return true;
+    if (!prev.hasProgressIndicator && next.hasProgressIndicator) return true;
+    if (!prev.hasOverlay && next.hasOverlay) return true;
+    if (prev.hasOverlay && !next.hasOverlay) return true;
+    if (!prev.hasResumeUpload && next.hasResumeUpload) return true;
+    if (!prev.hasEmbeddedATS && next.hasEmbeddedATS) return true;   // ← new
+    if (Math.abs(next.inputCount - prev.inputCount) >= 4) return true;
+    if (prev.textareaCount !== next.textareaCount) return true;
     if (prev.buttonFingerprint !== next.buttonFingerprint &&
         (next.hasSubmitButton || next.requiredFieldCount > 0 || next.hasOverlay))
-                                                                  return true;
+        return true;
     return false;
 }
 
@@ -355,7 +386,7 @@ function sendPageData(): void {
     try {
         const data = collectSignals();
         ipcRenderer.sendToHost('page-data', data);
-        lastSentUrl  = data.url;
+        lastSentUrl = data.url;
         lastSnapshot = buildSnapshot(data);
     } catch { /* ignore */ }
 }
@@ -384,10 +415,10 @@ function onUrlChange(): void {
     }
 }
 
-const origPush    = history.pushState.bind(history);
+const origPush = history.pushState.bind(history);
 const origReplace = history.replaceState.bind(history);
-history.pushState    = function(...args: Parameters<typeof history.pushState>)    { origPush(...args);    onUrlChange(); };
-history.replaceState = function(...args: Parameters<typeof history.replaceState>) { origReplace(...args); onUrlChange(); };
+history.pushState = function (...args: Parameters<typeof history.pushState>) { origPush(...args); onUrlChange(); };
+history.replaceState = function (...args: Parameters<typeof history.replaceState>) { origReplace(...args); onUrlChange(); };
 window.addEventListener('popstate', () => onUrlChange());
 
 // -- Trigger 3: DOM mutation ---------------------------------------------------
@@ -397,8 +428,8 @@ let lastFileCount = 0;
 const observer = new MutationObserver(() => {
     clearTimeout(visionTimer ?? undefined);
     visionTimer = setTimeout(() => {
-        const forms  = document.querySelectorAll('form').length;
-        const files  = document.querySelectorAll('input[type="file"]').length;
+        const forms = document.querySelectorAll('form').length;
+        const files = document.querySelectorAll('input[type="file"]').length;
         const inputs = document.querySelectorAll('input:not([type="hidden"])').length;
         if (files > lastFileCount || (forms > lastFormCount && inputs > 3)) {
             scheduleSend(500);
@@ -421,7 +452,7 @@ setInterval(() => {
     if (document.readyState !== 'complete') return;
     try {
         const signals = collectSignals();
-        const snap    = buildSnapshot(signals);
+        const snap = buildSnapshot(signals);
         if (lastSnapshot === null) {
             lastSnapshot = snap;
             return;

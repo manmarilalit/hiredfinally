@@ -1,1 +1,19 @@
-[]
+[
+  {
+    "type": "celebration",
+    "title": "🎊 Milestone Achieved!",
+    "desc": "🎉 Your first application is complete! Great start!",
+    "actionRequired": false,
+    "actions": [
+      {
+        "label": "View pipeline",
+        "style": "ghost",
+        "action": "open-pipeline"
+      }
+    ],
+    "id": "n-1773857798033-aj25d",
+    "timestamp": 1773857798033,
+    "unread": true,
+    "dismissed": false
+  }
+]
