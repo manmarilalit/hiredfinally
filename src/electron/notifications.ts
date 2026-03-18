@@ -526,24 +526,39 @@ class NotificationManager {
     if (!this.settings.enabled) return;
 
     try {
+      // Windows requires appUserModelId to be set — verify Notification is supported
+      if (!Notification.isSupported()) {
+        console.log('[NOTIFICATIONS] Notifications not supported on this platform');
+        // Still push to in-app feed even if OS notification fails
+        if (this.notifStore) {
+          this.notifStore.push(this.mapToPushPayload(options, data));
+        }
+        return;
+      }
+
       const notification = new Notification({
         title: options.title,
         body: options.body,
         silent: !this.settings.soundEnabled,
+        // Windows: icon helps notifications appear reliably
+        icon: require('path').join(__dirname, 'icon.png'),
       });
 
       notification.on('click', () => {
-        console.log('[NOTIFICATIONS] Notification clicked:', data);
+        console.log('[NOTIFICATIONS] Notification clicked:', data?.type);
+      });
+
+      notification.on('failed', (e: any) => {
+        console.error('[NOTIFICATIONS] Notification failed to show:', e);
       });
 
       notification.show();
+      console.log(`[NOTIFICATIONS] OS notification fired: ${options.title}`);
 
-      // Push to in-app notification feed (notifications.html)
       if (this.notifStore) {
         this.notifStore.push(this.mapToPushPayload(options, data));
       }
 
-      console.log(`[NOTIFICATIONS] Showed notification: ${options.title}`);
     } catch (error) {
       console.error('[NOTIFICATIONS] Failed to show notification:', error);
     }

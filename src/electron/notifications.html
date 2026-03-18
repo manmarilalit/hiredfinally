@@ -821,6 +821,12 @@
       function showToast(msg) { const t = document.getElementById("hfToast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2400); }
 
       let notifications = [], activeTab = 'all';
+      let snoozeDurationMins = 120; // default; overridden by settings-loaded
+
+      ipcRenderer.on('settings-loaded', (_e, s) => {
+        if (s && s.snoozeDurationMins) snoozeDurationMins = s.snoozeDurationMins;
+      });
+      ipcRenderer.send('get-settings'); // ask main to emit settings-loaded
       ipcRenderer.send("get-notifications");
       ipcRenderer.on("notifications-data", (_e, data) => { notifications = data || []; render(); });
       ipcRenderer.on("push-notification-ui", (_e, notif) => { notifications = [notif, ...notifications.filter(n => n.id !== notif.id)]; render(); });
@@ -913,7 +919,16 @@
         const n = notifications.find(x => x.id === id);
         switch (action) {
           case 'dismiss': btn.closest('.notif-card').classList.add('dismissing'); setTimeout(() => { if (n) { n.dismissed = true; n.unread = false; n.actionRequired = false; } ipcRenderer.send('dismiss-notification', id); render(); }, 220); break;
-          case 'snooze': ipcRenderer.send('snooze-notification', id); notifications = notifications.filter(x => x.id !== id); showToast('Snoozed for 2 hours'); render(); break;
+          case 'snooze': {
+            ipcRenderer.send('snooze-notification', { id, durationMins: snoozeDurationMins });
+            notifications = notifications.filter(x => x.id !== id);
+            const label = snoozeDurationMins >= 60
+              ? `${snoozeDurationMins / 60}h`
+              : `${snoozeDurationMins}m`;
+            showToast(`Snoozed for ${label}`);
+            render();
+            break;
+          }
           case 'open-pipeline': ipcRenderer.send('open-pipeline'); if (n) { n.unread = false; ipcRenderer.send('mark-notification-read', id); render(); } break;
           case 'navigate-home': ipcRenderer.send('navigate-home'); if (n) { n.unread = false; ipcRenderer.send('mark-notification-read', id); render(); } break;
           case 'open-url': if (n && n.jobUrl) ipcRenderer.send('open-url-in-home', n.jobUrl); if (n) { n.unread = false; ipcRenderer.send('mark-notification-read', id); render(); } break;

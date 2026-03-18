@@ -654,6 +654,151 @@
       display: none;
     }
 
+    /* ── Custom dropdown ── */
+    .s-dd {
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .s-dd-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px 5px 14px;
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      background: rgba(255, 255, 255, 0.04);
+      font-family: "DM Sans", sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: border-color 0.15s, background 0.15s;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    [data-theme="light"] .s-dd-btn {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .s-dd-btn:hover,
+    .s-dd.open .s-dd-btn {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .s-dd-btn svg {
+      width: 12px;
+      height: 12px;
+      stroke: var(--text-3);
+      stroke-width: 2.5;
+      flex-shrink: 0;
+      transition: transform 0.15s;
+    }
+
+    .s-dd.open .s-dd-btn svg {
+      transform: rotate(180deg);
+      stroke: var(--accent);
+    }
+
+    .s-dd-menu {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: calc(100% + 6px);
+      min-width: 140px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 5px;
+      z-index: 999;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    [data-theme="light"] .s-dd-menu {
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    }
+
+    .s-dd.open .s-dd-menu {
+      display: block;
+    }
+
+    .s-dd-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 12px;
+      border-radius: 9px;
+      font-size: 13px;
+      color: var(--text-2);
+      cursor: pointer;
+      transition: background 0.1s, color 0.1s;
+    }
+
+    .s-dd-item:hover {
+      background: var(--accent-soft);
+      color: var(--text);
+    }
+
+    .s-dd-item.active {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .s-dd-item.active::after {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .s-dd-divider {
+      height: 1px;
+      background: var(--border-s);
+      margin: 4px 6px;
+    }
+
+    .s-dd-custom-row {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 8px 4px;
+    }
+
+    .s-dd-custom-row.visible {
+      display: flex;
+    }
+
+    .s-dd-custom-input {
+      width: 52px;
+      text-align: center;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 4px 8px;
+      font-family: "DM Sans", sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      outline: none;
+      -webkit-user-select: text;
+      user-select: text;
+      transition: border-color 0.15s;
+    }
+
+    .s-dd-custom-input:focus {
+      border-color: var(--accent);
+    }
+
+    .s-dd-custom-label {
+      font-size: 12px;
+      color: var(--text-3);
+    }
+
     .s-btn {
       padding: 7px 18px;
       border-radius: 99px;
@@ -1007,7 +1152,6 @@
           <div class="s-panel active" id="s-panel-notifications">
             <div class="s-panel-header">
               <div class="s-panel-title">Edit Notifications</div>
-              <button class="s-btn s-btn-success" id="testNotifBtn">Send Test</button>
             </div>
 
             <div class="s-section">General</div>
@@ -1030,6 +1174,32 @@
               </div>
             </div>
 
+            <div class="s-row">
+              <div class="s-row-info">
+                <div class="s-row-name">Snooze Duration</div>
+                <div class="s-row-desc">How long to hide a notification when you snooze it.</div>
+              </div>
+              <div class="s-dd" id="dd-snoozeDuration" data-field="snoozeDuration" data-default="120">
+                <button class="s-dd-btn" type="button"><span class="s-dd-label">2 hours</span><svg viewBox="0 0 24 24"
+                    fill="none">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg></button>
+                <div class="s-dd-menu">
+                  <div class="s-dd-item" data-val="30">30 min</div>
+                  <div class="s-dd-item" data-val="60">1 hour</div>
+                  <div class="s-dd-item active" data-val="120">2 hours</div>
+                  <div class="s-dd-item" data-val="240">4 hours</div>
+                  <div class="s-dd-item" data-val="480">8 hours</div>
+                  <div class="s-dd-divider"></div>
+                  <div class="s-dd-item" data-val="custom">Custom…</div>
+                  <div class="s-dd-custom-row" id="dd-snoozeDuration-custom">
+                    <input class="s-dd-custom-input" type="number" min="1" max="1440" placeholder="–">
+                    <span class="s-dd-custom-label">min</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div class="s-section">After Applying</div>
 
             <div class="s-row">
@@ -1039,9 +1209,25 @@
                 <div class="s-row-name">Spam Folder Check</div>
                 <div class="s-row-desc">Remind you to check spam for recruiter replies after applying.</div>
               </div>
-              <div class="s-pill-input">
-                <input type="number" id="spamCheckDelay" min="1" max="14" value="3">
-                <span>days</span>
+              <div class="s-dd" id="dd-spamCheckDelay" data-field="spamCheckDelay" data-default="3">
+                <button class="s-dd-btn" type="button"><span class="s-dd-label">3 days</span><svg viewBox="0 0 24 24"
+                    fill="none">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg></button>
+                <div class="s-dd-menu">
+                  <div class="s-dd-item" data-val="1">1 day</div>
+                  <div class="s-dd-item" data-val="2">2 days</div>
+                  <div class="s-dd-item active" data-val="3">3 days</div>
+                  <div class="s-dd-item" data-val="5">5 days</div>
+                  <div class="s-dd-item" data-val="7">7 days</div>
+                  <div class="s-dd-item" data-val="14">14 days</div>
+                  <div class="s-dd-divider"></div>
+                  <div class="s-dd-item" data-val="custom">Custom…</div>
+                  <div class="s-dd-custom-row" id="dd-spamCheckDelay-custom">
+                    <input class="s-dd-custom-input" type="number" min="1" max="99" placeholder="–">
+                    <span class="s-dd-custom-label">days</span>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1052,9 +1238,26 @@
                 <div class="s-row-name">Follow-up Email Reminder</div>
                 <div class="s-row-desc">Nudge to send a polite follow-up after no response.</div>
               </div>
-              <div class="s-pill-input">
-                <input type="number" id="postApplyFollowUpDelay" min="1" max="30" value="10">
-                <span>days</span>
+              <div class="s-dd" id="dd-postApplyFollowUpDelay" data-field="postApplyFollowUpDelay" data-default="10">
+                <button class="s-dd-btn" type="button"><span class="s-dd-label">10 days</span><svg viewBox="0 0 24 24"
+                    fill="none">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg></button>
+                <div class="s-dd-menu">
+                  <div class="s-dd-item" data-val="3">3 days</div>
+                  <div class="s-dd-item" data-val="5">5 days</div>
+                  <div class="s-dd-item" data-val="7">7 days</div>
+                  <div class="s-dd-item active" data-val="10">10 days</div>
+                  <div class="s-dd-item" data-val="14">14 days</div>
+                  <div class="s-dd-item" data-val="21">21 days</div>
+                  <div class="s-dd-item" data-val="30">30 days</div>
+                  <div class="s-dd-divider"></div>
+                  <div class="s-dd-item" data-val="custom">Custom…</div>
+                  <div class="s-dd-custom-row" id="dd-postApplyFollowUpDelay-custom">
+                    <input class="s-dd-custom-input" type="number" min="1" max="99" placeholder="–">
+                    <span class="s-dd-custom-label">days</span>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1076,9 +1279,25 @@
                 <div class="s-row-name">Follow-up on Viewed Jobs</div>
                 <div class="s-row-desc">Remind you to apply to jobs you viewed but skipped.</div>
               </div>
-              <div class="s-pill-input">
-                <input type="number" id="followUpDelay" min="1" max="168" value="24">
-                <span>hrs</span>
+              <div class="s-dd" id="dd-followUpDelay" data-field="followUpDelay" data-default="24">
+                <button class="s-dd-btn" type="button"><span class="s-dd-label">24 hrs</span><svg viewBox="0 0 24 24"
+                    fill="none">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg></button>
+                <div class="s-dd-menu">
+                  <div class="s-dd-item" data-val="6">6 hrs</div>
+                  <div class="s-dd-item" data-val="12">12 hrs</div>
+                  <div class="s-dd-item active" data-val="24">24 hrs</div>
+                  <div class="s-dd-item" data-val="48">48 hrs</div>
+                  <div class="s-dd-item" data-val="72">72 hrs</div>
+                  <div class="s-dd-item" data-val="168">1 week</div>
+                  <div class="s-dd-divider"></div>
+                  <div class="s-dd-item" data-val="custom">Custom…</div>
+                  <div class="s-dd-custom-row" id="dd-followUpDelay-custom">
+                    <input class="s-dd-custom-input" type="number" min="1" max="999" placeholder="–">
+                    <span class="s-dd-custom-label">hrs</span>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1103,9 +1322,25 @@
                 <div class="s-row-name">Weekly Application Goal</div>
                 <div class="s-row-desc">Track progress toward a weekly target.</div>
               </div>
-              <div class="s-pill-input">
-                <input type="number" id="weeklyGoal" min="1" max="50" value="5">
-                <span>/ week</span>
+              <div class="s-dd" id="dd-weeklyGoal" data-field="weeklyGoal" data-default="5">
+                <button class="s-dd-btn" type="button"><span class="s-dd-label">5 / week</span><svg viewBox="0 0 24 24"
+                    fill="none">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg></button>
+                <div class="s-dd-menu">
+                  <div class="s-dd-item" data-val="1">1 / week</div>
+                  <div class="s-dd-item" data-val="3">3 / week</div>
+                  <div class="s-dd-item active" data-val="5">5 / week</div>
+                  <div class="s-dd-item" data-val="10">10 / week</div>
+                  <div class="s-dd-item" data-val="15">15 / week</div>
+                  <div class="s-dd-item" data-val="25">25 / week</div>
+                  <div class="s-dd-divider"></div>
+                  <div class="s-dd-item" data-val="custom">Custom…</div>
+                  <div class="s-dd-custom-row" id="dd-weeklyGoal-custom">
+                    <input class="s-dd-custom-input" type="number" min="1" max="99" placeholder="–">
+                    <span class="s-dd-custom-label">/ week</span>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1116,9 +1351,25 @@
                 <div class="s-row-name">Inactivity Reminders</div>
                 <div class="s-row-desc">Notified when you haven't applied recently.</div>
               </div>
-              <div class="s-pill-input">
-                <input type="number" id="inactivityDelay" min="1" max="30" value="3">
-                <span>days</span>
+              <div class="s-dd" id="dd-inactivityDelay" data-field="inactivityDelay" data-default="3">
+                <button class="s-dd-btn" type="button"><span class="s-dd-label">3 days</span><svg viewBox="0 0 24 24"
+                    fill="none">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg></button>
+                <div class="s-dd-menu">
+                  <div class="s-dd-item" data-val="1">1 day</div>
+                  <div class="s-dd-item" data-val="2">2 days</div>
+                  <div class="s-dd-item active" data-val="3">3 days</div>
+                  <div class="s-dd-item" data-val="5">5 days</div>
+                  <div class="s-dd-item" data-val="7">7 days</div>
+                  <div class="s-dd-item" data-val="14">14 days</div>
+                  <div class="s-dd-divider"></div>
+                  <div class="s-dd-item" data-val="custom">Custom…</div>
+                  <div class="s-dd-custom-row" id="dd-inactivityDelay-custom">
+                    <input class="s-dd-custom-input" type="number" min="1" max="99" placeholder="–">
+                    <span class="s-dd-custom-label">days</span>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1319,6 +1570,13 @@
         set("spamCheckDelay", s.spamCheckDelay, "value");
         set("keepApplyingEnabled", s.keepApplyingEnabled);
         set("milestoneEnabled", s.milestoneEnabled);
+        // Restore dropdown values
+        ddSetVal('spamCheckDelay', s.spamCheckDelay ?? 3);
+        ddSetVal('postApplyFollowUpDelay', s.postApplyFollowUpDelay ?? 10);
+        ddSetVal('followUpDelay', s.followUpDelay ?? 24);
+        ddSetVal('weeklyGoal', s.weeklyGoal ?? 5);
+        ddSetVal('inactivityDelay', s.inactivityDelay ?? 3);
+        ddSetVal('snoozeDuration', s.snoozeDurationMins ?? 120);
       });
       ipcRenderer.send("get-settings");
 
@@ -1330,27 +1588,121 @@
         });
       } catch { }
 
+      // ── Custom dropdown logic ────────────────────────────────────────────
+      // Each .s-dd has: data-field (key for collectSettings), data-default (numeric fallback)
+      // Items have data-val (numeric string or "custom")
+
+      function ddGetVal(fieldId) {
+        const dd = document.getElementById(`dd-${fieldId}`);
+        if (!dd) return null;
+        const active = dd.querySelector('.s-dd-item.active');
+        if (!active) return parseInt(dd.dataset.default, 10);
+        if (active.dataset.val === 'custom') {
+          return parseInt(dd.querySelector('.s-dd-custom-input')?.value, 10) || parseInt(dd.dataset.default, 10);
+        }
+        return parseInt(active.dataset.val, 10);
+      }
+
+      function ddSetVal(fieldId, val) {
+        const dd = document.getElementById(`dd-${fieldId}`);
+        if (!dd) return;
+        const items = dd.querySelectorAll('.s-dd-item[data-val]');
+        const preset = dd.querySelector(`.s-dd-item[data-val="${val}"]`);
+        const customRow = document.getElementById(`dd-${fieldId}-custom`);
+        const label = dd.querySelector('.s-dd-label');
+        items.forEach(i => i.classList.remove('active'));
+        if (preset && preset.dataset.val !== 'custom') {
+          preset.classList.add('active');
+          if (label) label.textContent = preset.textContent;
+          if (customRow) customRow.classList.remove('visible');
+        } else {
+          const customItem = dd.querySelector('.s-dd-item[data-val="custom"]');
+          if (customItem) customItem.classList.add('active');
+          const input = dd.querySelector('.s-dd-custom-input');
+          if (input) input.value = val;
+          if (label) label.textContent = `${val} (custom)`;
+          if (customRow) customRow.classList.add('visible');
+        }
+      }
+
+      // Wire all dropdowns
+      document.querySelectorAll('.s-dd').forEach(dd => {
+        const btn = dd.querySelector('.s-dd-btn');
+        const menu = dd.querySelector('.s-dd-menu');
+        const fieldId = dd.dataset.field;
+        const customRow = document.getElementById(`dd-${fieldId}-custom`);
+
+        btn.addEventListener('click', e => {
+          e.stopPropagation();
+          // Close all others
+          document.querySelectorAll('.s-dd.open').forEach(other => { if (other !== dd) other.classList.remove('open'); });
+          dd.classList.toggle('open');
+        });
+
+        dd.querySelectorAll('.s-dd-item[data-val]').forEach(item => {
+          item.addEventListener('click', e => {
+            e.stopPropagation();
+            const val = item.dataset.val;
+            const isCustom = val === 'custom';
+            dd.querySelectorAll('.s-dd-item').forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+            const label = dd.querySelector('.s-dd-label');
+            if (isCustom) {
+              if (customRow) customRow.classList.add('visible');
+              const input = customRow?.querySelector('.s-dd-custom-input');
+              if (input) { input.focus(); }
+              if (label) label.textContent = 'Custom';
+            } else {
+              if (customRow) customRow.classList.remove('visible');
+              if (label) label.textContent = item.textContent.trim();
+              dd.classList.remove('open');
+            }
+          });
+        });
+
+        // Confirm custom value on Enter or blur
+        const customInput = customRow?.querySelector('.s-dd-custom-input');
+        if (customInput) {
+          const confirmCustom = () => {
+            const v = parseInt(customInput.value, 10);
+            const label = dd.querySelector('.s-dd-label');
+            const unit = customRow.querySelector('.s-dd-custom-label')?.textContent || '';
+            if (!isNaN(v) && v > 0) {
+              if (label) label.textContent = `${v} ${unit}`.trim();
+            }
+          };
+          customInput.addEventListener('change', confirmCustom);
+          customInput.addEventListener('keydown', e => { if (e.key === 'Enter') { confirmCustom(); dd.classList.remove('open'); } });
+          customInput.addEventListener('click', e => e.stopPropagation());
+        }
+      });
+
+      // Close dropdowns when clicking outside
+      document.addEventListener('click', () => {
+        document.querySelectorAll('.s-dd.open').forEach(dd => dd.classList.remove('open'));
+      });
+
       function collectSettings() {
-        const g = id => document.getElementById(id);
         return {
-          enabled: g("notifEnabled").checked,
-          soundEnabled: g("soundEnabled").checked,
-          followUpEnabled: g("followUpEnabled").checked,
-          followUpDelay: parseInt(g("followUpDelay").value) || 24,
-          dailyReminderEnabled: g("dailyEnabled").checked,
-          dailyReminderTime: g("dailyTime").value,
+          enabled: document.getElementById("notifEnabled").checked,
+          soundEnabled: document.getElementById("soundEnabled").checked,
+          followUpEnabled: document.getElementById("followUpEnabled").checked,
+          followUpDelay: ddGetVal('followUpDelay') ?? 24,
+          dailyReminderEnabled: document.getElementById("dailyEnabled").checked,
+          dailyReminderTime: document.getElementById("dailyTime").value,
           emailCheckEnabled: false,
           emailCheckInterval: 30,
-          inactivityReminderEnabled: g("inactivityEnabled").checked,
-          inactivityDelay: parseInt(g("inactivityDelay").value) || 3,
-          weeklyGoalEnabled: g("weeklyEnabled").checked,
-          weeklyGoal: parseInt(g("weeklyGoal").value) || 5,
-          postApplyFollowUpEnabled: g("postApplyFollowUpEnabled").checked,
-          postApplyFollowUpDelay: parseInt(g("postApplyFollowUpDelay").value) || 10,
-          spamCheckEnabled: g("spamCheckEnabled").checked,
-          spamCheckDelay: parseInt(g("spamCheckDelay").value) || 3,
-          keepApplyingEnabled: g("keepApplyingEnabled").checked,
-          milestoneEnabled: g("milestoneEnabled").checked,
+          inactivityReminderEnabled: document.getElementById("inactivityEnabled").checked,
+          inactivityDelay: ddGetVal('inactivityDelay') ?? 3,
+          weeklyGoalEnabled: document.getElementById("weeklyEnabled").checked,
+          weeklyGoal: ddGetVal('weeklyGoal') ?? 5,
+          postApplyFollowUpEnabled: document.getElementById("postApplyFollowUpEnabled").checked,
+          postApplyFollowUpDelay: ddGetVal('postApplyFollowUpDelay') ?? 10,
+          spamCheckEnabled: document.getElementById("spamCheckEnabled").checked,
+          spamCheckDelay: ddGetVal('spamCheckDelay') ?? 3,
+          keepApplyingEnabled: document.getElementById("keepApplyingEnabled").checked,
+          milestoneEnabled: document.getElementById("milestoneEnabled").checked,
+          snoozeDurationMins: ddGetVal('snoozeDuration') ?? 120,
         };
       }
 
@@ -1360,10 +1712,6 @@
         setTimeout(() => ipcRenderer.send("navigate-home"), 500);
       });
       document.getElementById("settingsCancel").addEventListener("click", () => ipcRenderer.send("navigate-home"));
-      document.getElementById("testNotifBtn").addEventListener("click", () => {
-        ipcRenderer.send("show-notification", { title: "HiredFinally", body: "Notifications are working." });
-        showToast("Test sent");
-      });
       document.getElementById("exportBtn").addEventListener("click", () => {
         ipcRenderer.send("export-application-data"); showToast("Exporting…");
       });

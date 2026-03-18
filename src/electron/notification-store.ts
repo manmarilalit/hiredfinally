@@ -14,36 +14,36 @@
 //   notifStore.push({ type: 'followup', title: '...', desc: '...', ... });
 // ─────────────────────────────────────────────────────────────────────────────
 
-const fs      = require('fs');
+const fs = require('fs');
 const { ipcMain } = require('electron');
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
 export interface UINotificationAction {
-  label:  string;
-  style:  'primary' | 'ghost';
+  label: string;
+  style: 'primary' | 'ghost';
   action: string;   // matches action strings handled in notifications.html
 }
 
 export interface UINotificationProgress {
   value: number;
-  max:   number;
+  max: number;
 }
 
 export interface UINotification {
-  id:              string;
-  type:            'followup' | 'thankyou' | 'email' | 'interview' | 'weekly' |
-                   'deadline' | 'inactivity' | 'milestone' | 'daily';
-  title:           string;
-  desc:            string;               // may contain <strong> tags
-  timestamp:       number;
-  unread:          boolean;
-  actionRequired:  boolean;
-  dismissed:       boolean;
-  jobUrl?:         string;               // used by 'open-url' action
-  progress?:       UINotificationProgress;
-  actions?:        UINotificationAction[];
-  snoozeUntil?:    number | undefined;  // epoch ms; set by snooze-notification IPC
+  id: string;
+  type: 'followup' | 'thankyou' | 'email' | 'interview' | 'weekly' |
+  'deadline' | 'inactivity' | 'milestone' | 'daily';
+  title: string;
+  desc: string;               // may contain <strong> tags
+  timestamp: number;
+  unread: boolean;
+  actionRequired: boolean;
+  dismissed: boolean;
+  jobUrl?: string;               // used by 'open-url' action
+  progress?: UINotificationProgress;
+  actions?: UINotificationAction[];
+  snoozeUntil?: number | undefined;  // epoch ms; set by snooze-notification IPC
 }
 
 // ── NotificationStore ────────────────────────────────────────────────────────
@@ -55,7 +55,7 @@ export class NotificationStore {
   private snoozeTimers: Map<string, NodeJS.Timeout> = new Map();
 
   constructor(storePath: string, mainWindow: any) {
-    this.storePath  = storePath;
+    this.storePath = storePath;
     this.mainWindow = mainWindow;
 
     this.load();
@@ -97,7 +97,7 @@ export class NotificationStore {
    * fills in sensible defaults so callers only need to provide the meaningful fields.
    */
   public push(notif: Partial<Pick<UINotification, 'id' | 'timestamp' | 'unread' | 'dismissed' | 'snoozeUntil'>>
-                   & Omit<UINotification, 'id' | 'timestamp' | 'unread' | 'dismissed' | 'snoozeUntil'>): void {
+    & Omit<UINotification, 'id' | 'timestamp' | 'unread' | 'dismissed' | 'snoozeUntil'>): void {
     const {
       id,
       timestamp,
@@ -108,9 +108,9 @@ export class NotificationStore {
     } = notif as UINotification;
     const record: UINotification = {
       ...rest,
-      id:        id        ?? `n-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      id: id ?? `n-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       timestamp: timestamp ?? Date.now(),
-      unread:    unread    ?? true,
+      unread: unread ?? true,
       dismissed: dismissed ?? false,
       ...(typeof snoozeUntil === 'number' ? { snoozeUntil } : {}),
     };
@@ -124,7 +124,7 @@ export class NotificationStore {
     // Cap history at 200 entries (dismissed ones pruned first)
     if (this.notifications.length > 200) {
       const dismissed = this.notifications.filter(n => n.dismissed);
-      const active    = this.notifications.filter(n => !n.dismissed);
+      const active = this.notifications.filter(n => !n.dismissed);
       this.notifications = [...active, ...dismissed].slice(0, 200);
     }
 
@@ -194,8 +194,8 @@ export class NotificationStore {
     ipcMain.on('dismiss-notification', (_e: any, id: string) => {
       const n = this.notifications.find(x => x.id === id);
       if (n) {
-        n.dismissed      = true;
-        n.unread         = false;
+        n.dismissed = true;
+        n.unread = false;
         n.actionRequired = false;
         this.save();
       }
@@ -207,8 +207,11 @@ export class NotificationStore {
       this.save();
     });
 
-    // Snooze: hide for 2 hours then re-push
-    ipcMain.on('snooze-notification', (_e: any, id: string) => {
+    // Snooze: hide for configurable duration then re-push
+    // Accepts either a plain id string (legacy) or { id, durationMins } object
+    ipcMain.on('snooze-notification', (_e: any, payload: string | { id: string; durationMins?: number }) => {
+      const id = typeof payload === 'string' ? payload : payload.id;
+      const durationMins = typeof payload === 'object' && payload.durationMins ? payload.durationMins : 120;
       const n = this.notifications.find(x => x.id === id);
       if (!n) return;
 
@@ -216,15 +219,27 @@ export class NotificationStore {
       const existing = this.snoozeTimers.get(id);
       if (existing) clearTimeout(existing);
 
-      const snoozeUntil = Date.now() + 2 * 60 * 60 * 1000; // 2 hours
+      const durationMs = durationMins * 60 * 1000;
+      const snoozeUntil = Date.now() + durationMs;
       n.snoozeUntil = snoozeUntil;
-      n.dismissed   = true; // hide from the list while snoozed
+      n.dismissed = true; // hide from the list while snoozed
       this.save();
 
-      const timer = setTimeout(() => this.unsnoozePush(n), 2 * 60 * 60 * 1000);
+      const timer = setTimeout(() => this.unsnoozePush(n), durationMs);
       this.snoozeTimers.set(id, timer);
 
-      console.log(`[NOTIF-STORE] snoozed ${id} for 2h`);
+      console.log(`[NOTIF-STORE] snoozed ${id} for ${durationMins}m`);
+    });
+
+    // Test notification: inject a real card into the feed (fired from settings)
+    ipcMain.on('push-test-notification', (_e: any, partial: Partial<UINotification>) => {
+      this.push({
+        type: (partial.type as UINotification['type']) || 'daily',
+        title: partial.title || 'HiredFinally Test',
+        desc: partial.desc || 'This is a test notification.',
+        actionRequired: false,
+        actions: [{ label: 'Dismiss', style: 'ghost', action: 'dismiss' }],
+      });
     });
 
     // Navigate to notifications page (from other pages' sidebar bell)
