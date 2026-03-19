@@ -17,6 +17,7 @@ const {
   detectApplicationStatus,
   isDefiniteApplicationPage,
 } = require("./status");
+const storage = require("./storage");
 const {
   addInProgress,
   updateCompleted,
@@ -30,10 +31,12 @@ const {
   deleteApp,
   upsertInProgress,
   upsertCompleted,
-} = require("./storage");
+} = storage;
 const { NotificationManager } = require("./notifications");
 const { NotificationStore } = require("./notification-store");
 const { extractJobMeta, checkOllamaAvailable } = require("./extractor");
+const { AuthManager } = require("./auth");
+const { SyncManager } = require("./sync");
 
 // ── Analytics ────────────────────────────────────────────────────────────────
 const { PostHog } = require("posthog-node");
@@ -140,6 +143,8 @@ let tray: any = null;
 let notificationManager: any = null;
 let notifStore: any = null;
 let db: any = null;
+let auth: any = null;
+let sync: any = null;
 
 let updateDownloaded = false;
 
@@ -322,8 +327,33 @@ app.on("ready", async () => {
     },
   });
   mainWindow.setMenuBarVisibility(false);
-  mainWindow.loadFile(path.join(__dirname, "home.html"));
   mainWindow.once("ready-to-show", () => mainWindow.show());
+
+  // -- Auth setup ------------------------------------------------------------
+  auth = new AuthManager(mainWindow);
+  await auth.init();
+
+  sync = new SyncManager(auth, storage);
+
+  // Handle successful login from the renderer — run sync then go home
+  ipcMain.on("auth-login-success", async () => {
+    sync.fullSync().catch(console.error);
+    mainWindow.loadFile(path.join(__dirname, "home.html"));
+  });
+
+  // Navigate to login page after sign-out (auth-sign-out IPC is handled inside AuthManager)
+  // Listen for the renderer to tell us sign-out completed
+  ipcMain.on("auth-signed-out", () => {
+    mainWindow.loadFile(path.join(__dirname, "login.html"));
+  });
+
+  // Navigate to login or home depending on session
+  if (!auth.isLoggedIn()) {
+    mainWindow.loadFile(path.join(__dirname, "login.html"));
+  } else {
+    sync.fullSync().catch(console.error);
+    mainWindow.loadFile(path.join(__dirname, "home.html"));
+  }
 
   // -- System tray -----------------------------------------------------------
   tray = new Tray(iconPath);
@@ -638,6 +668,7 @@ app.on("ready", async () => {
         if (hasStartedApplication && urlToRemove) {
           console.log(`[MANUAL OVERRIDE] deleting app record for: ${urlToRemove}`);
           deleteApp(urlToRemove);
+          sync?.deleteRow(urlToRemove);
         }
         currentStatus = "NOT_STARTED";
         hasStartedApplication = false;
@@ -665,6 +696,7 @@ app.on("ready", async () => {
         const urlToRecord = lastNotStartedURL || url;
         console.log(`[MANUAL OVERRIDE] upsertInProgress: ${urlToRecord}`);
         upsertInProgress(urlToRecord, screenshotToUse);
+        sync?.pushRow(urlToRecord);
         startingURL = urlToRecord;
         hasStartedApplication = true;
         currentStatus = "IN_PROGRESS";
@@ -678,6 +710,7 @@ app.on("ready", async () => {
         const urlToComplete = startingURL || lastNotStartedURL || url;
         console.log(`[MANUAL OVERRIDE] upsertCompleted: ${urlToComplete}`);
         upsertCompleted(urlToComplete);
+        sync?.pushRow(urlToComplete);
         if (currentJobTitle) notificationManager?.onApplicationCompleted(urlToComplete, currentJobTitle);
         hasStartedApplication = false;
         startingURL = "";
@@ -735,7 +768,10 @@ app.on("ready", async () => {
     catch { event.sender.send("all-apps-data", []); }
   });
   ipcMain.on("delete-app", (_e: any, url: string) => {
-    try { db.prepare("DELETE FROM job_apps WHERE url = ?").run(url); } catch { /* ignore */ }
+    try {
+      db.prepare("DELETE FROM job_apps WHERE url = ?").run(url);
+      sync?.deleteRow(url);
+    } catch { /* ignore */ }
   });
   ipcMain.on("open-url-in-home", (_e: any, url: string) => {
     mainWindow?.loadFile(path.join(__dirname, "home.html"));
@@ -878,6 +914,7 @@ app.on("ready", async () => {
         const screenshotUsed = previousScreenshot ?? listingScreenshot;
         console.log(`[STATUS CHANGE] addInProgress: ${urlToRecord} | hasScreenshot: ${!!screenshotUsed}`);
         addInProgress(urlToRecord, screenshotUsed);
+        sync?.pushRow(urlToRecord);
         startingURL = urlToRecord;
         hasStartedApplication = true;
         // ── Track application started ───────────────────────────────────────
@@ -894,6 +931,7 @@ app.on("ready", async () => {
       if (urlToComplete) {
         console.log(`[STATUS CHANGE] updateCompleted: ${urlToComplete}`);
         updateCompleted(urlToComplete);
+        sync?.pushRow(urlToComplete);
         if (currentJobTitle) notificationManager.onApplicationCompleted(urlToComplete, currentJobTitle);
         // ── Track application completed ─────────────────────────────────────
         analytics.capture({ distinctId: anonymousId, event: "application_completed" });
@@ -928,6 +966,7 @@ app.on("ready", async () => {
         if (meta) {
           console.log(`[EXTRACTION] got meta for ${row.url} — title: "${meta.jobTitle}" company: "${meta.company}"`);
           updateMeta(row.url, meta.jobTitle, meta.company);
+          sync?.pushRow(row.url); // sync meta update
           clearScreenshot(row.url);
           mainWindow?.webContents.send("app-status-updated");
         } else {

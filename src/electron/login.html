@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>HiredFinally — Sign In</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0f1117;
+      --surface:   #1a1d27;
+      --border:    #2a2d3a;
+      --accent:    #6c63ff;
+      --accent-h:  #5a52e0;
+      --text:      #e8eaf0;
+      --muted:     #7a7f99;
+      --error:     #ff5c6a;
+      --success:   #3ecf8e;
+      --radius:    12px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      -webkit-app-region: drag;
+    }
+
+    .card {
+      -webkit-app-region: no-drag;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 40px 36px;
+      width: 380px;
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .logo h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+    .logo span { color: var(--accent); }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 4px;
+      margin-bottom: 24px;
+    }
+    .tab {
+      flex: 1;
+      padding: 8px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .tab.active {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    }
+
+    .form-group { margin-bottom: 16px; }
+    label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 10px 14px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input:focus { border-color: var(--accent); }
+
+    .btn {
+      width: 100%;
+      padding: 11px;
+      border: none;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background 0.15s, opacity 0.15s;
+    }
+    .btn:hover { background: var(--accent-h); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .message {
+      margin-top: 14px;
+      font-size: 13px;
+      text-align: center;
+      min-height: 18px;
+    }
+    .message.error   { color: var(--error); }
+    .message.success { color: var(--success); }
+
+    .forgot {
+      text-align: right;
+      margin-top: -8px;
+      margin-bottom: 16px;
+    }
+    .forgot a {
+      font-size: 12px;
+      color: var(--muted);
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .forgot a:hover { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">
+      <h1>Hired<span>Finally</span></h1>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" id="tab-signin" onclick="switchTab('signin')">Sign In</button>
+      <button class="tab"        id="tab-signup" onclick="switchTab('signup')">Create Account</button>
+    </div>
+
+    <!-- Sign In -->
+    <div id="panel-signin">
+      <div class="form-group">
+        <label>Email</label>
+        <input id="si-email" type="email" placeholder="you@example.com" autocomplete="email" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input id="si-password" type="password" placeholder="••••••••" autocomplete="current-password" />
+      </div>
+      <div class="forgot"><a onclick="forgotPassword()">Forgot password?</a></div>
+      <button class="btn" id="btn-signin" onclick="signIn()">Sign In</button>
+      <div class="message" id="si-msg"></div>
+    </div>
+
+    <!-- Sign Up -->
+    <div id="panel-signup" style="display:none">
+      <div class="form-group">
+        <label>Email</label>
+        <input id="su-email" type="email" placeholder="you@example.com" autocomplete="email" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input id="su-password" type="password" placeholder="At least 6 characters" autocomplete="new-password" />
+      </div>
+      <button class="btn" id="btn-signup" onclick="signUp()">Create Account</button>
+      <div class="message" id="su-msg"></div>
+    </div>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+
+    function switchTab(tab) {
+      document.getElementById('panel-signin').style.display = tab === 'signin' ? '' : 'none';
+      document.getElementById('panel-signup').style.display = tab === 'signup' ? '' : 'none';
+      document.getElementById('tab-signin').classList.toggle('active', tab === 'signin');
+      document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
+    }
+
+    function setMsg(id, text, type) {
+      const el = document.getElementById(id);
+      el.textContent = text;
+      el.className = `message ${type}`;
+    }
+
+    async function signIn() {
+      const email    = document.getElementById('si-email').value.trim();
+      const password = document.getElementById('si-password').value;
+      if (!email || !password) return setMsg('si-msg', 'Please fill in all fields.', 'error');
+
+      const btn = document.getElementById('btn-signin');
+      btn.disabled = true;
+      btn.textContent = 'Signing in…';
+      setMsg('si-msg', '', '');
+
+      const res = await ipcRenderer.invoke('auth-sign-in', { email, password });
+      btn.disabled = false;
+      btn.textContent = 'Sign In';
+
+      if (res.success) {
+        setMsg('si-msg', '✓ Signed in!', 'success');
+        setTimeout(() => ipcRenderer.send('auth-login-success'), 600);
+      } else {
+        setMsg('si-msg', res.message || 'Sign in failed.', 'error');
+      }
+    }
+
+    async function signUp() {
+      const email    = document.getElementById('su-email').value.trim();
+      const password = document.getElementById('su-password').value;
+      if (!email || !password) return setMsg('su-msg', 'Please fill in all fields.', 'error');
+      if (password.length < 6)  return setMsg('su-msg', 'Password must be at least 6 characters.', 'error');
+
+      const btn = document.getElementById('btn-signup');
+      btn.disabled = true;
+      btn.textContent = 'Creating account…';
+      setMsg('su-msg', '', '');
+
+      const res = await ipcRenderer.invoke('auth-sign-up', { email, password });
+      btn.disabled = false;
+      btn.textContent = 'Create Account';
+
+      if (res.success) {
+        if (res.needsConfirmation) {
+          setMsg('su-msg', '✓ Check your email to confirm your account.', 'success');
+        } else {
+          setMsg('su-msg', '✓ Account created!', 'success');
+          setTimeout(() => ipcRenderer.send('auth-login-success'), 600);
+        }
+      } else {
+        setMsg('su-msg', res.message || 'Sign up failed.', 'error');
+      }
+    }
+
+    async function forgotPassword() {
+      const email = document.getElementById('si-email').value.trim();
+      if (!email) return setMsg('si-msg', 'Enter your email above first.', 'error');
+      const res = await ipcRenderer.invoke('auth-reset-password', { email });
+      if (res.success) setMsg('si-msg', '✓ Reset link sent — check your email.', 'success');
+      else             setMsg('si-msg', res.message || 'Failed to send reset link.', 'error');
+    }
+
+    // Allow pressing Enter to submit
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Enter') return;
+      const signupVisible = document.getElementById('panel-signup').style.display !== 'none';
+      if (signupVisible) signUp(); else signIn();
+    });
+  </script>
+</body>
+</html>

@@ -1,1 +1,13 @@
-[]
+[
+  {
+    "type": "daily-reminder",
+    "title": "☀️ Daily Application Reminder",
+    "desc": "🎯 Good morning! Ready to apply to some jobs today?",
+    "actionRequired": false,
+    "actions": [],
+    "id": "n-1773933261571-ud91p",
+    "timestamp": 1773933261571,
+    "unread": true,
+    "dismissed": false
+  }
+]
