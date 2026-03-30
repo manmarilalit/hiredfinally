@@ -5,6 +5,28 @@
     "desc": "🎯 Good morning! Ready to apply to some jobs today?",
     "actionRequired": false,
     "actions": [],
+    "id": "n-1774447200097-lq9rm",
+    "timestamp": 1774447200097,
+    "unread": true,
+    "dismissed": false
+  },
+  {
+    "type": "daily-reminder",
+    "title": "☀️ Daily Application Reminder",
+    "desc": "🎯 Good morning! Ready to apply to some jobs today?",
+    "actionRequired": false,
+    "actions": [],
+    "id": "n-1774274400148-vdfum",
+    "timestamp": 1774274400148,
+    "unread": true,
+    "dismissed": false
+  },
+  {
+    "type": "daily-reminder",
+    "title": "☀️ Daily Application Reminder",
+    "desc": "🎯 Good morning! Ready to apply to some jobs today?",
+    "actionRequired": false,
+    "actions": [],
     "id": "n-1773933261571-ud91p",
     "timestamp": 1773933261571,
     "unread": true,

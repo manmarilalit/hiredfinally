@@ -1,261 +1,536 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
-  <title>HiredFinally — Sign In</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Mono:wght@300;400&display=swap"
+    rel="stylesheet" />
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     :root {
-      --bg:        #0f1117;
-      --surface:   #1a1d27;
-      --border:    #2a2d3a;
-      --accent:    #6c63ff;
-      --accent-h:  #5a52e0;
-      --text:      #e8eaf0;
-      --muted:     #7a7f99;
-      --error:     #ff5c6a;
-      --success:   #3ecf8e;
-      --radius:    12px;
+      --bg: #0A0A0A;
+      --panel-l: #131313;
+      --panel-r: #1C1C1C;
+      --text: #EDEDED;
+      --sub: #6B6B6B;
+      --radius: 18px;
+      --gap: 10px;
+      --accent: #6c63ff;
+      --accent-h: #5a52e0;
+      --error: #ff5c6a;
+      --success: #3ecf8e;
     }
 
+    html,
     body {
+      height: 100%;
       background: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      height: 100vh;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      -webkit-app-region: drag;
+      font-family: 'Syne', sans-serif;
+      color: var(--text);
     }
 
-    .card {
-      -webkit-app-region: no-drag;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 40px 36px;
-      width: 380px;
-    }
-
-    .logo {
-      text-align: center;
-      margin-bottom: 28px;
-    }
-    .logo h1 {
-      font-size: 22px;
-      font-weight: 700;
-      letter-spacing: -0.3px;
-    }
-    .logo span { color: var(--accent); }
-
-    .tabs {
+    .shell {
       display: flex;
-      gap: 4px;
+      flex-direction: row;
+      width: min(860px, 96vw);
+      min-height: min(520px, 90vh);
+      padding: var(--gap);
+      gap: 0;
       background: var(--bg);
+      border-radius: calc(var(--radius) + var(--gap));
+    }
+
+    .panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 52px 48px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .panel-left {
+      background: var(--panel-l);
+      border-radius: var(--radius) 0 0 var(--radius);
+    }
+
+    .panel-right {
+      background: var(--panel-r);
+      border-radius: 0 var(--radius) var(--radius) 0;
+    }
+
+    .brand-mark {
+      width: 36px;
+      height: 36px;
+      border: 1.5px solid #2A2A2A;
       border-radius: 8px;
-      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 48px;
+    }
+
+    .brand-mark svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .brand-headline {
+      font-size: clamp(22px, 2.6vw, 30px);
+      font-weight: 700;
+      line-height: 1.18;
+      letter-spacing: -0.03em;
+      color: var(--text);
+      margin-bottom: 14px;
+    }
+
+    .brand-sub {
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      color: var(--sub);
+      line-height: 1.75;
+      letter-spacing: 0.02em;
+      max-width: 230px;
+    }
+
+    .panel-left::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(#1E1E1E 1px, transparent 1px),
+        linear-gradient(90deg, #1E1E1E 1px, transparent 1px);
+      background-size: 36px 36px;
+      mask-image: radial-gradient(ellipse 70% 60% at 85% 85%, rgba(0, 0, 0, 0.5) 0%, transparent 68%);
+      pointer-events: none;
+    }
+
+    .status-badge {
+      margin-top: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: var(--sub);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #3D8A5A;
+      box-shadow: 0 0 6px #3D8A5A;
+      animation: pulse 2.4s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.3;
+      }
+    }
+
+    .form-eyebrow {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--sub);
+      margin-bottom: 8px;
+    }
+
+    .form-title {
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: -0.025em;
+      color: var(--text);
       margin-bottom: 24px;
     }
-    .tab {
-      flex: 1;
-      padding: 8px;
-      border: none;
-      border-radius: 6px;
-      background: transparent;
-      color: var(--muted);
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .tab.active {
-      background: var(--surface);
-      color: var(--text);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+
+    .field {
+      margin-bottom: 16px;
     }
 
-    .form-group { margin-bottom: 16px; }
-    label {
+    .field label {
       display: block;
-      font-size: 13px;
-      color: var(--muted);
-      margin-bottom: 6px;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--sub);
+      margin-bottom: 8px;
+      font-family: 'DM Mono', monospace;
     }
-    input {
-      width: 100%;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
-      padding: 10px 14px;
-      font-size: 14px;
-      outline: none;
-      transition: border-color 0.15s;
-    }
-    input:focus { border-color: var(--accent); }
 
-    .btn {
+    .field input {
       width: 100%;
-      padding: 11px;
+      background: #141414;
+      border: 1px solid #252525;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.18s, box-shadow 0.18s;
+    }
+
+    .field input::placeholder {
+      color: #363636;
+    }
+
+    .field input:focus {
+      border-color: #383838;
+      box-shadow: 0 0 0 3px rgba(237, 237, 237, 0.04);
+    }
+
+    .field-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .field-row label {
+      margin-bottom: 0;
+    }
+
+    .forgot {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      color: var(--sub);
+      text-decoration: none;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: color 0.15s;
+      background: none;
+      border: none;
+      padding: 0;
+    }
+
+    .forgot:hover {
+      color: var(--text);
+    }
+
+    .btn-primary {
+      width: 100%;
+      margin-top: 24px;
+      padding: 13px;
+      background: var(--text);
+      color: var(--bg);
       border: none;
       border-radius: 8px;
-      background: var(--accent);
-      color: #fff;
-      font-size: 14px;
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
       font-weight: 600;
+      letter-spacing: 0.04em;
       cursor: pointer;
-      margin-top: 8px;
-      transition: background 0.15s, opacity 0.15s;
+      transition: opacity 0.18s, transform 0.12s;
     }
-    .btn:hover { background: var(--accent-h); }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-primary:hover {
+      opacity: 0.88;
+    }
+
+    .btn-primary:active {
+      transform: scale(0.985);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+    }
 
     .message {
       margin-top: 14px;
-      font-size: 13px;
       text-align: center;
-      min-height: 18px;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      min-height: 16px;
+      transition: opacity 0.2s;
     }
-    .message.error   { color: var(--error); }
-    .message.success { color: var(--success); }
 
-    .forgot {
-      text-align: right;
-      margin-top: -8px;
-      margin-bottom: 16px;
+    .message.error {
+      color: var(--error);
     }
-    .forgot a {
-      font-size: 12px;
-      color: var(--muted);
+
+    .message.success {
+      color: var(--success);
+    }
+
+    .message.empty {
+      opacity: 0;
+    }
+
+    .form-footer {
+      margin-top: 20px;
+      text-align: center;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: var(--sub);
+    }
+
+    .form-footer a {
+      color: var(--text);
       text-decoration: none;
+      border-bottom: 1px solid #2E2E2E;
+      padding-bottom: 1px;
+      transition: border-color 0.15s;
       cursor: pointer;
     }
-    .forgot a:hover { color: var(--accent); }
+
+    .form-footer a:hover {
+      border-color: var(--text);
+    }
+
+    .form-panel {
+      display: none;
+    }
+
+    .form-panel.active {
+      display: block;
+    }
+
+    @media (max-width: 600px) {
+      .shell {
+        flex-direction: column;
+        height: auto;
+      }
+
+      .panel-left {
+        border-radius: var(--radius) var(--radius) 0 0;
+        padding: 36px 32px;
+      }
+
+      .panel-right {
+        border-radius: 0 0 var(--radius) var(--radius);
+        padding: 36px 32px;
+      }
+
+      .status-badge {
+        display: none;
+      }
+    }
   </style>
 </head>
+
 <body>
-  <div class="card">
-    <div class="logo">
-      <h1>Hired<span>Finally</span></h1>
+
+  <div class="shell">
+
+    <!-- Left branding panel -->
+    <div class="panel panel-left">
+      <div class="brand-mark">
+        <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="1" y="1" width="7" height="7" rx="1.5" fill="#EDEDED" opacity="0.9" />
+          <rect x="10" y="1" width="7" height="7" rx="1.5" fill="#EDEDED" opacity="0.35" />
+          <rect x="1" y="10" width="7" height="7" rx="1.5" fill="#EDEDED" opacity="0.35" />
+          <rect x="10" y="10" width="7" height="7" rx="1.5" fill="#EDEDED" opacity="0.6" />
+        </svg>
+      </div>
+
+      <h1 class="brand-headline">The quietest<br />way in.</h1>
+      <p class="brand-sub">Minimal surface. Full control. Everything where you left it.</p>
+
+      <div class="status-badge">
+        <span class="status-dot"></span>
+        All systems operational
+      </div>
     </div>
 
-    <div class="tabs">
-      <button class="tab active" id="tab-signin" onclick="switchTab('signin')">Sign In</button>
-      <button class="tab"        id="tab-signup" onclick="switchTab('signup')">Create Account</button>
-    </div>
+    <!-- Right form panel -->
+    <div class="panel panel-right">
 
-    <!-- Sign In -->
-    <div id="panel-signin">
-      <div class="form-group">
-        <label>Email</label>
-        <input id="si-email" type="email" placeholder="you@example.com" autocomplete="email" />
-      </div>
-      <div class="form-group">
-        <label>Password</label>
-        <input id="si-password" type="password" placeholder="••••••••" autocomplete="current-password" />
-      </div>
-      <div class="forgot"><a onclick="forgotPassword()">Forgot password?</a></div>
-      <button class="btn" id="btn-signin" onclick="signIn()">Sign In</button>
-      <div class="message" id="si-msg"></div>
-    </div>
+      <!-- Sign In -->
+      <div class="form-panel active" id="panel-signin">
+        <p class="form-eyebrow">Welcome back</p>
+        <h2 class="form-title">Sign in</h2>
 
-    <!-- Sign Up -->
-    <div id="panel-signup" style="display:none">
-      <div class="form-group">
-        <label>Email</label>
-        <input id="su-email" type="email" placeholder="you@example.com" autocomplete="email" />
+        <div class="field">
+          <label>Email</label>
+          <input id="si-email" type="email" placeholder="you@example.com" autocomplete="email" />
+        </div>
+
+        <div class="field">
+          <div class="field-row">
+            <label>Password</label>
+            <button class="forgot" onclick="forgotPassword()">Forgot?</button>
+          </div>
+          <input id="si-password" type="password" placeholder="••••••••••" autocomplete="current-password" />
+        </div>
+
+        <button class="btn-primary" id="btn-signin" onclick="signIn()">Continue →</button>
+        <div class="message empty" id="si-msg"></div>
+
+        <p class="form-footer">No account? <a onclick="switchTab('signup')">Create one</a></p>
       </div>
-      <div class="form-group">
-        <label>Password</label>
-        <input id="su-password" type="password" placeholder="At least 6 characters" autocomplete="new-password" />
+
+      <!-- Sign Up -->
+      <div class="form-panel" id="panel-signup">
+        <p class="form-eyebrow">Get started</p>
+        <h2 class="form-title">Create account</h2>
+
+        <div class="field">
+          <label>Email</label>
+          <input id="su-email" type="email" placeholder="you@example.com" autocomplete="email" />
+        </div>
+
+        <div class="field">
+          <label>Password</label>
+          <input id="su-password" type="password" placeholder="At least 6 characters" autocomplete="new-password" />
+        </div>
+
+        <button class="btn-primary" id="btn-signup" onclick="signUp()">Continue →</button>
+        <div class="message empty" id="su-msg"></div>
+
+        <p class="form-footer">Already have an account? <a onclick="switchTab('signin')">Sign in</a></p>
       </div>
-      <button class="btn" id="btn-signup" onclick="signUp()">Create Account</button>
-      <div class="message" id="su-msg"></div>
+
     </div>
   </div>
 
   <script>
+    // ── IPC bridge (Electron) ─────────────────────────────────────────────────
     const { ipcRenderer } = require('electron');
 
+    // ── Panel switching ───────────────────────────────────────────────────────
     function switchTab(tab) {
-      document.getElementById('panel-signin').style.display = tab === 'signin' ? '' : 'none';
-      document.getElementById('panel-signup').style.display = tab === 'signup' ? '' : 'none';
-      document.getElementById('tab-signin').classList.toggle('active', tab === 'signin');
-      document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
+      document.getElementById('panel-signin').classList.toggle('active', tab === 'signin');
+      document.getElementById('panel-signup').classList.toggle('active', tab === 'signup');
+      clearMsg('si-msg');
+      clearMsg('su-msg');
     }
 
+    // ── Message helpers ───────────────────────────────────────────────────────
     function setMsg(id, text, type) {
       const el = document.getElementById(id);
       el.textContent = text;
       el.className = `message ${type}`;
     }
 
+    function clearMsg(id) {
+      const el = document.getElementById(id);
+      el.textContent = '';
+      el.className = 'message empty';
+    }
+
+    // ── Sign In ───────────────────────────────────────────────────────────────
     async function signIn() {
-      const email    = document.getElementById('si-email').value.trim();
+      const email = document.getElementById('si-email').value.trim();
       const password = document.getElementById('si-password').value;
-      if (!email || !password) return setMsg('si-msg', 'Please fill in all fields.', 'error');
+
+      if (!email || !password) {
+        return setMsg('si-msg', 'Please fill in all fields.', 'error');
+      }
 
       const btn = document.getElementById('btn-signin');
       btn.disabled = true;
       btn.textContent = 'Signing in…';
-      setMsg('si-msg', '', '');
+      clearMsg('si-msg');
 
-      const res = await ipcRenderer.invoke('auth-sign-in', { email, password });
-      btn.disabled = false;
-      btn.textContent = 'Sign In';
-
-      if (res.success) {
-        setMsg('si-msg', '✓ Signed in!', 'success');
-        setTimeout(() => ipcRenderer.send('auth-login-success'), 600);
-      } else {
-        setMsg('si-msg', res.message || 'Sign in failed.', 'error');
+      try {
+        const res = await ipcRenderer.invoke('auth-sign-in', { email, password });
+        if (res.success) {
+          setMsg('si-msg', '✓ Signed in!', 'success');
+          setTimeout(() => ipcRenderer.send('auth-login-success'), 600);
+        } else {
+          setMsg('si-msg', res.message || 'Sign in failed.', 'error');
+        }
+      } catch (err) {
+        setMsg('si-msg', err.message || 'Something went wrong.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Continue →';
       }
     }
 
+    // ── Sign Up ───────────────────────────────────────────────────────────────
     async function signUp() {
-      const email    = document.getElementById('su-email').value.trim();
+      const email = document.getElementById('su-email').value.trim();
       const password = document.getElementById('su-password').value;
-      if (!email || !password) return setMsg('su-msg', 'Please fill in all fields.', 'error');
-      if (password.length < 6)  return setMsg('su-msg', 'Password must be at least 6 characters.', 'error');
+
+      if (!email || !password) {
+        return setMsg('su-msg', 'Please fill in all fields.', 'error');
+      }
+      if (password.length < 6) {
+        return setMsg('su-msg', 'Password must be at least 6 characters.', 'error');
+      }
 
       const btn = document.getElementById('btn-signup');
       btn.disabled = true;
       btn.textContent = 'Creating account…';
-      setMsg('su-msg', '', '');
+      clearMsg('su-msg');
 
-      const res = await ipcRenderer.invoke('auth-sign-up', { email, password });
-      btn.disabled = false;
-      btn.textContent = 'Create Account';
-
-      if (res.success) {
-        if (res.needsConfirmation) {
-          setMsg('su-msg', '✓ Check your email to confirm your account.', 'success');
+      try {
+        const res = await ipcRenderer.invoke('auth-sign-up', { email, password });
+        if (res.success) {
+          if (res.needsConfirmation) {
+            setMsg('su-msg', '✓ Check your email to confirm your account.', 'success');
+          } else {
+            setMsg('su-msg', '✓ Account created!', 'success');
+            setTimeout(() => ipcRenderer.send('auth-login-success'), 600);
+          }
         } else {
-          setMsg('su-msg', '✓ Account created!', 'success');
-          setTimeout(() => ipcRenderer.send('auth-login-success'), 600);
+          setMsg('su-msg', res.message || 'Sign up failed.', 'error');
         }
-      } else {
-        setMsg('su-msg', res.message || 'Sign up failed.', 'error');
+      } catch (err) {
+        setMsg('su-msg', err.message || 'Something went wrong.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Continue →';
       }
     }
 
+    // ── Forgot Password ───────────────────────────────────────────────────────
     async function forgotPassword() {
       const email = document.getElementById('si-email').value.trim();
-      if (!email) return setMsg('si-msg', 'Enter your email above first.', 'error');
-      const res = await ipcRenderer.invoke('auth-reset-password', { email });
-      if (res.success) setMsg('si-msg', '✓ Reset link sent — check your email.', 'success');
-      else             setMsg('si-msg', res.message || 'Failed to send reset link.', 'error');
+      if (!email) {
+        return setMsg('si-msg', 'Enter your email above first.', 'error');
+      }
+
+      try {
+        const res = await ipcRenderer.invoke('auth-reset-password', { email });
+        if (res.success) {
+          setMsg('si-msg', '✓ Reset link sent — check your email.', 'success');
+        } else {
+          setMsg('si-msg', res.message || 'Failed to send reset link.', 'error');
+        }
+      } catch (err) {
+        setMsg('si-msg', err.message || 'Something went wrong.', 'error');
+      }
     }
 
-    // Allow pressing Enter to submit
+    // ── Enter key support ─────────────────────────────────────────────────────
     document.addEventListener('keydown', e => {
       if (e.key !== 'Enter') return;
-      const signupVisible = document.getElementById('panel-signup').style.display !== 'none';
+      const signupVisible = document.getElementById('panel-signup').classList.contains('active');
       if (signupVisible) signUp(); else signIn();
     });
   </script>
+
 </body>
+
 </html>

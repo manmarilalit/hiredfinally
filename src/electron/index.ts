@@ -789,6 +789,29 @@ app.on("ready", async () => {
     else mainWindow?.maximize();
   });
 
+  ipcMain.on("get-notifications", (event: any) => {
+    try {
+      const notifications = notifStore?.getAll?.() ?? [];
+      event.sender.send("notifications-data", notifications);
+    } catch {
+      event.sender.send("notifications-data", []);
+    }
+  });
+
+  ipcMain.on("get-user-name", (event: any) => {
+    try {
+      const name = _store.get("userName") as string | undefined;
+      event.sender.send("user-name-data", name || "");
+    } catch {
+      event.sender.send("user-name-data", "");
+    }
+  });
+
+  // When the user saves their name (e.g. from settings), persist it:
+  ipcMain.on("save-user-name", (_e: any, name: string) => {
+    try { _store.set("userName", name); } catch { /* ignore */ }
+  });
+
   function exportApplicationData(): void {
     const rows = db.prepare("SELECT * FROM job_apps ORDER BY rowid DESC").all() as any[];
     const csv = [
