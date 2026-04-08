@@ -5,6 +5,113 @@
     "desc": "🎯 Good morning! Ready to apply to some jobs today?",
     "actionRequired": false,
     "actions": [],
+    "id": "n-1775485479776-qwb2h",
+    "timestamp": 1775485479776,
+    "unread": true,
+    "dismissed": false
+  },
+  {
+    "type": "daily-reminder",
+    "title": "☀️ Daily Application Reminder",
+    "desc": "🎯 Good morning! Ready to apply to some jobs today?",
+    "actionRequired": false,
+    "actions": [],
+    "id": "n-1775424783303-c61a2",
+    "timestamp": 1775424783303,
+    "unread": true,
+    "dismissed": false
+  },
+  {
+    "type": "celebration",
+    "title": "🎊 Milestone Achieved!",
+    "desc": "🎉 Your first application is complete! Great start!",
+    "actionRequired": false,
+    "actions": [
+      {
+        "label": "View pipeline",
+        "style": "ghost",
+        "action": "open-pipeline"
+      }
+    ],
+    "id": "n-1775343243075-9quk1",
+    "timestamp": 1775343243075,
+    "unread": true,
+    "dismissed": false
+  },
+  {
+    "type": "celebration",
+    "title": "🎊 Milestone Achieved!",
+    "desc": "🎉 Your first application is complete! Great start!",
+    "actionRequired": false,
+    "actions": [
+      {
+        "label": "View pipeline",
+        "style": "ghost",
+        "action": "open-pipeline"
+      }
+    ],
+    "id": "n-1775342825730-181ix",
+    "timestamp": 1775342825730,
+    "unread": true,
+    "dismissed": false
+  },
+  {
+    "type": "celebration",
+    "title": "🎊 Milestone Achieved!",
+    "desc": "🎉 Your first application is complete! Great start!",
+    "actionRequired": false,
+    "actions": [
+      {
+        "label": "View pipeline",
+        "style": "ghost",
+        "action": "open-pipeline"
+      }
+    ],
+    "id": "n-1775342610447-zbwgo",
+    "timestamp": 1775342610447,
+    "unread": true,
+    "dismissed": false
+  },
+  {
+    "type": "celebration",
+    "title": "🎊 Milestone Achieved!",
+    "desc": "🎉 Your first application is complete! Great start!",
+    "actionRequired": false,
+    "actions": [
+      {
+        "label": "View pipeline",
+        "style": "ghost",
+        "action": "open-pipeline"
+      }
+    ],
+    "id": "n-1775342004418-qrzef",
+    "timestamp": 1775342004418,
+    "unread": true,
+    "dismissed": false
+  },
+  {
+    "type": "celebration",
+    "title": "🎊 Milestone Achieved!",
+    "desc": "🎉 Your first application is complete! Great start!",
+    "actionRequired": false,
+    "actions": [
+      {
+        "label": "View pipeline",
+        "style": "ghost",
+        "action": "open-pipeline"
+      }
+    ],
+    "id": "n-1775009161905-pyifo",
+    "timestamp": 1775009161905,
+    "unread": true,
+    "dismissed": false
+  },
+  {
+    "type": "daily-reminder",
+    "title": "☀️ Daily Application Reminder",
+    "desc": "🎯 Good morning! Ready to apply to some jobs today?",
+    "actionRequired": false,
+    "actions": [],
     "id": "n-1774447200097-lq9rm",
     "timestamp": 1774447200097,
     "unread": true,

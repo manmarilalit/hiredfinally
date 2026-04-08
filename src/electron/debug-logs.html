@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Logs</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        button {
+            padding: 8px 16px;
+            background: #0e639c;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        button:hover {
+            background: #1177bb;
+        }
+
+        .log-entry {
+            background: #252526;
+            border: 1px solid #3e3e42;
+            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 10px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .log-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #3e3e42;
+        }
+
+        .log-timestamp {
+            color: #858585;
+        }
+
+        .log-status {
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-weight: bold;
+            font-size: 11px;
+        }
+
+        .status-NOT_STARTED {
+            background: #3a3a3a;
+            color: #94a3b8;
+        }
+
+        .status-IN_PROGRESS {
+            background: #3d2e00;
+            color: #f59e0b;
+        }
+
+        .status-COMPLETED {
+            background: #0d3d2d;
+            color: #5fc488;
+        }
+
+        .status-UNKNOWN {
+            background: #3a3a3a;
+            color: #888;
+        }
+
+        .log-url {
+            color: #4ec9b0;
+            word-break: break-all;
+            margin-bottom: 8px;
+        }
+
+        .log-signals {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .signal-item {
+            color: #9cdcfe;
+        }
+
+        .signal-label {
+            color: #858585;
+        }
+
+        .log-body-sample {
+            margin-top: 8px;
+            padding: 8px;
+            background: #1e1e1e;
+            border-radius: 3px;
+            color: #ce9178;
+            max-height: 100px;
+            overflow-y: auto;
+            font-size: 11px;
+        }
+
+        .confidence-high {
+            color: #5fc488;
+        }
+
+        .confidence-medium {
+            color: #f59e0b;
+        }
+
+        .confidence-low {
+            color: #94a3b8;
+        }
+
+        .applied-yes {
+            color: #5fc488;
+            font-weight: bold;
+        }
+
+        .applied-no {
+            color: #858585;
+        }
+
+        .manual-override {
+            background: #2d1b69;
+            border-color: #5b3fb8;
+        }
+
+        .log-path {
+            color: #858585;
+            font-size: 11px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🔍 Debug Logs</h1>
+    <div class="log-path" id="logPath">Loading...</div>
+    <div class="controls">
+        <button onclick="refreshLogs()">Refresh</button>
+        <button onclick="openLogFolder()">Open Log Folder</button>
+        <button onclick="clearDisplay()">Clear Display</button>
+    </div>
+    <div id="logsContainer"></div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+
+        async function refreshLogs() {
+            try {
+                const logs = await ipcRenderer.invoke('get-debug-logs', 100);
+                const logPath = await ipcRenderer.invoke('get-debug-log-path');
+
+                document.getElementById('logPath').textContent = `Log file: ${logPath}`;
+
+                const container = document.getElementById('logsContainer');
+                container.innerHTML = '';
+
+                if (!logs || logs.length === 0) {
+                    container.innerHTML = '<div style="color:#858585;">No logs yet. Start browsing job boards to see detection logs.</div>';
+                    return;
+                }
+
+                // Reverse to show newest first
+                logs.reverse().forEach(log => {
+                    const entry = document.createElement('div');
+                    entry.className = 'log-entry';
+                    if (log.manualOverride) {
+                        entry.classList.add('manual-override');
+                    }
+
+                    const statusClass = `status-${log.detectedStatus}`;
+                    const confidenceClass = `confidence-${log.confidence}`;
+                    const appliedClass = log.applied ? 'applied-yes' : 'applied-no';
+
+                    entry.innerHTML = `
+            <div class="log-header">
+              <span class="log-timestamp">${new Date(log.timestamp).toLocaleString()}</span>
+              <div>
+                <span class="log-status ${statusClass}">${log.detectedStatus}</span>
+                <span class="${confidenceClass}" style="margin-left:8px;">${log.confidence}</span>
+                <span class="${appliedClass}" style="margin-left:8px;">${log.applied ? '✓ Applied' : '○ Not Applied'}</span>
+              </div>
+            </div>
+            <div class="log-url">${log.url}</div>
+            ${log.manualOverride ? `<div style="color:#a78bfa;margin-bottom:8px;">🔧 Manual Override: ${log.manualOverride.from} → ${log.manualOverride.to}</div>` : ''}
+            ${log.reason ? `<div style="color:#fbbf24;margin-bottom:8px;">Reason: ${log.reason}</div>` : ''}
+            <div class="log-signals">
+              <div class="signal-item"><span class="signal-label">Forms:</span> ${log.signals.formCount}</div>
+              <div class="signal-item"><span class="signal-label">Inputs:</span> ${log.signals.inputCount}</div>
+              <div class="signal-item"><span class="signal-label">Required:</span> ${log.signals.requiredFieldCount}</div>
+              <div class="signal-item"><span class="signal-label">File Inputs:</span> ${log.signals.fileInputCount}</div>
+              <div class="signal-item"><span class="signal-label">Selects:</span> ${log.signals.selectCount}</div>
+              <div class="signal-item"><span class="signal-label">Textareas:</span> ${log.signals.textareaCount}</div>
+              <div class="signal-item"><span class="signal-label">Apply Button:</span> ${log.signals.hasApplyButton ? 'Yes' : 'No'}</div>
+              <div class="signal-item"><span class="signal-label">Overlay:</span> ${log.signals.hasOverlay ? 'Yes' : 'No'}</div>
+              <div class="signal-item"><span class="signal-label">Resume Upload:</span> ${log.signals.hasResumeUpload ? 'Yes' : 'No'}</div>
+              <div class="signal-item"><span class="signal-label">Embedded ATS:</span> ${log.signals.hasEmbeddedATS ? 'Yes' : 'No'}</div>
+            </div>
+            ${log.signals.buttonTexts && log.signals.buttonTexts.length > 0 ? `
+              <div style="margin-top:8px;color:#858585;">
+                <span class="signal-label">Buttons:</span> ${log.signals.buttonTexts.join(', ')}
+              </div>
+            ` : ''}
+            ${log.bodyTextSample ? `
+              <div class="log-body-sample">${log.bodyTextSample}</div>
+            ` : ''}
+          `;
+
+                    container.appendChild(entry);
+                });
+            } catch (err) {
+                console.error('Failed to load logs:', err);
+                document.getElementById('logsContainer').innerHTML = `<div style="color:#f87171;">Error loading logs: ${err.message}</div>`;
+            }
+        }
+
+        function openLogFolder() {
+            ipcRenderer.send('open-debug-log-folder');
+        }
+
+        function clearDisplay() {
+            document.getElementById('logsContainer').innerHTML = '<div style="color:#858585;">Display cleared. Click Refresh to reload.</div>';
+        }
+
+        // Auto-refresh every 5 seconds
+        setInterval(refreshLogs, 5000);
+
+        // Initial load
+        refreshLogs();
+    </script>
+</body>
+
+</html>

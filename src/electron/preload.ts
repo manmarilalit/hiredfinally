@@ -160,11 +160,17 @@ function detectCompletionToast(): boolean {
         'application started',
         'start your application',
         'continue your application',
+        'submit your application',
+        'submit application',
+        'submit an application',
+        'complete your application',
+        'finish your application',
     ];
 
     const bodyLower = getBodyText().toLowerCase();
 
-    // If any false positive phrase is present, bail out early
+    // CRITICAL: Check false positives FIRST, before any completion detection
+    // This prevents "submit your application" from being mistaken for "application submitted"
     if (falsePositivePhrases.some(p => bodyLower.includes(p))) return false;
 
     const toastSelectors = [
@@ -219,6 +225,7 @@ const ATS_IFRAME_DOMAINS = [
     'applicantpro.com',
     'breezy.hr',
     'jazz.co',
+    'ashbyhq.com',
 ];
 
 // Query parameters that ATS platforms inject when embedding on a host page
@@ -239,6 +246,8 @@ const ATS_EMBED_SELECTORS = [
     '[id*="greenhouse"]',
     '[id*="lever-job"]',
     '[class*="greenhouse"]',
+    '[id*="ashby"]',            // Ashby
+    '[class*="ashby"]',         // Ashby
     'iframe[src*="greenhouse.io"]',
     'iframe[src*="lever.co"]',
     'iframe[src*="myworkdayjobs"]',
@@ -249,6 +258,7 @@ const ATS_EMBED_SELECTORS = [
     'iframe[src*="taleo.net"]',
     'iframe[src*="breezy.hr"]',
     'iframe[src*="workable.com"]',
+    'iframe[src*="ashbyhq.com"]',
 ];
 
 function detectEmbeddedATS(): boolean {
@@ -273,6 +283,22 @@ function detectEmbeddedATS(): boolean {
                 if (style.display !== 'none' && style.visibility !== 'hidden') return true;
             }
         } catch { /* invalid selector, skip */ }
+    }
+
+    // 4. Special case: if we're on a known ATS domain and there's ANY visible iframe,
+    // assume it's the application form (Ashby, etc. use same-origin iframes)
+    if (iframes.length > 0) {
+        const isKnownATSDomain = ATS_IFRAME_DOMAINS.some(d => urlLower.includes(d));
+        if (isKnownATSDomain) {
+            // Check if any iframe is visible
+            for (const iframe of Array.from(iframes)) {
+                const style = window.getComputedStyle(iframe);
+                if (style.display !== 'none' && style.visibility !== 'hidden' &&
+                    iframe.offsetWidth > 100 && iframe.offsetHeight > 100) {
+                    return true;
+                }
+            }
+        }
     }
 
     return false;

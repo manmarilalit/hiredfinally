@@ -21,8 +21,8 @@
 
 const { createClient } = require('@supabase/supabase-js');
 
-const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';
-const SUPABASE_KEY = 'YOUR_ANON_KEY';
+const SUPABASE_URL = 'https://dwrbmeqmtogvsginvhfz.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR3cmJtZXFtdG9ndnNnaW52aGZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NTM3MzUsImV4cCI6MjA4OTUyOTczNX0.eqeq2XziG3563GGV6plfZDjMai0WNR-uOWQKUY10GGE';
 
 // ── SQL to run once in the Supabase dashboard (SQL editor) ───────────────────
 //
@@ -62,8 +62,8 @@ export class SyncManager {
 
   constructor(auth: any, storage: any) {
     this.supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-    this.auth     = auth;
-    this.storage  = storage;
+    this.auth = auth;
+    this.storage = storage;
   }
 
   // ── Full two-way sync (call once after login) ──────────────────────────────
@@ -158,7 +158,7 @@ export class SyncManager {
     const localMap = new Map(localRows.map((r: LocalRow) => [r.url, r]));
 
     let inserted = 0;
-    let updated  = 0;
+    let updated = 0;
 
     for (const remote of data) {
       const local = localMap.get(remote.url);
@@ -177,7 +177,7 @@ export class SyncManager {
       } else if (local.status !== remote.status) {
         // Status mismatch — take the "more advanced" status
         const order: Record<string, number> = { NOT_STARTED: 0, IN_PROGRESS: 1, COMPLETED: 2 };
-        const localOrder  = order[local.status]  ?? 0;
+        const localOrder = order[local.status] ?? 0;
         const remoteOrder = order[remote.status] ?? 0;
 
         if (remoteOrder > localOrder) {
@@ -203,14 +203,14 @@ export class SyncManager {
 
   private toRemoteRow(userId: string, r: LocalRow): object {
     return {
-      user_id:      userId,
-      url:          r.url,
-      status:       r.status,
-      applied_at:   r.applied_at  ? new Date(r.applied_at).toISOString()  : null,
+      user_id: userId,
+      url: r.url,
+      status: r.status,
+      applied_at: r.applied_at ? new Date(r.applied_at).toISOString() : null,
       completed_at: r.completed_at ? new Date(r.completed_at).toISOString() : null,
-      job_title:    r.job_title ?? null,
-      company:      r.company   ?? null,
-      updated_at:   new Date().toISOString(),
+      job_title: r.job_title ?? null,
+      company: r.company ?? null,
+      updated_at: new Date().toISOString(),
     };
   }
 }

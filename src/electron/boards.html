@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Boards – HiredFinally</title>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @font-face {
+      font-family: 'ClashGrotesk';
+      src: url('./ClashGrotesk-Regular.otf') format('opentype');
+      font-weight: 300;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      font-family: 'ClashGrotesk', sans-serif;
+      background: #F6F6F4;
+    }
+
+    /* ── Title Bar ── */
+    .title-bar {
+      height: 40px;
+      background: #ECECEA;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      cursor: grab;
+      user-select: none;
+      border-bottom: 1px solid #E0E0DD;
+      -webkit-app-region: drag;
+      flex-shrink: 0;
+    }
+
+    .title-bar:active {
+      cursor: grabbing;
+    }
+
+    .title-bar__left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .title-bar__right {
+      display: flex;
+      align-items: center;
+      -webkit-app-region: no-drag;
+    }
+
+    .title-bar__traffic {
+      display: flex;
+      gap: 6px;
+      -webkit-app-region: no-drag;
+    }
+
+    .traffic-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    .traffic-dot:hover {
+      opacity: 0.75;
+    }
+
+    .traffic-dot--close {
+      background: #FF5F57;
+    }
+
+    .traffic-dot--min {
+      background: #FEBC2E;
+    }
+
+    .traffic-dot--max {
+      background: #28C840;
+    }
+
+    .title-bar__title {
+      font-size: 13px;
+      color: #555;
+      letter-spacing: 0.01em;
+    }
+
+    .title-bar__icon-btn {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      cursor: pointer;
+      color: #666;
+      transition: background 0.15s, color 0.15s;
+      -webkit-app-region: no-drag;
+    }
+
+    .title-bar__icon-btn:hover {
+      background: rgba(0, 0, 0, 0.07);
+      color: #111;
+    }
+
+    .title-bar__icon-btn--spaced {
+      margin-right: 8px;
+    }
+
+    .win-btn {
+      width: 46px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #444;
+      transition: background 0.12s, color 0.12s;
+      -webkit-app-region: no-drag;
+    }
+
+    .win-btn svg {
+      width: 14px;
+      height: 14px;
+      stroke-width: 2;
+    }
+
+    .win-btn--min:hover,
+    .win-btn--max:hover {
+      background: rgba(0, 0, 0, 0.08);
+    }
+
+    .win-btn--close:hover {
+      background: #e81123;
+      color: #fff;
+    }
+
+    /* ── App Shell ── */
+    .app-shell {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    .layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── Sidebar ── */
+    .panel-sidebar {
+      width: 210px;
+      flex-shrink: 0;
+      background: #F6F6F4;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .sidebar-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 100%;
+      padding: 0 24px;
+    }
+
+    .nav-tab {
+      padding: 10px 16px;
+      font-family: 'ClashGrotesk', sans-serif;
+      font-size: 15px;
+      color: #333;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: background 0.15s;
+      user-select: none;
+    }
+
+    .nav-tab:hover {
+      background: rgba(0, 0, 0, 0.06);
+    }
+
+    .nav-tab.active {
+      background: rgba(0, 0, 0, 0.09);
+      color: #000;
+    }
+
+    /* ── Main ── */
+    .panel-main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 20px 20px 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .panel-main::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .panel-main::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .panel-main::-webkit-scrollbar-thumb {
+      background: #DDD;
+      border-radius: 4px;
+    }
+
+    /* ── Page header ── */
+    .page-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      padding: 4px 0 0 0;
+    }
+
+    .page-title {
+      font-size: 22px;
+      font-weight: 600;
+      color: #111;
+      letter-spacing: -0.03em;
+    }
+
+    .page-sub {
+      font-size: 12px;
+      color: #bbb;
+      margin-top: 2px;
+    }
+
+    /* ── Section ── */
+    .section-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #bbb;
+      margin-bottom: 10px;
+    }
+
+    /* ── Board grid ── */
+    .boards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 8px;
+    }
+
+    /* ── Board card ── */
+    .board-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 18px 16px 14px;
+      cursor: pointer;
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+      border: 1px solid transparent;
+      position: relative;
+      overflow: hidden;
+      animation: fadeUp 0.3s ease both;
+    }
+
+    .board-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.07);
+      border-color: #EBEBEA;
+    }
+
+    .board-card:active {
+      transform: translateY(0px);
+      box-shadow: none;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* stagger animation per card */
+    .board-card:nth-child(1) {
+      animation-delay: 0.03s;
+    }
+
+    .board-card:nth-child(2) {
+      animation-delay: 0.06s;
+    }
+
+    .board-card:nth-child(3) {
+      animation-delay: 0.09s;
+    }
+
+    .board-card:nth-child(4) {
+      animation-delay: 0.12s;
+    }
+
+    .board-card:nth-child(5) {
+      animation-delay: 0.15s;
+    }
+
+    .board-card:nth-child(6) {
+      animation-delay: 0.18s;
+    }
+
+    .board-card:nth-child(7) {
+      animation-delay: 0.21s;
+    }
+
+    .board-card:nth-child(8) {
+      animation-delay: 0.24s;
+    }
+
+    .board-card:nth-child(9) {
+      animation-delay: 0.27s;
+    }
+
+    .board-card:nth-child(10) {
+      animation-delay: 0.30s;
+    }
+
+    .board-card:nth-child(11) {
+      animation-delay: 0.33s;
+    }
+
+    .board-card:nth-child(12) {
+      animation-delay: 0.36s;
+    }
+
+    .board-card__top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+
+    .board-card__favicon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: #F4F4F2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .board-card__favicon img {
+      width: 22px;
+      height: 22px;
+      object-fit: contain;
+    }
+
+    .board-card__tag {
+      font-size: 9.5px;
+      color: #bbb;
+      background: #F4F4F2;
+      border-radius: 20px;
+      padding: 2px 8px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .board-card__tag--tech {
+      background: #EDF7F1;
+      color: #5a9e78;
+    }
+
+    .board-card__tag--general {
+      background: #F3F4F6;
+      color: #888;
+    }
+
+    .board-card__tag--remote {
+      background: #EEF2FF;
+      color: #6366F1;
+    }
+
+    .board-card__tag--startup {
+      background: #FFF7E6;
+      color: #D97706;
+    }
+
+    .board-card__tag--design {
+      background: #FDF2F8;
+      color: #C026D3;
+    }
+
+    .board-card__tag--finance {
+      background: #F0FDF4;
+      color: #16A34A;
+    }
+
+    .board-card__info {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .board-card__name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #111;
+      letter-spacing: -0.01em;
+    }
+
+    .board-card__domain {
+      font-size: 11px;
+      color: #ccc;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-shell">
+
+    <!-- Title Bar -->
+    <div class="title-bar">
+      <div class="title-bar__left">
+        <div class="title-bar__traffic">
+          <div class="traffic-dot traffic-dot--close" onclick="ipcSend('window-close')"></div>
+          <div class="traffic-dot traffic-dot--min" onclick="ipcSend('window-minimize')"></div>
+          <div class="traffic-dot traffic-dot--max" onclick="ipcSend('window-maximize')"></div>
+        </div>
+        <span class="title-bar__title">HiredFinally</span>
+      </div>
+      <div class="title-bar__right">
+        <div class="title-bar__icon-btn"><i data-lucide="search"></i></div>
+        <div class="title-bar__icon-btn" onclick="ipcSend('open-notifications')"><i data-lucide="bell"></i></div>
+        <div class="title-bar__icon-btn" onclick="ipcSend('open-settings')"><i data-lucide="settings"></i></div>
+        <div class="title-bar__icon-btn title-bar__icon-btn--spaced"><i data-lucide="ellipsis"></i></div>
+        <div class="win-btn win-btn--min" onclick="ipcSend('window-minimize')"><i data-lucide="minus"></i></div>
+        <div class="win-btn win-btn--max" onclick="ipcSend('window-maximize')"><i data-lucide="square"></i></div>
+        <div class="win-btn win-btn--close" onclick="ipcSend('window-close')"><i data-lucide="x"></i></div>
+      </div>
+    </div>
+
+    <div class="layout">
+
+      <!-- Sidebar -->
+      <div class="panel-sidebar">
+        <nav class="sidebar-nav">
+          <div class="nav-tab" onclick="ipcSend('navigate-home')">Home</div>
+          <div class="nav-tab active">Boards</div>
+          <div class="nav-tab" onclick="ipcSend('open-pipeline')">Applications</div>
+          <div class="nav-tab" onclick="ipcSend('open-settings')">Settings</div>
+          <div class="nav-tab" onclick="ipcSend('open-notifications')">Notifications</div>
+        </nav>
+      </div>
+
+      <!-- Main content -->
+      <div class="panel-main">
+
+        <div class="page-header">
+          <div>
+            <div class="page-title">Boards</div>
+            <div class="page-sub">Click a board to open it in your browser</div>
+          </div>
+          <button id="btnAddBoard"
+            style="height:36px; padding:0 16px; border-radius:8px; cursor:pointer; font-family:'ClashGrotesk',sans-serif; font-size:13px; font-weight:500; border:1px solid #E0E0DE; background:#fff; color:#333; display:flex; align-items:center; gap:6px; transition:background 0.12s;">
+            <i data-lucide="plus" style="width:16px;height:16px;"></i> Add Board
+          </button>
+        </div>
+
+        <!-- Frequently Visited -->
+        <div id="frequentSection" style="display:none;">
+          <div class="section-label">Frequently Visited</div>
+          <div class="boards-grid" id="grid-frequent"></div>
+        </div>
+
+        <!-- Custom Boards -->
+        <div id="customSection" style="display:none;">
+          <div class="section-label">Custom</div>
+          <div class="boards-grid" id="grid-custom"></div>
+        </div>
+
+        <!-- General -->
+        <div>
+          <div class="section-label">General</div>
+          <div class="boards-grid" id="grid-general"></div>
+        </div>
+
+        <!-- Tech & Engineering -->
+        <div>
+          <div class="section-label">Tech & Engineering</div>
+          <div class="boards-grid" id="grid-tech"></div>
+        </div>
+
+        <!-- Remote -->
+        <div>
+          <div class="section-label">Remote</div>
+          <div class="boards-grid" id="grid-remote"></div>
+        </div>
+
+        <!-- Startups -->
+        <div>
+          <div class="section-label">Startups</div>
+          <div class="boards-grid" id="grid-startup"></div>
+        </div>
+
+        <!-- Design & Creative -->
+        <div>
+          <div class="section-label">Design & Creative</div>
+          <div class="boards-grid" id="grid-design"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Board Modal -->
+  <div id="addBoardModal"
+    style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+    <div
+      style="background:#fff; border-radius:16px; padding:24px; width:90%; max-width:400px; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+      <div style="font-size:18px; font-weight:600; color:#111; margin-bottom:20px;">Add Job Board</div>
+
+      <div style="margin-bottom:16px;">
+        <label style="display:block; font-size:12px; color:#666; margin-bottom:6px;">Board Name</label>
+        <input id="inputBoardName" type="text" placeholder="e.g. AngelList"
+          style="width:100%; height:40px; border:1px solid #E0E0DE; border-radius:8px; padding:0 12px; font-family:'ClashGrotesk',sans-serif; font-size:14px; outline:none;">
+      </div>
+
+      <div style="margin-bottom:24px;">
+        <label style="display:block; font-size:12px; color:#666; margin-bottom:6px;">Board URL</label>
+        <input id="inputBoardUrl" type="url" placeholder="https://wellfound.com/jobs"
+          style="width:100%; height:40px; border:1px solid #E0E0DE; border-radius:8px; padding:0 12px; font-family:'ClashGrotesk',sans-serif; font-size:14px; outline:none;">
+      </div>
+
+      <div style="display:flex; gap:8px; justify-content:flex-end;">
+        <button id="btnCancelAdd"
+          style="height:36px; padding:0 16px; border-radius:8px; cursor:pointer; font-family:'ClashGrotesk',sans-serif; font-size:13px; font-weight:500; border:1px solid #E0E0DE; background:#fff; color:#333;">Cancel</button>
+        <button id="btnConfirmAdd"
+          style="height:36px; padding:0 16px; border-radius:8px; cursor:pointer; font-family:'ClashGrotesk',sans-serif; font-size:13px; font-weight:500; border:none; background:#111; color:#fff;">Add
+          Board</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    function ipcSend(channel, ...args) {
+      try {
+        const { ipcRenderer } = require('electron');
+        ipcRenderer.send(channel, ...args);
+      } catch (e) { /* browser preview */ }
+    }
+
+    function openBoard(url) {
+      try {
+        const { ipcRenderer } = require('electron');
+        ipcRenderer.send('open-url-in-home', url);
+      } catch (e) {
+        window.open(url, '_blank');
+      }
+    }
+
+    async function deleteBoard(url) {
+      if (!confirm('Delete this board?')) return;
+
+      try {
+        const { ipcRenderer } = require('electron');
+        const result = await ipcRenderer.invoke('delete-board', url);
+
+        if (result.success) {
+          // Remove from BOARDS object
+          Object.keys(BOARDS).forEach(tag => {
+            BOARDS[tag] = BOARDS[tag].filter(b => b.url !== url);
+          });
+
+          // Show/hide sections based on content
+          const customSection = document.getElementById('customSection');
+          if (customSection) {
+            customSection.style.display = BOARDS.custom.length > 0 ? 'block' : 'none';
+          }
+
+          const frequentSection = document.getElementById('frequentSection');
+          if (frequentSection) {
+            frequentSection.style.display = BOARDS.frequent.length > 0 ? 'block' : 'none';
+          }
+
+          // Re-render grids
+          renderGrid('grid-frequent', BOARDS.frequent);
+          renderGrid('grid-custom', BOARDS.custom);
+          renderGrid('grid-general', BOARDS.general);
+          renderGrid('grid-tech', BOARDS.tech);
+          renderGrid('grid-remote', BOARDS.remote);
+          renderGrid('grid-startup', BOARDS.startup);
+          renderGrid('grid-design', BOARDS.design);
+        } else {
+          alert('Failed to delete board: ' + (result.message || 'Unknown error'));
+        }
+      } catch (e) {
+        console.error('Error deleting board:', e);
+        alert('Failed to delete board');
+      }
+    }
+
+    let BOARDS = {
+      frequent: [],
+      custom: [],
+      general: [
+        { name: 'LinkedIn', domain: 'linkedin.com', url: 'https://linkedin.com/jobs', tag: 'general' },
+        { name: 'Indeed', domain: 'indeed.com', url: 'https://indeed.com', tag: 'general' },
+        { name: 'Glassdoor', domain: 'glassdoor.com', url: 'https://glassdoor.com/Job', tag: 'general' },
+        { name: 'ZipRecruiter', domain: 'ziprecruiter.com', url: 'https://ziprecruiter.com', tag: 'general' },
+        { name: 'Monster', domain: 'monster.com', url: 'https://monster.com', tag: 'general' },
+        { name: 'SimplyHired', domain: 'simplyhired.com', url: 'https://simplyhired.com', tag: 'general' },
+      ],
+      tech: [
+        { name: 'Levels.fyi', domain: 'levels.fyi', url: 'https://levels.fyi/jobs', tag: 'tech' },
+        { name: 'Hacker News', domain: 'ycombinator.com', url: 'https://news.ycombinator.com/jobs', tag: 'tech' },
+        { name: 'Dice', domain: 'dice.com', url: 'https://dice.com', tag: 'tech' },
+        { name: 'Stack Overflow', domain: 'stackoverflow.com', url: 'https://stackoverflow.com/jobs', tag: 'tech' },
+        { name: 'GitHub Jobs', domain: 'github.com', url: 'https://github.com/jobs', tag: 'tech' },
+        { name: 'Arc.dev', domain: 'arc.dev', url: 'https://arc.dev/remote-jobs', tag: 'tech' },
+      ],
+      remote: [
+        { name: 'Remote.co', domain: 'remote.co', url: 'https://remote.co/remote-jobs', tag: 'remote' },
+        { name: 'We Work Remotely', domain: 'weworkremotely.com', url: 'https://weworkremotely.com', tag: 'remote' },
+        { name: 'Remote OK', domain: 'remoteok.com', url: 'https://remoteok.com', tag: 'remote' },
+        { name: 'Himalayas', domain: 'himalayas.app', url: 'https://himalayas.app/jobs', tag: 'remote' },
+        { name: 'Flexjobs', domain: 'flexjobs.com', url: 'https://flexjobs.com', tag: 'remote' },
+      ],
+      startup: [
+        { name: 'Wellfound', domain: 'wellfound.com', url: 'https://wellfound.com/jobs', tag: 'startup' },
+        { name: 'YC Jobs', domain: 'ycombinator.com', url: 'https://workatastartup.com', tag: 'startup' },
+        { name: 'Crunchboard', domain: 'crunchboard.com', url: 'https://crunchboard.com', tag: 'startup' },
+        { name: 'Startup.jobs', domain: 'startup.jobs', url: 'https://startup.jobs', tag: 'startup' },
+      ],
+      design: [
+        { name: 'Dribbble', domain: 'dribbble.com', url: 'https://dribbble.com/jobs', tag: 'design' },
+        { name: 'Behance', domain: 'behance.net', url: 'https://behance.net/joblist', tag: 'design' },
+        { name: 'AIGA Design', domain: 'aiga.org', url: 'https://designjobs.aiga.org', tag: 'design' },
+        { name: 'Coroflot', domain: 'coroflot.com', url: 'https://coroflot.com/jobs', tag: 'design' },
+      ],
+      custom: [],
+    };
+
+    const TAG_LABELS = {
+      frequent: 'Frequent',
+      custom: 'Custom',
+      general: 'General',
+      tech: 'Tech',
+      remote: 'Remote',
+      startup: 'Startup',
+      design: 'Design',
+      custom: 'Custom',
+      remote: 'Remote',
+      startup: 'Startup',
+      design: 'Design',
+      finance: 'Finance',
+    };
+
+    function faviconURL(domain) {
+      return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+    }
+
+    function renderGrid(gridId, boards) {
+      const el = document.getElementById(gridId);
+      if (!el) return;
+
+      // Check which boards are custom (not in hardcoded list)
+      const hardcodedUrls = new Set([
+        'https://linkedin.com/jobs', 'https://indeed.com', 'https://glassdoor.com/Job',
+        'https://ziprecruiter.com', 'https://monster.com', 'https://simplyhired.com',
+        'https://levels.fyi/jobs', 'https://news.ycombinator.com/jobs', 'https://dice.com',
+        'https://stackoverflow.com/jobs', 'https://github.com/jobs', 'https://wellfound.com/jobs',
+        'https://remote.co/remote-jobs', 'https://weworkremotely.com', 'https://flexjobs.com',
+        'https://remoteok.com', 'https://ycombinator.com/jobs', 'https://angel.co/jobs',
+        'https://startup.jobs', 'https://dribbble.com/jobs', 'https://behance.net/joblist',
+        'https://coroflot.com/jobs'
+      ]);
+
+      el.innerHTML = boards.map(b => {
+        const isCustom = !hardcodedUrls.has(b.url);
+        return `
+        <div class="board-card" style="position:relative;">
+          <a href="#" onclick="event.preventDefault(); openBoard('${b.url}')" style="display:block; text-decoration:none; color:inherit;">
+            <div class="board-card__top">
+              <div class="board-card__favicon">
+                <img src="${faviconURL(b.domain)}" alt="${b.name}" onerror="this.parentElement.innerHTML='<i data-lucide=\\'globe\\' style=\\'width:16px;height:16px;color:#ccc\\'></i>'">
+              </div>
+              <span class="board-card__tag board-card__tag--${b.tag}">${TAG_LABELS[b.tag]}</span>
+            </div>
+            <div class="board-card__info">
+              <div class="board-card__name">${b.name}</div>
+              <div class="board-card__domain">${b.domain}</div>
+            </div>
+          </a>
+          ${isCustom ? `<button onclick="event.stopPropagation(); deleteBoard('${b.url}')" style="position:absolute; top:8px; right:8px; width:24px; height:24px; border-radius:6px; border:none; background:rgba(255,255,255,0.9); cursor:pointer; display:flex; align-items:center; justify-content:center; opacity:0.6; transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'"><i data-lucide="x" style="width:14px;height:14px;color:#666;"></i></button>` : ''}
+        </div>
+      `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    // Load boards from database on page load
+    async function loadBoards() {
+      try {
+        const { ipcRenderer } = require('electron');
+        const dbBoards = await ipcRenderer.invoke('get-boards');
+        const frequentBoards = await ipcRenderer.invoke('get-frequent-boards');
+        console.log('[BOARDS] Received boards from DB:', dbBoards);
+        console.log('[BOARDS] Received frequent boards:', frequentBoards);
+
+        // Load frequently visited boards (top 10 with visit_count > 0)
+        if (frequentBoards && frequentBoards.length > 0) {
+          BOARDS.frequent = frequentBoards.slice(0, 10).map(board => {
+            const domain = board.url ? new URL(board.url).hostname.replace('www.', '') : '';
+            return {
+              name: board.name,
+              domain: domain,
+              url: board.url,
+              tag: 'frequent',
+              visitCount: board.visit_count
+            };
+          });
+        }
+
+        // Don't replace BOARDS, just add custom boards to it
+        if (dbBoards && dbBoards.length > 0) {
+          // Get hardcoded URLs to avoid duplicates
+          const hardcodedUrls = new Set();
+          Object.values(BOARDS).forEach(category => {
+            category.forEach(board => hardcodedUrls.add(board.url));
+          });
+
+          // Add custom boards from database (only if not already in hardcoded list)
+          dbBoards.forEach(board => {
+            if (!hardcodedUrls.has(board.url)) {
+              const tag = 'custom'; // Custom boards go to custom category
+              const domain = board.url ? new URL(board.url).hostname.replace('www.', '') : '';
+
+              BOARDS[tag].push({
+                name: board.name,
+                domain: domain,
+                url: board.url,
+                tag: tag
+              });
+            }
+          });
+
+          console.log('[BOARDS] After adding custom boards, BOARDS.custom has', BOARDS.custom.length, 'boards');
+        }
+
+        // Show/hide sections based on content
+        const customSection = document.getElementById('customSection');
+        if (customSection) {
+          customSection.style.display = BOARDS.custom.length > 0 ? 'block' : 'none';
+        }
+
+        const frequentSection = document.getElementById('frequentSection');
+        if (frequentSection) {
+          frequentSection.style.display = BOARDS.frequent.length > 0 ? 'block' : 'none';
+        }
+
+        // Render all grids
+        console.log('[BOARDS] Rendering grids...');
+        renderGrid('grid-frequent', BOARDS.frequent);
+        renderGrid('grid-custom', BOARDS.custom);
+        renderGrid('grid-general', BOARDS.general);
+        renderGrid('grid-tech', BOARDS.tech);
+        renderGrid('grid-remote', BOARDS.remote);
+        renderGrid('grid-startup', BOARDS.startup);
+        renderGrid('grid-design', BOARDS.design);
+        console.log('[BOARDS] Grids rendered');
+      } catch (e) {
+        console.error('[BOARDS] Error loading boards:', e);
+      }
+    }
+
+    // Initial render with hardcoded boards, then load from database
+    renderGrid('grid-frequent', BOARDS.frequent);
+    renderGrid('grid-custom', BOARDS.custom);
+    renderGrid('grid-general', BOARDS.general);
+    renderGrid('grid-tech', BOARDS.tech);
+    renderGrid('grid-remote', BOARDS.remote);
+    renderGrid('grid-startup', BOARDS.startup);
+    renderGrid('grid-design', BOARDS.design);
+
+    // Load from database (will add custom boards and frequent visits)
+    loadBoards();
+
+    // Add Board Modal
+    const modal = document.getElementById('addBoardModal');
+    const btnAddBoard = document.getElementById('btnAddBoard');
+    const btnCancelAdd = document.getElementById('btnCancelAdd');
+    const btnConfirmAdd = document.getElementById('btnConfirmAdd');
+    const inputBoardName = document.getElementById('inputBoardName');
+    const inputBoardUrl = document.getElementById('inputBoardUrl');
+
+    btnAddBoard.addEventListener('click', () => {
+      modal.style.display = 'flex';
+      inputBoardName.value = '';
+      inputBoardUrl.value = '';
+      inputBoardName.focus();
+    });
+
+    btnCancelAdd.addEventListener('click', () => {
+      modal.style.display = 'none';
+    });
+
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.style.display = 'none';
+    });
+
+    btnConfirmAdd.addEventListener('click', async () => {
+      const name = inputBoardName.value.trim();
+      const url = inputBoardUrl.value.trim();
+
+      if (!name || !url) {
+        alert('Please enter both name and URL');
+        return;
+      }
+
+      try {
+        const { ipcRenderer } = require('electron');
+        const result = await ipcRenderer.invoke('add-board', { name, url });
+
+        if (result.success) {
+          modal.style.display = 'none';
+          // Reload all boards from database
+          await loadBoards();
+        } else {
+          alert('Failed to add board: ' + (result.message || 'Unknown error'));
+        }
+      } catch (e) {
+        console.error('Error adding board:', e);
+        alert('Failed to add board');
+      }
+    });
+
+    // Allow Enter key to submit
+    inputBoardUrl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') btnConfirmAdd.click();
+    });
+  </script>
+</body>
+
+</html>

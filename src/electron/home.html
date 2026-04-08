@@ -2,1173 +2,1199 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard</title>
-  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>App</title>
+  <script src="https://unpkg.com/lucide@latest"></script>
   <style>
     @font-face {
-      font-family: "ClashGrotesk";
-      src: url("ClashGrotesk-Light.otf") format("opentype");
+      font-family: 'ClashGrotesk';
+      src: url('./ClashGrotesk-Regular.otf') format('opentype');
       font-weight: 300;
     }
 
-    @font-face {
-      font-family: "Chillax";
-      src: url("Chillax-Bold.otf") format("opentype");
-      font-weight: 700;
-    }
-
-    :root {
-      --bg: #F0EFEC;
-      --panel-l: #F4F3F0;
-      --panel-r: #F4F3F0;
-      --text: #1A1A1A;
-      --sub: #9A9A92;
-      --border: #E2E1DC;
-      --border-mid: #D8D7D2;
-      --hover: rgba(0, 0, 0, 0.04);
-      --radius: 18px;
-      --accent: #1A1A1A;
-      --accent-h: #333333;
-      --surface: #EEEDEA;
-      --surface-2: #E8E7E3;
-      --green: #2D8A5E;
-    }
-
-    *,
-    *::before,
-    *::after {
+    * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-      font-family: 'ClashGrotesk', sans-serif;
-      font-weight: 300;
     }
 
     html,
     body {
+      height: 100%;
       width: 100%;
-      height: 100%;
       overflow: hidden;
-      background: var(--bg);
-      color: var(--text);
-    }
-
-    .shell {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: row;
-      position: relative;
-      -webkit-app-region: drag;
-    }
-
-    .divider-v {
-      width: 1px;
-      background: var(--border);
-      flex-shrink: 0;
-    }
-
-    /* Sidebar */
-    .sidebar {
-      background: var(--panel-l);
-      padding: 0;
-      width: 260px;
-      flex-shrink: 0;
-      display: flex;
-      flex-direction: column;
-      -webkit-app-region: no-drag;
-      overflow: hidden;
-    }
-
-    .sidebar-top {
-      padding: 22px 20px 18px;
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
-    }
-
-    .app-name {
-      font-family: 'Chillax', sans-serif;
-      font-size: 17px;
-      font-weight: 700;
-      letter-spacing: -0.03em;
-      color: var(--text);
-      display: flex;
-      align-items: center;
-      gap: 9px;
-    }
-
-    .app-name-mark {
-      width: 26px;
-      height: 26px;
-      border: 1px solid var(--border-mid);
-      border-radius: 7px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      background: var(--surface);
-    }
-
-    .app-name-mark svg {
-      width: 13px;
-      height: 13px;
-    }
-
-    .sidebar-nav {
-      flex: 1;
-      padding: 14px 12px;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    .nav-section-label {
       font-family: 'ClashGrotesk', sans-serif;
-      font-size: 9px;
-      font-weight: 300;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--sub);
-      padding: 0 10px;
-      margin-bottom: 4px;
-      margin-top: 16px;
-      opacity: 0.7;
     }
 
-    .nav-section-label:first-child {
-      margin-top: 0;
-    }
-
-    .nav-spacer {
-      flex: 1;
-    }
-
-    .nav-item {
+    /* ── Title Bar ── */
+    .title-bar {
+      height: 40px;
+      background: #ECECEA;
       display: flex;
       align-items: center;
-      gap: 9px;
-      padding: 8px 10px;
-      border-radius: 8px;
-      font-family: 'ClashGrotesk', sans-serif;
-      font-size: 12px;
-      font-weight: 300;
-      letter-spacing: 0.01em;
-      color: var(--sub);
-      cursor: pointer;
-      user-select: none;
-      transition: background 0.15s, color 0.15s;
-      position: relative;
-    }
-
-    .nav-item:hover {
-      background: var(--hover);
-      color: var(--text);
-    }
-
-    .nav-item.active {
-      background: var(--surface-2);
-      color: var(--text);
-      border: 1px solid var(--border);
-    }
-
-    .nav-item-badge {
-      margin-left: auto;
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      font-family: 'ClashGrotesk', sans-serif;
-      font-size: 9px;
-      font-weight: 300;
-      color: var(--sub);
-      padding: 1px 6px;
-      letter-spacing: 0.04em;
-    }
-
-    .nav-item.active .nav-item-badge {
-      background: var(--border);
-      color: var(--text);
-    }
-
-    .sidebar-profile {
-      padding: 12px 16px;
-      border-top: 1px solid var(--border);
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-
-    .sidebar-profile:hover {
-      background: var(--hover);
-    }
-
-    .profile-avatar {
-      width: 32px;
-      height: 32px;
-      border-radius: 10px;
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: 'Chillax', sans-serif;
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--text);
-      letter-spacing: -0.02em;
-    }
-
-    .profile-info {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .profile-name {
-      font-family: 'ClashGrotesk', sans-serif;
-      font-size: 12px;
-      font-weight: 300;
-      color: var(--text);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .profile-plan {
-      font-family: 'ClashGrotesk', sans-serif;
-      font-size: 10px;
-      font-weight: 300;
-      color: var(--sub);
-      letter-spacing: 0.03em;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      margin-top: 1px;
-    }
-
-    .profile-plan-dot {
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      background: var(--green);
-      box-shadow: 0 0 4px var(--green);
-      animation: pulse 2.4s ease-in-out infinite;
-    }
-
-    .profile-chevron {
-      color: var(--sub);
-      flex-shrink: 0;
-    }
-
-    .main-col {
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      background: var(--panel-r);
-      -webkit-app-region: no-drag;
-    }
-
-    .main-topbar {
-      padding: 10px 16px 10px 28px;
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      background: var(--panel-r);
-      -webkit-app-region: drag;
-    }
-
-    .main-topbar-inner {
-      display: contents;
-    }
-
-    .main-topbar input {
-      font-family: 'ClashGrotesk', monospace;
-      background: transparent;
-      border: none;
-      outline: none;
-      flex: 1;
-      font-size: 12px;
-      color: var(--sub);
-      -webkit-app-region: no-drag;
-    }
-
-    .search-icon {
-      color: var(--sub);
-      flex-shrink: 0;
-      width: 14px;
-      height: 14px;
-      display: flex;
-    }
-
-    .search-icon svg {
-      width: 14px !important;
-      height: 14px !important;
-    }
-
-    .main-topbar input::placeholder {
-      color: var(--border-mid);
-    }
-
-    .wm-pill {
-      display: flex;
-      align-items: center;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 4px 6px;
-      gap: 2px;
-      -webkit-app-region: no-drag;
-    }
-
-    .wm-btn {
-      width: 26px;
-      height: 26px;
-      border: none;
-      background: transparent;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--sub);
-      border-radius: 6px;
-      transition: background 0.15s, color 0.15s;
-    }
-
-    .wm-btn:hover {
-      background: var(--surface-2);
-      color: var(--sub);
-    }
-
-    .wm-btn.close:hover {
-      background: #e5534b;
-      color: #fff;
-    }
-
-    /* Top banner */
-    .main-top {
-      flex: 1;
-      padding: 28px 0px 36px 36px;
-      min-height: 0;
-      overflow: hidden;
-    }
-
-    .main-top-box {
-      background: var(--surface);
-      border-radius: var(--radius);
-      border-top-right-radius: 0;
-      border-bottom-right-radius: 0;
-      border: 1px solid var(--border);
-      border-right: none;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      overflow: hidden;
-      position: relative;
-    }
-
-    .main-top-box::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background-image:
-        linear-gradient(var(--border) 1px, transparent 1px),
-        linear-gradient(90deg, var(--border) 1px, transparent 1px);
-      background-size: 36px 36px;
-      mask-image: radial-gradient(ellipse 60% 70% at 90% 50%, rgba(0, 0, 0, 0.4) 0%, transparent 65%);
-      pointer-events: none;
-      opacity: 0.35;
-    }
-
-    .box-left {
-      flex: 0 0 auto;
-      width: 340px;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      padding: 0 36px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .box-left-inner {
-      display: flex;
-      flex-direction: column;
       justify-content: space-between;
-      height: 88%;
-      padding: 4px 0;
-      width: 100%;
+      padding: 0 12px;
+      cursor: grab;
+      user-select: none;
+      border-bottom: 1px solid #E0E0DD;
+      -webkit-app-region: drag;
+      flex-shrink: 0;
     }
 
-    .box-greeting {
-      font-family: 'ClashGrotesk', monospace;
-      font-size: 11px;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--sub);
+    .title-bar:active {
+      cursor: grabbing;
     }
 
-    .box-sub {
-      font-family: 'Chillax', sans-serif;
-      font-size: 40px;
-      font-weight: 700;
-      color: var(--text);
-      line-height: 1.12;
-      letter-spacing: -0.03em;
-      white-space: nowrap;
-      margin-top: -18px;
-    }
-
-    .box-sub span {
-      color: var(--accent);
-    }
-
-    .box-pill {
-      display: inline-flex;
+    .title-bar__left {
+      display: flex;
       align-items: center;
       gap: 6px;
-      background: var(--text);
-      border: none;
-      border-radius: 8px;
-      padding: 9px 16px;
-      font-family: 'Chillax', sans-serif;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--bg);
-      cursor: pointer;
-      transition: opacity 0.15s, transform 0.12s;
-      width: fit-content;
-      margin-bottom: 18px;
-      letter-spacing: 0.02em;
     }
 
-    .box-pill:hover {
-      opacity: 0.85;
-    }
-
-    .box-pill:active {
-      transform: scale(0.985);
-    }
-
-    .box-pill svg {
-      width: 12px !important;
-      height: 12px !important;
-    }
-
-    .box-right {
-      flex: 1;
-      height: 100%;
+    .title-bar__right {
       display: flex;
       align-items: center;
-      justify-content: flex-end;
-      padding: 0 24px;
-      gap: 14px;
-      position: relative;
-      z-index: 1;
+      -webkit-app-region: no-drag;
     }
 
-    .card {
-      background: var(--panel-l);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      flex-shrink: 0;
-      width: 190px;
-      height: 80%;
-      padding: 14px 14px 14px;
+    .title-bar__traffic {
       display: flex;
-      flex-direction: column;
-      justify-content: space-between;
+      gap: 6px;
+      -webkit-app-region: no-drag;
+    }
+
+    .traffic-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
       cursor: pointer;
-      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.15s;
-      overflow: hidden;
+      transition: opacity 0.15s;
     }
 
-    .card:hover {
-      transform: translateY(-3px);
-      border-color: var(--border-mid);
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+    .traffic-dot:hover {
+      opacity: 0.75;
     }
 
-    .card.orange {
-      background: var(--accent);
-      border-color: var(--accent);
+    .traffic-dot--close {
+      background: #FF5F57;
     }
 
-    .card.orange:hover {
-      border-color: var(--accent-h);
-      background: var(--accent-h);
+    .traffic-dot--min {
+      background: #FEBC2E;
     }
 
-    .card-num {
-      font-family: 'ClashGrotesk', monospace;
-      font-size: 10px;
-      letter-spacing: 0.1em;
-      color: var(--sub);
+    .traffic-dot--max {
+      background: #28C840;
     }
 
-    .card.orange .card-num {
-      color: rgba(255, 255, 255, 0.45);
+    .title-bar__title {
+      font-size: 13px;
+      color: #555;
+      letter-spacing: 0.01em;
     }
 
-    .card-bottom {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-
-    .card-icon {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
-      background: var(--surface-2);
-      border: 1px solid var(--border);
+    .title-bar__icon-btn {
+      width: 28px;
+      height: 28px;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 4px;
-    }
-
-    .card.orange .card-icon {
-      background: rgba(255, 255, 255, 0.15);
-      border-color: rgba(255, 255, 255, 0.1);
-    }
-
-    .card-icon svg {
-      width: 14px !important;
-      height: 14px !important;
-      color: var(--sub);
-    }
-
-    .card.orange .card-icon svg {
-      color: #fff;
-    }
-
-    .card-label {
-      font-family: 'Chillax', sans-serif;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text);
-      line-height: 1.3;
-      letter-spacing: -0.01em;
-    }
-
-    .card.orange .card-label {
-      color: #fff;
-    }
-
-    .card-sub {
-      font-family: 'ClashGrotesk', monospace;
-      font-size: 10px;
-      color: var(--sub);
-      letter-spacing: 0.03em;
-    }
-
-    .card.orange .card-sub {
-      color: rgba(255, 255, 255, 0.6);
-    }
-
-    .divider-h {
-      height: 1px;
-      background: var(--border);
-      flex-shrink: 0;
-    }
-
-    /* Bottom Left */
-    .bottom-left {
-      background: var(--panel-r);
-      flex: 1;
-      min-height: 0;
-      display: flex;
-      flex-direction: column;
-      padding: 26px 36px 24px;
-      padding-right: calc(30% + 110px);
-      overflow: visible;
-    }
-
-    .bl-header {
-      flex-shrink: 0;
-      margin-bottom: 18px;
-      width: 100%;
-    }
-
-    .bl-week-label {
-      font-family: 'ClashGrotesk', monospace;
-      font-size: 10px;
-      color: var(--sub);
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      margin-bottom: 4px;
-    }
-
-    .bl-header-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      width: 100%;
-    }
-
-    .bl-title {
-      font-family: 'Chillax', sans-serif;
-      font-size: 28px;
-      font-weight: 700;
-      letter-spacing: -0.03em;
-      color: var(--text);
-      flex-shrink: 0;
-    }
-
-    .bl-progress-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-shrink: 0;
-    }
-
-    .bl-progress-track {
-      width: 140px;
-      flex-shrink: 0;
-      height: 4px;
-      background: var(--surface-2);
-      border-radius: 999px;
-      overflow: hidden;
-      border: 1px solid var(--border);
-    }
-
-    .bl-progress-fill {
-      height: 100%;
-      background: var(--accent);
-      border-radius: 999px;
-      transition: width 0.4s ease;
-    }
-
-    .bl-pct {
-      font-family: 'ClashGrotesk', monospace;
-      font-size: 11px;
-      color: var(--sub);
-      flex-shrink: 0;
-      letter-spacing: 0.05em;
-    }
-
-    .bl-list {
-      display: flex;
-      flex-direction: column;
-      overflow-y: auto;
-      flex: 1;
-      scrollbar-width: none;
-    }
-
-    .bl-list::-webkit-scrollbar {
-      display: none;
-    }
-
-    .bl-item {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--border);
+      border-radius: 6px;
       cursor: pointer;
-      transition: opacity 0.15s;
-      width: 100%;
+      color: #666;
+      transition: background 0.15s, color 0.15s;
+      -webkit-app-region: no-drag;
     }
 
-    .bl-item:last-child {
-      border-bottom: none;
+    .title-bar__icon-btn:hover {
+      background: rgba(0, 0, 0, 0.07);
+      color: #111;
     }
 
-    .bl-item:hover {
-      opacity: 0.65;
+    .title-bar__icon-btn--spaced {
+      margin-right: 8px;
     }
 
-    .bl-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      flex-shrink: 0;
+    .win-btn {
+      width: 46px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #444;
+      transition: background 0.12s, color 0.12s;
+      -webkit-app-region: no-drag;
     }
 
-    .bl-dot.done {
-      background: var(--green);
+    .win-btn svg {
+      width: 14px;
+      height: 14px;
+      stroke-width: 2;
     }
 
-    .bl-dot.active {
-      background: var(--accent);
+    .win-btn--min:hover,
+    .win-btn--max:hover {
+      background: rgba(0, 0, 0, 0.08);
     }
 
-    .bl-dot.pending {
-      background: var(--border);
-      border: 1px solid var(--border);
+    .win-btn--close:hover {
+      background: #e81123;
+      color: #fff;
     }
 
-    .bl-item-content {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .bl-item-title {
-      font-family: 'Chillax', sans-serif;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      letter-spacing: -0.01em;
-    }
-
-    .bl-item-sub {
-      font-family: 'ClashGrotesk', monospace;
-      font-size: 10px;
-      color: var(--sub);
-      margin-top: 2px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      letter-spacing: 0.02em;
-    }
-
-    .bl-item-right {
-      font-family: 'ClashGrotesk', monospace;
-      font-size: 10px;
-      color: var(--sub);
-      flex-shrink: 0;
-      white-space: nowrap;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-    }
-
-    .bl-item.pending .bl-item-title {
-      color: var(--sub);
-    }
-
-    .bl-item.pending .bl-item-sub {
-      color: var(--sub);
-    }
-
-    /* Bottom Right: Notifications */
-    .bottom-right {
-      background: var(--panel-r);
-      position: absolute;
-      right: 0;
-      bottom: 0;
-      width: 30%;
-      z-index: 10;
+    /* ── App Shell ── */
+    .app-shell {
       display: flex;
       flex-direction: column;
-      font-family: 'Chillax', sans-serif;
-      padding: 20px 32px 24px;
-      overflow: hidden;
-      border-left: 1px solid var(--border);
+      height: 100vh;
+      width: 100vw;
     }
 
-    .notif-header {
+    .layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .panel {
+      background: #F6F6F4;
+    }
+
+    .panel-sidebar {
+      width: 210px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .panel-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 4px;
+      overflow: hidden;
+    }
+
+    .panel-notifications {
+      width: 250px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 14px 10px 10px;
+      gap: 0;
+      overflow: hidden;
+    }
+
+    /* ── Notifications ── */
+    .notif-panel-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 16px;
+      padding: 0 4px 10px;
       flex-shrink: 0;
     }
 
-    .notif-title {
-      font-family: 'Chillax', sans-serif;
-      font-size: 28px;
-      font-weight: 700;
-      letter-spacing: -0.03em;
-      color: var(--text);
+    .notif-section-label {
+      font-size: 10px;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
     }
 
     .notif-see-all {
-      font-family: 'ClashGrotesk', monospace;
       font-size: 10px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--sub);
+      color: #888;
       cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 2px;
       transition: color 0.15s;
-      background: none;
-      border: none;
-      padding: 0;
     }
 
     .notif-see-all:hover {
-      color: var(--text);
+      color: #333;
     }
 
     .notif-scroll {
       flex: 1;
-      min-height: 0;
       overflow-y: auto;
-      scrollbar-width: none;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 7px;
     }
 
     .notif-scroll::-webkit-scrollbar {
-      display: none;
-    }
-
-    .notif-day-label {
-      font-family: 'ClashGrotesk', monospace;
-      font-size: 10px;
-      letter-spacing: 0.12em;
-      color: var(--sub);
-      text-transform: uppercase;
-      margin-bottom: 2px;
-      padding: 0 2px;
+      width: 0;
     }
 
     .notif-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 12px 14px;
+      background: rgba(0, 0, 0, 0.07);
+      border-radius: 9px;
+      padding: 10px 12px;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 5px;
       cursor: pointer;
-      transition: transform 0.15s ease, border-color 0.15s ease;
-      position: relative;
-      overflow: hidden;
+      transition: background 0.15s;
+      flex-shrink: 0;
     }
 
     .notif-card:hover {
-      transform: translateY(-2px);
-      border-color: var(--border-mid);
+      background: rgba(0, 0, 0, 0.11);
     }
 
-    .notif-card-top {
+    .notif-card__top {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: space-between;
-      gap: 10px;
     }
 
-    .notif-card-title {
-      font-family: 'Chillax', sans-serif;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text);
-      line-height: 1.3;
-      letter-spacing: -0.01em;
-    }
-
-    .notif-card-sub {
-      font-family: 'ClashGrotesk', monospace;
-      font-size: 10px;
-      color: var(--sub);
-      margin-top: 2px;
-      letter-spacing: 0.02em;
-    }
-
-    .notif-card-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 3px 8px;
-      border-radius: 6px;
-      font-family: 'ClashGrotesk', monospace;
-      font-size: 10px;
-      letter-spacing: 0.05em;
-      flex-shrink: 0;
-      margin-top: 2px;
-    }
-
-    .notif-card-badge.group {
-      background: rgba(99, 179, 237, 0.1);
-      color: #63b3ed;
-      border: 1px solid rgba(99, 179, 237, 0.15);
-    }
-
-    .notif-card-badge.personal {
-      background: rgba(246, 173, 85, 0.1);
-      color: #f6ad55;
-      border: 1px solid rgba(246, 173, 85, 0.15);
-    }
-
-    .notif-card-badge.interview {
-      background: rgba(62, 207, 142, 0.1);
-      color: #3ecf8e;
-      border: 1px solid rgba(62, 207, 142, 0.15);
-    }
-
-    .notif-card-badge.update {
-      background: rgba(26, 26, 26, 0.06);
-      color: var(--text);
-      border: 1px solid rgba(26, 26, 26, 0.12);
-    }
-
-    .notif-card-badge-dot {
-      width: 4px;
-      height: 4px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-
-    .notif-card-badge.group .notif-card-badge-dot {
-      background: #63b3ed;
-    }
-
-    .notif-card-badge.personal .notif-card-badge-dot {
-      background: #f6ad55;
-    }
-
-    .notif-card-badge.interview .notif-card-badge-dot {
-      background: #3ecf8e;
-    }
-
-    .notif-card-badge.update .notif-card-badge-dot {
-      background: var(--text);
-    }
-
-    .notif-avatars {
+    .notif-card__top-left {
       display: flex;
       align-items: center;
-      margin-top: 4px;
-    }
-
-    .notif-avatar {
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      border: 1.5px solid var(--surface);
-      margin-left: -6px;
-      font-family: 'ClashGrotesk', monospace;
-      font-size: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #fff;
-      flex-shrink: 0;
-    }
-
-    .notif-avatar:first-child {
-      margin-left: 0;
-    }
-
-    .notif-avatar.a {
-      background: var(--accent);
-    }
-
-    .notif-avatar.b {
-      background: var(--accent-h);
-    }
-
-    .notif-avatar.c {
-      background: #3ecf8e;
-    }
-
-    .notif-day-group {
-      display: flex;
-      flex-direction: column;
       gap: 6px;
     }
 
-    .notif-card-time {
-      font-family: 'ClashGrotesk', monospace;
+    .notif-card__dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #111;
+      flex-shrink: 0;
+    }
+
+    .notif-card__company {
+      font-size: 12px;
+      font-weight: 600;
+      color: #111;
+    }
+
+    .notif-card__time {
       font-size: 10px;
-      color: var(--sub);
-      letter-spacing: 0.04em;
+      color: #bbb;
     }
 
-    .notif-empty {
-      font-family: 'ClashGrotesk', monospace;
+    .notif-card__body {
       font-size: 11px;
-      color: var(--sub);
-      text-align: center;
-      padding: 20px 0;
-      letter-spacing: 0.05em;
+      color: #666;
+      line-height: 1.45;
     }
 
-    .bl-empty {
-      font-family: 'ClashGrotesk', monospace;
+    /* ── Sidebar ── */
+    .sidebar-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 100%;
+      padding: 0 24px;
+    }
+
+    .nav-tab {
+      padding: 10px 16px;
+      font-family: 'ClashGrotesk', sans-serif;
+      font-size: 15px;
+      color: #333;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: background 0.15s;
+      user-select: none;
+    }
+
+    .nav-tab:hover {
+      background: rgba(0, 0, 0, 0.06);
+    }
+
+    .nav-tab.active {
+      background: rgba(0, 0, 0, 0.09);
+      color: #000;
+    }
+
+    /* ── Layout rows ── */
+    .row {
+      display: flex;
+      flex-direction: row;
+      gap: 8px;
+    }
+
+    .row--fixed {
+      height: 140px;
+      flex-shrink: 0;
+    }
+
+    .row--flex {
+      flex: 1;
+      min-height: 0;
+    }
+
+    .white-card {
+      background: #fff;
+      border-radius: 12px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    /* ── Welcome card ── */
+    .welcome-card {
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 16px;
+    }
+
+    .welcome-sub {
       font-size: 11px;
-      color: var(--sub);
-      padding: 16px 0;
+      color: #aaa;
+      text-transform: uppercase;
       letter-spacing: 0.05em;
+      margin-bottom: 4px;
     }
 
-    @keyframes pulse {
+    .welcome-name {
+      font-size: 20px;
+      font-weight: 600;
+      color: #111;
+      letter-spacing: -0.02em;
+    }
 
-      0%,
-      100% {
-        opacity: 1;
+    .status-pill {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-family: 'ClashGrotesk', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      background: #F4F4F2;
+      color: #888;
+      white-space: nowrap;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .status-pill.in-progress {
+      background: #FFF7E6;
+      color: #D97706;
+    }
+
+    .status-pill.completed {
+      background: #ECFDF5;
+      color: #059669;
+    }
+
+    /* ── Card shared ── */
+    .card-header {
+      padding: 12px 16px 10px;
+      border-bottom: 1px solid #EBEBEA;
+      flex-shrink: 0;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #111;
+      letter-spacing: -0.01em;
+    }
+
+    /* ── Overview card (weekly goal progress) ── */
+    .overview-card {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .overview-card .card-body {
+      padding: 14px 16px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      overflow: hidden;
+    }
+
+    .weekly-goal-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+
+    .weekly-count {
+      font-size: 26px;
+      font-weight: 600;
+      color: #111;
+      letter-spacing: -0.04em;
+      line-height: 1;
+    }
+
+    .weekly-goal-label {
+      font-size: 11px;
+      color: #aaa;
+    }
+
+    .weekly-goal-target {
+      font-size: 11px;
+      color: #bbb;
+    }
+
+    /* Green progress bar */
+    .progress-track {
+      width: 100%;
+      height: 28px;
+      background: #EDF7F1;
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #5FC488 0%, #3DAF6A 100%);
+      border-radius: 8px;
+      transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      min-width: 0;
+    }
+
+    .progress-label {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 11px;
+      font-weight: 600;
+      color: #5a9e78;
+    }
+
+    .progress-label--inside {
+      color: #fff;
+      right: auto;
+      left: 10px;
+    }
+
+    .stat-row {
+      display: flex;
+      gap: 0;
+    }
+
+    .stat-item {
+      flex: 1;
+    }
+
+    .stat-item+.stat-item {
+      border-left: 1px solid #F2F2F0;
+      padding-left: 14px;
+    }
+
+    .stat-val {
+      font-size: 18px;
+      font-weight: 600;
+      color: #111;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+
+    .stat-lbl {
+      font-size: 10px;
+      color: #bbb;
+      margin-top: 3px;
+    }
+
+    /* ── Job Boards card ── */
+    .recent-card {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .recent-card .card-body {
+      padding: 8px 16px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .board-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 6px;
+      border-bottom: 1px solid #F2F2F0;
+      border-radius: 6px;
+      cursor: pointer;
+      margin: 0 -6px;
+      transition: background 0.12s;
+    }
+
+    .board-row:hover {
+      background: #F6F6F4;
+    }
+
+    .board-row:last-child {
+      border-bottom: none;
+    }
+
+    .board-favicon {
+      width: 16px;
+      height: 16px;
+      border-radius: 3px;
+      background: #F0F0EE;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .board-favicon img {
+      width: 14px;
+      height: 14px;
+      object-fit: contain;
+    }
+
+    .board-name {
+      font-size: 12.5px;
+      color: #222;
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .board-domain {
+      font-size: 10.5px;
+      color: #ccc;
+      flex-shrink: 0;
+    }
+
+    /* ── In-Progress Table card ── */
+    .app-table-card {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .tbl-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px 10px;
+      border-bottom: 1px solid #EBEBEA;
+      flex-shrink: 0;
+    }
+
+    .tbl-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #111;
+      letter-spacing: -0.01em;
+    }
+
+    /* 5 columns: checkbox | company | role | date | status */
+    .tbl-head {
+      display: grid;
+      grid-template-columns: 28px 1fr 1fr 100px 120px;
+      align-items: center;
+      padding: 0 16px;
+      height: 34px;
+      border-bottom: 1px solid #EBEBEA;
+      flex-shrink: 0;
+    }
+
+    .tbl-head-cell {
+      font-size: 11px;
+      color: #aaa;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+      user-select: none;
+      transition: color 0.12s;
+    }
+
+    .tbl-head-cell:hover {
+      color: #555;
+    }
+
+    .tbl-head-cell--active {
+      color: #333;
+    }
+
+    .tbl-body {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .tbl-body::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .tbl-body::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .tbl-body::-webkit-scrollbar-thumb {
+      background: #DDD;
+      border-radius: 4px;
+    }
+
+    .tbl-row {
+      display: grid;
+      grid-template-columns: 28px 1fr 1fr 100px 120px;
+      align-items: center;
+      padding: 0 16px;
+      height: 44px;
+      border-bottom: 1px solid #F2F2F0;
+      transition: background 0.1s;
+      cursor: pointer;
+    }
+
+    .tbl-row:hover {
+      background: #FAFAF9;
+    }
+
+    .tbl-row:last-child {
+      border-bottom: none;
+    }
+
+    .tbl-cell {
+      font-size: 12.5px;
+      color: #222;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding-right: 8px;
+    }
+
+    .tbl-cell--muted {
+      color: #999;
+      font-size: 11.5px;
+    }
+
+    .tbl-checkbox {
+      width: 14px;
+      height: 14px;
+      border: 1.5px solid #D0D0CE;
+      border-radius: 3px;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      background: #fff;
+      flex-shrink: 0;
+      transition: border-color 0.12s, background 0.12s;
+    }
+
+    .tbl-checkbox:checked {
+      background: #111;
+      border-color: #111;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpolyline points='2,5 4,7.5 8,3' fill='none' stroke='white' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: center;
+    }
+
+    /* see-more row */
+    .tbl-see-more {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 38px;
+      border-top: 1px solid #F2F2F0;
+      font-size: 12px;
+      color: #999;
+      cursor: pointer;
+      transition: color 0.15s, background 0.15s;
+      border-radius: 0 0 12px 12px;
+      flex-shrink: 0;
+    }
+
+    .tbl-see-more:hover {
+      background: #FAFAF9;
+      color: #444;
+    }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .badge::before {
+      content: '';
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .badge--in_progress {
+      background: #FFF7E6;
+      color: #D97706;
+    }
+
+    .badge--in_progress::before {
+      background: #D97706;
+    }
+
+    .badge--completed {
+      background: #ECFDF5;
+      color: #059669;
+    }
+
+    .badge--completed::before {
+      background: #059669;
+    }
+
+    .badge--not_started {
+      background: #F3F4F6;
+      color: #6B7280;
+    }
+
+    .badge--not_started::before {
+      background: #9CA3AF;
+    }
+
+    .badge--unknown {
+      background: #F3F4F6;
+      color: #6B7280;
+    }
+
+    .badge--unknown::before {
+      background: #9CA3AF;
+    }
+
+    .tbl-empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #bbb;
+      font-size: 13px;
+    }
+
+    /* ── Browser mode ── */
+    .browser-pane {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .browser-pane.active {
+      display: flex;
+    }
+
+    .panel-main.browser-mode {
+      display: none;
+    }
+
+    /* Browser chrome bar */
+    .browser-bar {
+      height: 44px;
+      background: #fff;
+      border-bottom: 1px solid #EBEBEA;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 10px;
+      flex-shrink: 0;
+    }
+
+    .browser-bar__nav {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+
+    .browser-btn {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      cursor: pointer;
+      color: #777;
+      border: none;
+      background: transparent;
+      transition: background 0.12s, color 0.12s;
+      flex-shrink: 0;
+    }
+
+    .browser-btn:hover {
+      background: #F4F4F2;
+      color: #111;
+    }
+
+    .browser-btn:disabled {
+      opacity: 0.3;
+      cursor: default;
+    }
+
+    .browser-btn:disabled:hover {
+      background: transparent;
+    }
+
+    .browser-bar__url {
+      flex: 1;
+      height: 28px;
+      background: #F4F4F2;
+      border: 1px solid #E8E8E6;
+      border-radius: 7px;
+      padding: 0 10px;
+      font-family: 'ClashGrotesk', sans-serif;
+      font-size: 12px;
+      color: #333;
+      outline: none;
+      transition: border-color 0.15s, background 0.15s;
+      min-width: 0;
+    }
+
+    .browser-bar__url:focus {
+      background: #fff;
+      border-color: #ccc;
+    }
+
+    .browser-bar__right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .browser-status-pill {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-family: 'ClashGrotesk', sans-serif;
+      font-size: 11.5px;
+      font-weight: 500;
+      background: #F4F4F2;
+      color: #888;
+      white-space: nowrap;
+      transition: background 0.2s, color 0.2s;
+      flex-shrink: 0;
+    }
+
+    .browser-status-pill.in-progress {
+      background: #FFF7E6;
+      color: #D97706;
+    }
+
+    .browser-status-pill.completed {
+      background: #ECFDF5;
+      color: #059669;
+    }
+
+    .browser-home-btn {
+      height: 28px;
+      padding: 0 12px;
+      border-radius: 7px;
+      cursor: pointer;
+      font-family: 'ClashGrotesk', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      border: 1px solid #E0E0DE;
+      background: #fff;
+      color: #333;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: background 0.12s;
+      flex-shrink: 0;
+    }
+
+    .browser-home-btn:hover {
+      background: #F4F4F2;
+    }
+
+    .browser-webview {
+      flex: 1;
+      width: 100%;
+      border: none;
+      display: block;
+    }
+
+    .browser-loading {
+      height: 2px;
+      background: #EDF7F1;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .browser-loading__bar {
+      height: 100%;
+      background: linear-gradient(90deg, #5FC488, #3DAF6A);
+      width: 0%;
+      border-radius: 2px;
+    }
+
+    .browser-loading--active .browser-loading__bar {
+      animation: loadPulse 1.4s ease-in-out infinite;
+    }
+
+    @keyframes loadPulse {
+      0% {
+        width: 0%;
+        margin-left: 0;
       }
 
       50% {
-        opacity: 0.3;
+        width: 60%;
+        margin-left: 20%;
+      }
+
+      100% {
+        width: 0%;
+        margin-left: 100%;
       }
     }
   </style>
 </head>
 
 <body>
-  <div class="shell">
-    <div class="sidebar">
-      <div class="sidebar-top">
-        <div class="app-name">
-          <div class="app-name-mark">
-            <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="1" y="1" width="7" height="7" rx="1.5" fill="#1A1A1A" opacity="0.9" />
-              <rect x="10" y="1" width="7" height="7" rx="1.5" fill="#1A1A1A" opacity="0.35" />
-              <rect x="1" y="10" width="7" height="7" rx="1.5" fill="#1A1A1A" opacity="0.35" />
-              <rect x="10" y="10" width="7" height="7" rx="1.5" fill="#1A1A1A" opacity="0.6" />
-            </svg>
-          </div>
-          HiredFin
+  <div class="app-shell">
+
+    <!-- Title Bar -->
+    <div class="title-bar" id="titleBar">
+      <div class="title-bar__left">
+        <div class="title-bar__traffic">
+          <div class="traffic-dot traffic-dot--close" onclick="ipcSend('window-close')"></div>
+          <div class="traffic-dot traffic-dot--min" onclick="ipcSend('window-minimize')"></div>
+          <div class="traffic-dot traffic-dot--max" onclick="ipcSend('window-maximize')"></div>
         </div>
+        <span class="title-bar__title">HiredFinally</span>
       </div>
-
-      <div class="sidebar-nav">
-        <div class="nav-section-label">Menu</div>
-        <div class="nav-item active"><i data-lucide="house"></i>Dashboard</div>
-        <div class="nav-item"><i data-lucide="layout-grid"></i>Job boards</div>
-        <div class="nav-item"><i data-lucide="list-todo"></i>Applications<span class="nav-item-badge">0</span></div>
-
-        <div class="nav-section-label">Insights</div>
-        <div class="nav-item"><i data-lucide="chart-line"></i>Statistics</div>
-        <div class="nav-item"><i data-lucide="bell"></i>Notifications<span class="nav-item-badge"
-            id="notif-badge">—</span></div>
-
-        <div class="nav-spacer"></div>
-
-        <div class="nav-section-label">Account</div>
-        <div class="nav-item"><i data-lucide="settings"></i>Settings</div>
-      </div>
-
-      <div class="sidebar-profile">
-        <div class="profile-avatar">U</div>
-        <div class="profile-info">
-          <div class="profile-name">Your Account</div>
-          <div class="profile-plan"><span class="profile-plan-dot"></span>Free plan</div>
+      <div class="title-bar__right">
+        <div class="title-bar__icon-btn"><i data-lucide="search"></i></div>
+        <div class="title-bar__icon-btn" onclick="ipcSend('open-notifications')"><i data-lucide="bell"></i></div>
+        <div class="title-bar__icon-btn" onclick="ipcSend('open-settings')"><i data-lucide="settings"></i></div>
+        <div class="title-bar__icon-btn title-bar__icon-btn--spaced"><i data-lucide="ellipsis"></i></div>
+        <div class="win-btn win-btn--min" onclick="ipcSend('window-minimize')"><i data-lucide="minus"></i></div>
+        <div class="win-btn win-btn--max" onclick="ipcSend('window-maximize')" id="winMax"><i data-lucide="square"></i>
         </div>
-        <i data-lucide="chevron-up-down" class="profile-chevron" style="width:14px;height:14px;"></i>
+        <div class="win-btn win-btn--close" onclick="ipcSend('window-close')"><i data-lucide="x"></i></div>
       </div>
     </div>
 
-    <div class="divider-v"></div>
+    <div class="layout">
 
-    <div class="main-col">
-      <div class="main-topbar">
-        <div class="main-topbar-inner">
-          <i data-lucide="search" class="search-icon"></i>
-          <input type="text" placeholder="Search for a job board" />
-          <div class="wm-pill">
-            <button class="wm-btn" id="btn-minimize"><i data-lucide="minus"></i></button>
-            <button class="wm-btn" id="btn-maximize"><i data-lucide="maximize" id="maximize-icon"></i></button>
-            <button class="wm-btn close" id="btn-close"><i data-lucide="x"></i></button>
+      <!-- Sidebar -->
+      <div class="panel panel-sidebar">
+        <nav class="sidebar-nav">
+          <div class="nav-tab active">Home</div>
+          <div class="nav-tab" onclick="ipcSend('open-boards')">Boards</div>
+          <div class="nav-tab" onclick="ipcSend('open-pipeline')">Applications</div>
+          <div class="nav-tab" onclick="ipcSend('open-settings')">Settings</div>
+          <div class="nav-tab" onclick="ipcSend('open-notifications')">Notifications</div>
+        </nav>
+      </div>
+
+      <!-- Main -->
+      <div class="panel panel-main" id="mainPanel">
+
+        <!-- Welcome row -->
+        <div class="row row--fixed">
+          <div class="white-card welcome-card">
+            <div style="flex:1">
+              <div class="welcome-sub">Welcome back</div>
+              <div class="welcome-name" id="greetingName">—</div>
+            </div>
+            <div class="status-pill" id="statusPill">Not tracking</div>
+          </div>
+        </div>
+
+        <!-- Overview + Job Boards -->
+        <div class="row row--flex">
+
+          <!-- Overview: weekly goal progress bar -->
+          <div class="white-card overview-card">
+            <div class="card-header"><span class="card-title">This week</span></div>
+            <div class="card-body">
+              <div class="weekly-goal-row">
+                <div>
+                  <div class="weekly-count" id="weeklyCount">0</div>
+                  <div class="weekly-goal-label">applications sent</div>
+                </div>
+                <div class="weekly-goal-target" id="weeklyGoalTarget">Goal: 10</div>
+              </div>
+
+              <!-- Progress bar -->
+              <div class="progress-track">
+                <div class="progress-fill" id="progressFill" style="width:0%"></div>
+                <span class="progress-label" id="progressLabel">0 / 10</span>
+              </div>
+
+              <!-- Mini stats row -->
+              <div class="stat-row" id="miniStats">
+                <div class="stat-item">
+                  <div class="stat-val" id="statTotal">—</div>
+                  <div class="stat-lbl">Total</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-val" id="statActive">—</div>
+                  <div class="stat-lbl">In progress</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-val" id="statDone">—</div>
+                  <div class="stat-lbl">Completed</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Frequently visited job boards -->
+          <div class="white-card recent-card">
+            <div class="card-header"><span class="card-title">Frequently visited</span></div>
+            <div class="card-body" id="recentBoards">
+              <div style="color:#bbb;font-size:13px;padding:8px 0;">Loading…</div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- In-progress applications table (top 5 + see more) -->
+        <div class="row row--flex">
+          <div class="white-card app-table-card">
+
+            <div class="tbl-toolbar">
+              <span class="tbl-title">In Progress</span>
+            </div>
+
+            <div class="tbl-head">
+              <div></div>
+              <div class="tbl-head-cell tbl-head-cell--active">
+                Company <i data-lucide="chevron-up" style="width:10px;height:10px;"></i>
+              </div>
+              <div class="tbl-head-cell">
+                Role <i data-lucide="chevrons-up-down" style="width:10px;height:10px;opacity:.5"></i>
+              </div>
+              <div class="tbl-head-cell">
+                Date <i data-lucide="chevrons-up-down" style="width:10px;height:10px;opacity:.5"></i>
+              </div>
+              <div class="tbl-head-cell">Status</div>
+            </div>
+
+            <div class="tbl-body" id="tblBody">
+              <div class="tbl-empty">Loading…</div>
+            </div>
+
+            <div class="tbl-see-more" id="seeMoreBtn" style="display:none;" onclick="ipcSend('open-pipeline')">
+              See all applications &rarr;
+            </div>
+
           </div>
         </div>
       </div>
 
-      <div class="main-top" id="main-top">
-        <div class="main-top-box">
-          <div class="box-left">
-            <div class="box-left-inner">
-              <div class="box-greeting" id="box-greeting">Hello, there</div>
-              <div class="box-sub" id="box-sub">You've completed<br><span id="completed-count"
-                  style="font-family:'ClashGrotesk',sans-serif;font-weight:300;">0</span>
-                applications<br>this week</div>
-              <div class="box-pill"><i data-lucide="arrow-right"></i>View In-Progress</div>
-            </div>
-          </div>
-          <div class="box-right" id="box-right">
-            <div class="card">
-              <span class="card-num">01</span>
-              <div class="card-bottom">
-                <div class="card-icon"><i data-lucide="briefcase"></i></div>
-                <div class="card-label">Active<br>Applications</div>
-                <div class="card-sub" id="card-active-sub">0 in progress</div>
-              </div>
-            </div>
-            <div class="card orange">
-              <span class="card-num">02</span>
-              <div class="card-bottom">
-                <div class="card-icon"><i data-lucide="check-circle"></i></div>
-                <div class="card-label">Completed<br>Applications</div>
-                <div class="card-sub" id="card-completed-sub">0 submitted</div>
-              </div>
-            </div>
-            <div class="card">
-              <span class="card-num">03</span>
-              <div class="card-bottom">
-                <div class="card-icon"><i data-lucide="layers"></i></div>
-                <div class="card-label">Total<br>Tracked</div>
-                <div class="card-sub" id="card-total-sub">0 all time</div>
-              </div>
-            </div>
-          </div>
+      <!-- Notifications panel -->
+      <div class="panel panel-notifications" id="notifPanel">
+        <div class="notif-panel-header">
+          <span class="notif-section-label">Notifications</span>
+          <span class="notif-see-all" onclick="ipcSend('open-notifications')">See all</span>
+        </div>
+        <div class="notif-scroll" id="notifScroll">
+          <div style="font-size:11px;color:#bbb;padding:4px;">Loading…</div>
         </div>
       </div>
 
-      <div class="divider-h" id="divider-h"></div>
-
-      <div class="bottom-left" id="bottom-left">
-        <div class="bl-header">
-          <div class="bl-week-label" id="bl-week-label">This week</div>
-          <div class="bl-header-top">
-            <div class="bl-title">Applications</div>
-            <div class="bl-progress-row">
-              <div class="bl-progress-track">
-                <div class="bl-progress-fill" id="bl-progress-fill" style="width: 0%"></div>
+      <!-- Browser pane — replaces main panel content, sidebar stays visible -->
+      <div class="panel panel-main" id="browserPane" style="display:none;">
+        <div
+          style="height:44px; background:#fff; border-bottom:1px solid #EBEBEA; display:flex; align-items:center; gap:6px; padding:0 10px; flex-shrink:0; border-radius:12px 12px 0 0;">
+          <div style="display:flex; gap:2px; flex-shrink:0;">
+            <button class="browser-btn" id="btnBack" disabled title="Back"><i data-lucide="arrow-left"
+                style="width:14px;height:14px;"></i></button>
+            <button class="browser-btn" id="btnForward" disabled title="Forward"><i data-lucide="arrow-right"
+                style="width:14px;height:14px;"></i></button>
+            <button class="browser-btn" id="btnReload" title="Reload"><i data-lucide="rotate-cw"
+                style="width:13px;height:13px;"></i></button>
+          </div>
+          <input id="urlBar" type="text" spellcheck="false"
+            style="flex:1; height:28px; background:#F4F4F2; border:1px solid #E8E8E6; border-radius:7px; padding:0 10px; font-family:'ClashGrotesk',sans-serif; font-size:12px; color:#333; outline:none; min-width:0;">
+          <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+            <span id="browserStatusPill"
+              style="padding:4px 12px; border-radius:20px; font-family:'ClashGrotesk',sans-serif; font-size:11.5px; font-weight:500; background:#F4F4F2; color:#888; white-space:nowrap; transition:background 0.2s,color 0.2s; cursor:pointer; position:relative;"
+              title="Click to manually override status">Not tracking</span>
+            <!-- Status override dropdown -->
+            <div id="statusOverrideMenu"
+              style="display:none; position:absolute; top:36px; right:80px; background:#fff; border:1px solid #E0E0DE; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.1); z-index:1000; min-width:180px; padding:6px;">
+              <div
+                style="padding:8px 12px; font-size:11px; color:#888; border-bottom:1px solid #F0F0F0; font-weight:500;">
+                Override Status</div>
+              <button class="status-override-btn" data-status="NOT_STARTED"
+                style="width:100%; padding:8px 12px; text-align:left; background:none; border:none; cursor:pointer; font-family:'ClashGrotesk',sans-serif; font-size:12px; color:#333; border-radius:4px; display:flex; align-items:center; gap:8px; transition:background 0.1s;">
+                <span style="width:8px; height:8px; border-radius:50%; background:#94A3B8;"></span>
+                Not Started
+              </button>
+              <button class="status-override-btn" data-status="IN_PROGRESS"
+                style="width:100%; padding:8px 12px; text-align:left; background:none; border:none; cursor:pointer; font-family:'ClashGrotesk',sans-serif; font-size:12px; color:#333; border-radius:4px; display:flex; align-items:center; gap:8px; transition:background 0.1s;">
+                <span style="width:8px; height:8px; border-radius:50%; background:#F59E0B;"></span>
+                In Progress
+              </button>
+              <button class="status-override-btn" data-status="COMPLETED"
+                style="width:100%; padding:8px 12px; text-align:left; background:none; border:none; cursor:pointer; font-family:'ClashGrotesk',sans-serif; font-size:12px; color:#333; border-radius:4px; display:flex; align-items:center; gap:8px; transition:background 0.1s;">
+                <span style="width:8px; height:8px; border-radius:50%; background:#5FC488;"></span>
+                Completed
+              </button>
+              <div style="border-top:1px solid #F0F0F0; margin-top:4px; padding-top:4px;">
+                <button id="btnOpenDebugLogs"
+                  style="width:100%; padding:8px 12px; text-align:left; background:none; border:none; cursor:pointer; font-family:'ClashGrotesk',sans-serif; font-size:11px; color:#666; border-radius:4px; transition:background 0.1s;">
+                  📁 Open Log Folder
+                </button>
               </div>
-              <div class="bl-pct" id="bl-pct">0%</div>
             </div>
+            <button id="btnDashboard"
+              style="height:28px; padding:0 12px; border-radius:7px; cursor:pointer; font-family:'ClashGrotesk',sans-serif; font-size:12px; font-weight:500; border:1px solid #E0E0DE; background:#fff; color:#333; display:flex; align-items:center; gap:5px; transition:background 0.12s; flex-shrink:0;"><i
+                data-lucide="arrow-left" style="width:12px;height:12px;"></i> Dashboard</button>
           </div>
         </div>
-
-        <div class="bl-list" id="bl-list">
-          <div class="bl-empty">Loading applications...</div>
+        <div id="browserLoading" style="height:2px; background:#EDF7F1; flex-shrink:0; overflow:hidden;">
+          <div id="browserLoadingBar"
+            style="height:100%; background:linear-gradient(90deg,#5FC488,#3DAF6A); width:0%; border-radius:2px; transition:width 0.3s;">
+          </div>
         </div>
+        <webview id="mainWebview" src="about:blank" style="flex:1; width:100%; border:none; display:flex;" allowpopups
+          nodeintegration="false" webpreferences="contextIsolation=yes"></webview>
       </div>
+
     </div>
-
-    <!-- Bottom Right: Notifications -->
-    <div class="bottom-right" id="bottom-right">
-      <div class="notif-header">
-        <div class="notif-title">Notifications</div>
-        <button class="notif-see-all">See all</button>
-      </div>
-
-      <div class="notif-scroll" id="notif-scroll">
-        <div class="notif-empty">Loading...</div>
-      </div>
-    </div>
-
   </div>
 
   <script>
     lucide.createIcons();
 
-    document.querySelectorAll('.nav-item svg').forEach(svg => {
-      svg.setAttribute('width', '13');
-      svg.setAttribute('height', '13');
-    });
+    const WEEKLY_GOAL = 10;
 
-    function resizeWmIcons() {
-      document.querySelectorAll('.wm-btn svg').forEach(svg => {
-        svg.setAttribute('width', '12');
-        svg.setAttribute('height', '12');
-      });
+    /* ── IPC Helper ── */
+    function ipcSend(channel, ...args) {
+      try {
+        const { ipcRenderer } = require('electron');
+        ipcRenderer.send(channel, ...args);
+      } catch (e) { console.error('IPC send error:', e); }
     }
-    resizeWmIcons();
-    document.querySelectorAll('.search-icon svg').forEach(svg => {
-      svg.setAttribute('width', '14');
-      svg.setAttribute('height', '14');
-    });
 
-    const overlapPx = 36;
-    function positionBottomRight() {
-      const rect = document.getElementById('divider-h').getBoundingClientRect();
-      document.getElementById('bottom-right').style.top = (rect.top - overlapPx) + 'px';
+    /* ── Helpers ── */
+    function domainLabel(url) {
+      try {
+        const parts = new URL(url).hostname.replace('www.', '').split('.');
+        const name = parts.length >= 2 ? parts[parts.length - 2] : parts[0];
+        return name.charAt(0).toUpperCase() + name.slice(1);
+      } catch { return url || '—'; }
     }
-    positionBottomRight();
-    window.addEventListener('resize', positionBottomRight);
+
+    function extractCompanyName(url, company) {
+      if (company && company.trim()) return company.trim();
+      return domainLabel(url);
+    }
 
     function getWeekNumber(date) {
       const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -1179,20 +1205,9 @@
 
     function isThisWeek(dateStr) {
       if (!dateStr) return false;
-      const d = new Date(dateStr);
+      const d = new Date(String(dateStr).replace(' ', 'T'));
       const now = new Date();
       return getWeekNumber(d) === getWeekNumber(now) && d.getFullYear() === now.getFullYear();
-    }
-
-    function extractCompanyName(url, company) {
-      if (company && company.trim()) return company.trim();
-      try {
-        const host = new URL(url).hostname.replace('www.', '');
-        const parts = host.split('.');
-        return parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
-      } catch {
-        return url || 'Unknown';
-      }
     }
 
     function statusLabel(status) {
@@ -1203,212 +1218,412 @@
       }
     }
 
-    function statusDotClass(status) {
-      switch (status) {
-        case 'IN_PROGRESS': return 'active';
-        case 'COMPLETED': return 'done';
-        default: return 'pending';
-      }
-    }
-
-    function itemClass(status) {
-      return status === 'NOT_STARTED' ? 'bl-item pending' : 'bl-item ' + statusDotClass(status);
-    }
-
-    function formatRelativeTime(dateStr) {
-      if (!dateStr) return '';
-      const d = new Date(dateStr);
+    function formatRelativeTime(ts) {
+      if (!ts) return '';
+      const d = new Date(typeof ts === 'number' ? ts : String(ts).replace(' ', 'T'));
       const now = new Date();
       const diff = now - d;
       const mins = Math.floor(diff / 60000);
       const hours = Math.floor(diff / 3600000);
       const days = Math.floor(diff / 86400000);
       if (mins < 2) return 'Just now';
-      if (mins < 60) return `${mins}m ago`;
-      if (hours < 24) return `${hours}h ago`;
+      if (mins < 60) return mins + 'm ago';
+      if (hours < 24) return hours + 'h ago';
       if (days === 1) return 'Yesterday';
       return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     }
 
+    /* ── Browser mode ── */
+    const layout = document.querySelector('.layout');
+    const mainPanel = document.getElementById('mainPanel');
+    const notifPanel = document.getElementById('notifPanel');
+    const browserPane = document.getElementById('browserPane');
+    const webview = document.getElementById('mainWebview');
+    const urlBar = document.getElementById('urlBar');
+    const btnBack = document.getElementById('btnBack');
+    const btnForward = document.getElementById('btnForward');
+    const btnReload = document.getElementById('btnReload');
+    const btnDashboard = document.getElementById('btnDashboard');
+    const browserStatusPill = document.getElementById('browserStatusPill');
+    const loadingBar = document.getElementById('browserLoadingBar');
+
+    let browserActive = false;
+
+    function enterBrowserMode(url) {
+      console.log('[BROWSER MODE] enterBrowserMode called with url:', url, 'browserActive:', browserActive);
+
+      // Track board visit
+      if (url && url !== 'about:blank') {
+        try {
+          require('electron').ipcRenderer.invoke('track-board-visit', url).catch(() => { });
+        } catch (e) {
+          console.error('Failed to track board visit:', e);
+        }
+      }
+
+      if (browserActive) {
+        // Already in browser mode, just navigate to the new URL
+        if (url && url !== 'about:blank') {
+          console.log('[BROWSER MODE] Navigating to:', url);
+          webview.src = url;
+          urlBar.value = url;
+        }
+      } else {
+        // Entering browser mode for the first time
+        browserActive = true;
+        mainPanel.style.display = 'none';
+        notifPanel.style.display = 'none';
+        browserPane.style.display = 'flex';
+        if (url && url !== 'about:blank') {
+          console.log('[BROWSER MODE] Initial navigation to:', url);
+          webview.src = url;
+          urlBar.value = url;
+        }
+        lucide.createIcons();
+      }
+    }
+
+    function exitBrowserMode() {
+      browserActive = false;
+      browserPane.style.display = 'none';
+      mainPanel.style.display = 'flex';
+      notifPanel.style.display = 'flex';
+    }
+
+    btnDashboard.addEventListener('click', exitBrowserMode);
+    btnBack.addEventListener('click', () => { try { webview.goBack(); } catch { } });
+    btnForward.addEventListener('click', () => { try { webview.goForward(); } catch { } });
+    btnReload.addEventListener('click', () => { try { webview.reload(); } catch { } });
+
+    urlBar.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        let val = urlBar.value.trim();
+        if (!val) return;
+        if (!/^https?:\/\//i.test(val)) val = 'https://' + val;
+        webview.src = val;
+      }
+    });
+
+    webview.addEventListener('did-start-loading', () => {
+      if (loadingBar) loadingBar.style.width = '60%';
+      const icon = btnReload.querySelector('i');
+      if (icon) { icon.setAttribute('data-lucide', 'x'); lucide.createIcons(); }
+    });
+
+    webview.addEventListener('did-stop-loading', () => {
+      if (loadingBar) {
+        loadingBar.style.width = '100%';
+        setTimeout(() => { loadingBar.style.width = '0%'; }, 300);
+      }
+      const icon = btnReload.querySelector('i');
+      if (icon) { icon.setAttribute('data-lucide', 'rotate-cw'); lucide.createIcons(); }
+      try {
+        btnBack.disabled = !webview.canGoBack();
+        btnForward.disabled = !webview.canGoForward();
+      } catch { }
+    });
+
+    webview.addEventListener('did-navigate', e => {
+      urlBar.value = e.url || webview.getURL();
+    });
+
+    webview.addEventListener('did-navigate-in-page', e => {
+      urlBar.value = e.url || webview.getURL();
+    });
+
+    // Handle new window requests (popups, target="_blank" links)
+    webview.addEventListener('new-window', (e) => {
+      e.preventDefault();
+      if (e.url && e.url !== 'about:blank') {
+        webview.src = e.url;
+        urlBar.value = e.url;
+      }
+    });
+
+    webview.addEventListener('dom-ready', () => {
+      try {
+        webview.executeJavaScript(`
+          (() => ({
+            url: location.href,
+            bodyText: (document.body ? document.body.innerText : '').slice(0, 5000),
+            pageTitle: document.title,
+            formCount: document.forms.length,
+            inputCount: document.querySelectorAll('input:not([type=hidden])').length,
+            fileInputCount: document.querySelectorAll('input[type=file]').length,
+            selectCount: document.querySelectorAll('select').length,
+            textareaCount: document.querySelectorAll('textarea').length,
+            buttonTexts: Array.from(document.querySelectorAll('button,[role=button]')).slice(0,20).map(b=>b.innerText.trim().slice(0,40)),
+            hasProgressIndicator: !!document.querySelector('[class*=progress],[class*=step]'),
+            requiredFieldCount: document.querySelectorAll('[required]').length,
+            hasOverlay: !!document.querySelector('[class*=modal],[class*=dialog],[role=dialog]'),
+            hasResumeUpload: !!document.querySelector('input[type=file]'),
+            hasCompletionToast: !!document.querySelector('[class*=success],[class*=confirm],[class*=submitted]'),
+            hasApplyButton: !!document.querySelector('[class*=apply]'),
+            hasEmbeddedATS: !!document.querySelector('iframe[src*=greenhouse],iframe[src*=lever],iframe[src*=workday]'),
+          }))()
+        `).then(data => {
+          try { require('electron').ipcRenderer.send('webview-data', data); } catch { }
+        }).catch(() => { });
+      } catch { }
+    });
+
+    /* ── Render: in-progress apps (top 5) ── */
     function renderApps(apps) {
-      const list = document.getElementById('bl-list');
-      if (!apps || apps.length === 0) {
-        list.innerHTML = '<div class="bl-empty">No applications tracked yet.</div>';
+      const list = document.getElementById('tblBody');
+      const seeMore = document.getElementById('seeMoreBtn');
+
+      const inProgress = apps.filter(a => a.status === 'IN_PROGRESS')
+        .sort((a, b) => {
+          const da = new Date(String(a.applied_at || a.completed_at || 0).replace(' ', 'T'));
+          const db = new Date(String(b.applied_at || b.completed_at || 0).replace(' ', 'T'));
+          return db - da;
+        });
+
+      if (!inProgress.length) {
+        list.innerHTML = '<div class="tbl-empty">No in-progress applications.</div>';
+        seeMore.style.display = 'none';
         return;
       }
 
-      const order = { IN_PROGRESS: 0, COMPLETED: 1, NOT_STARTED: 2 };
-      const sorted = [...apps].sort((a, b) => {
-        const od = (order[a.status] ?? 2) - (order[b.status] ?? 2);
-        if (od !== 0) return od;
-        const da = new Date(a.applied_at || a.completed_at || 0);
-        const db2 = new Date(b.applied_at || b.completed_at || 0);
-        return db2 - da;
-      });
+      const top5 = inProgress.slice(0, 5);
+      const hasMore = inProgress.length > 5;
 
-      list.innerHTML = sorted.map(app => {
+      list.innerHTML = top5.map(app => {
         const company = extractCompanyName(app.url, app.company);
-        const jobTitle = app.job_title ? app.job_title + ' — Full-time' : 'Position — Full-time';
-        const dotCls = statusDotClass(app.status);
-        const itemCls = itemClass(app.status);
-        const label = statusLabel(app.status);
-        return `
-          <div class="${itemCls}" data-url="${app.url}">
-            <div class="bl-dot ${dotCls}"></div>
-            <div class="bl-item-content">
-              <div class="bl-item-title">${company}</div>
-              <div class="bl-item-sub">${jobTitle}</div>
-            </div>
-            <div class="bl-item-right">${label}</div>
-          </div>
-        `;
+        const jobTitle = app.job_title || 'Position';
+        const date = formatRelativeTime(app.applied_at || app.completed_at);
+        const statusClass = app.status.toLowerCase();
+        const statusText = statusLabel(app.status);
+        return '<div class="tbl-row" data-url="' + app.url + '">' +
+          '<div class="tbl-cell"><input type="checkbox" class="tbl-checkbox"></div>' +
+          '<div class="tbl-cell">' + company + '</div>' +
+          '<div class="tbl-cell">' + jobTitle + '</div>' +
+          '<div class="tbl-cell tbl-cell--muted">' + date + '</div>' +
+          '<div class="tbl-cell"><span class="badge badge--' + statusClass + '">' + statusText + '</span></div>' +
+          '</div>';
       }).join('');
+
+      seeMore.style.display = hasMore ? 'flex' : 'none';
     }
 
+    /* ── Render: notifications ── */
     function renderNotifications(notifications) {
-      const scroll = document.getElementById('notif-scroll');
+      const scroll = document.getElementById('notifScroll');
+      const visible = (notifications || []).filter(n => !n.dismissed);
 
-      if (!notifications || notifications.length === 0) {
-        scroll.innerHTML = '<div class="notif-empty">No notifications yet.</div>';
+      if (!visible.length) {
+        scroll.innerHTML = '<div style="font-size:11px;color:#ccc;padding:4px;">No notifications.</div>';
         return;
       }
 
-      const today = [];
-      const earlier = [];
-      const now = new Date();
-      notifications.forEach(n => {
-        const d = new Date(n.timestamp || n.created_at || 0);
-        const diffDays = Math.floor((now - d) / 86400000);
-        if (diffDays < 1) today.push(n);
-        else earlier.push(n);
-      });
+      const recent = visible
+        .sort((a, b) => (b.timestamp || b.created_at || 0) - (a.timestamp || a.created_at || 0))
+        .slice(0, 6);
 
-      function badgeClass(type) {
-        if (!type) return 'update';
-        const t = type.toLowerCase();
-        if (t.includes('interview')) return 'interview';
-        if (t.includes('group')) return 'group';
-        if (t.includes('personal')) return 'personal';
-        return 'update';
-      }
-
-      function badgeLabel(type) {
-        if (!type) return 'Update';
-        const t = type.toLowerCase();
-        if (t.includes('interview')) return 'Interview';
-        if (t.includes('group')) return 'Group';
-        if (t.includes('personal')) return 'Personal';
-        return 'Update';
-      }
-
-      function renderGroup(label, items) {
-        if (!items.length) return '';
-        return `
-          <div class="notif-day-group">
-            <div class="notif-day-label">${label}</div>
-            ${items.map(n => `
-              <div class="notif-card">
-                <div class="notif-card-top">
-                  <div>
-                    <div class="notif-card-title">${n.title || 'Notification'}</div>
-                    <div class="notif-card-sub">${n.body || n.message || ''}</div>
-                  </div>
-                  <div class="notif-card-badge ${badgeClass(n.type)}">
-                    <div class="notif-card-badge-dot"></div>${badgeLabel(n.type)}
-                  </div>
-                </div>
-                <div class="notif-card-time">${formatRelativeTime(n.timestamp || n.created_at)}</div>
-              </div>
-            `).join('')}
-          </div>
-        `;
-      }
-
-      scroll.innerHTML = renderGroup('Today', today) + renderGroup('Earlier', earlier);
-
-      if (!today.length && !earlier.length) {
-        scroll.innerHTML = '<div class="notif-empty">No notifications yet.</div>';
-      }
+      scroll.innerHTML = recent.map(n =>
+        '<div class="notif-card">' +
+        '<div class="notif-card__top">' +
+        '<div class="notif-card__top-left">' +
+        '<div class="notif-card__dot"></div>' +
+        '<div class="notif-card__company">' + (n.title || 'Notification') + '</div>' +
+        '</div>' +
+        '<div class="notif-card__time">' + formatRelativeTime(n.timestamp || n.created_at) + '</div>' +
+        '</div>' +
+        '<div class="notif-card__body">' + (n.desc || n.body || n.message || '') + '</div>' +
+        '</div>'
+      ).join('');
     }
 
-    function updateStats(apps) {
-      const active = apps.filter(a => a.status === 'IN_PROGRESS').length;
-      const completed = apps.filter(a => a.status === 'COMPLETED').length;
-      const total = apps.length;
-      const weekCompleted = apps.filter(a => a.status === 'COMPLETED' && isThisWeek(a.completed_at || a.applied_at)).length;
+    /* ── Render: weekly goal ── */
+    function updateWeeklyGoal(apps) {
+      const count = apps.filter(a => isThisWeek(a.applied_at || a.completed_at)).length;
+      const pct = Math.min(100, Math.round((count / WEEKLY_GOAL) * 100));
 
-      document.getElementById('completed-count').textContent = weekCompleted;
-      document.getElementById('card-active-sub').textContent = `${active} in progress`;
-      document.getElementById('card-completed-sub').textContent = `${completed} submitted`;
-      document.getElementById('card-total-sub').textContent = `${total} all time`;
+      document.getElementById('weeklyCount').textContent = count;
+      document.getElementById('weeklyGoalTarget').textContent = 'Goal: ' + WEEKLY_GOAL;
 
-      const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
-      document.getElementById('bl-progress-fill').style.width = pct + '%';
-      document.getElementById('bl-pct').textContent = pct + '%';
+      const fill = document.getElementById('progressFill');
+      const label = document.getElementById('progressLabel');
+      fill.style.width = pct + '%';
+      label.textContent = count + ' / ' + WEEKLY_GOAL;
+      label.className = pct > 30 ? 'progress-label progress-label--inside' : 'progress-label';
 
-      const week = getWeekNumber(new Date());
-      document.getElementById('bl-week-label').textContent = `Week ${week}`;
+      document.getElementById('statTotal').textContent = apps.length;
+      document.getElementById('statActive').textContent = apps.filter(a => a.status === 'IN_PROGRESS').length;
+      document.getElementById('statDone').textContent = apps.filter(a => a.status === 'COMPLETED').length;
+    }
+
+    /* ── Job boards ── */
+    async function renderJobBoards() {
+      const div = document.getElementById('recentBoards');
+      try {
+        const { ipcRenderer } = require('electron');
+        const frequentBoards = await ipcRenderer.invoke('get-frequent-boards');
+
+        if (frequentBoards && frequentBoards.length > 0) {
+          div.innerHTML = frequentBoards.map(b =>
+            '<div class="board-row" onclick="enterBrowserMode(\'' + b.url + '\')">' +
+            '<div class="board-favicon"><img src="https://www.google.com/s2/favicons?domain=' + new URL(b.url).hostname + '&sz=32" alt="' + b.name + '" onerror="this.style.display=\'none\'"></div>' +
+            '<div class="board-name">' + b.name + '</div>' +
+            '<div class="board-domain">' + b.visit_count + ' visits</div>' +
+            '</div>'
+          ).join('');
+        } else {
+          // Show default top boards if no visits yet
+          const TOP_JOB_BOARDS = [
+            { name: 'LinkedIn', domain: 'linkedin.com', url: 'https://www.linkedin.com/jobs/', favicon: 'https://www.google.com/s2/favicons?domain=linkedin.com&sz=32' },
+            { name: 'Indeed', domain: 'indeed.com', url: 'https://www.indeed.com/', favicon: 'https://www.google.com/s2/favicons?domain=indeed.com&sz=32' },
+            { name: 'Glassdoor', domain: 'glassdoor.com', url: 'https://www.glassdoor.com/Job/index.htm', favicon: 'https://www.google.com/s2/favicons?domain=glassdoor.com&sz=32' },
+            { name: 'Levels.fyi', domain: 'levels.fyi', url: 'https://www.levels.fyi/jobs', favicon: 'https://www.google.com/s2/favicons?domain=levels.fyi&sz=32' },
+            { name: 'Wellfound', domain: 'wellfound.com', url: 'https://wellfound.com/jobs', favicon: 'https://www.google.com/s2/favicons?domain=wellfound.com&sz=32' },
+          ];
+          div.innerHTML = TOP_JOB_BOARDS.map(b =>
+            '<div class="board-row" onclick="enterBrowserMode(\'' + b.url + '\')">' +
+            '<div class="board-favicon"><img src="' + b.favicon + '" alt="' + b.name + '" onerror="this.style.display=\'none\'"></div>' +
+            '<div class="board-name">' + b.name + '</div>' +
+            '<div class="board-domain">' + b.domain + '</div>' +
+            '</div>'
+          ).join('');
+        }
+      } catch (e) {
+        console.error('Error rendering job boards:', e);
+        div.innerHTML = '<div style="color:#bbb;font-size:13px;padding:8px 0;">Unable to load boards</div>';
+      }
     }
 
     function updateUserName(name) {
-      if (name) {
-        document.getElementById('box-greeting').textContent = `Hello, ${name}`;
-      }
+      const el = document.getElementById('greetingName');
+      if (el) el.textContent = (name && name.trim()) ? name.trim() : 'User';
     }
 
+    function resizeWmIcons() {
+      document.querySelectorAll('.wm-btn svg').forEach(svg => {
+        svg.setAttribute('width', '12'); svg.setAttribute('height', '12');
+      });
+    }
+
+    resizeWmIcons();
+    renderJobBoards();
+
+    /* ── IPC ── */
     try {
       const { ipcRenderer } = require('electron');
 
-      function loadApps() {
-        ipcRenderer.send('get-all-apps');
-      }
-
       ipcRenderer.on('all-apps-data', (_e, apps) => {
         apps = apps || [];
-        updateStats(apps);
+        updateWeeklyGoal(apps);
         renderApps(apps);
       });
 
-      ipcRenderer.on('app-status-updated', () => loadApps());
+      ipcRenderer.on('app-status-updated', () => ipcRenderer.send('get-all-apps'));
 
-      ipcRenderer.send('get-notifications');
       ipcRenderer.on('notifications-data', (_e, notifications) => {
         renderNotifications(notifications || []);
       });
 
-      ipcRenderer.send('get-user-name');
+      ipcRenderer.on('push-notification-ui', () => ipcRenderer.send('get-notifications'));
       ipcRenderer.on('user-name-data', (_e, name) => updateUserName(name));
 
+      ipcRenderer.on('load-in-webview', (_e, url) => enterBrowserMode(url));
+
+      ipcRenderer.on('update-status-badge', (_e, label, cls) => {
+        if (browserStatusPill) {
+          browserStatusPill.textContent = label;
+          browserStatusPill.className = '';
+          browserStatusPill.style.cssText = 'padding:4px 12px;border-radius:20px;font-family:ClashGrotesk,sans-serif;font-size:11.5px;font-weight:500;white-space:nowrap;transition:background 0.2s,color 0.2s;flex-shrink:0;cursor:pointer;position:relative;';
+          if (cls === 'in-progress') { browserStatusPill.style.background = '#FFF7E6'; browserStatusPill.style.color = '#D97706'; }
+          else if (cls === 'completed') { browserStatusPill.style.background = '#ECFDF5'; browserStatusPill.style.color = '#059669'; }
+          else { browserStatusPill.style.background = '#F4F4F2'; browserStatusPill.style.color = '#888'; }
+        }
+        const pill = document.getElementById('statusPill');
+        if (pill) { pill.textContent = label; pill.className = 'status-pill ' + (cls || ''); }
+      });
+
       ipcRenderer.on('window-maximized', () => {
-        document.getElementById('maximize-icon').setAttribute('data-lucide', 'minimize');
-        lucide.createIcons(); resizeWmIcons(); positionBottomRight();
+        const maxIcon = document.getElementById('winMax');
+        if (maxIcon) { maxIcon.querySelector('i').setAttribute('data-lucide', 'minimize'); lucide.createIcons(); }
       });
+
       ipcRenderer.on('window-unmaximized', () => {
-        document.getElementById('maximize-icon').setAttribute('data-lucide', 'maximize');
-        lucide.createIcons(); resizeWmIcons(); positionBottomRight();
+        const maxIcon = document.getElementById('winMax');
+        if (maxIcon) { maxIcon.querySelector('i').setAttribute('data-lucide', 'maximize'); lucide.createIcons(); }
       });
 
-      document.getElementById('btn-minimize').addEventListener('click', () => ipcRenderer.send('window-minimize'));
-      document.getElementById('btn-maximize').addEventListener('click', () => ipcRenderer.send('window-maximize'));
-      document.getElementById('btn-close').addEventListener('click', () => ipcRenderer.send('window-close'));
+      document.getElementById('tblBody').addEventListener('click', e => {
+        const row = e.target.closest('.tbl-row');
+        if (row && row.dataset.url) enterBrowserMode(row.dataset.url);
+      });
 
-      document.querySelector('.box-pill').addEventListener('click', () => ipcRenderer.send('open-pipeline'));
-      document.querySelectorAll('.nav-item')[1].addEventListener('click', () => ipcRenderer.send('navigate-home'));
-      document.querySelectorAll('.nav-item')[2].addEventListener('click', () => ipcRenderer.send('open-pipeline'));
-      document.querySelectorAll('.nav-item')[4].addEventListener('click', () => ipcRenderer.send('open-notifications'));
-      document.querySelectorAll('.nav-item')[5].addEventListener('click', () => ipcRenderer.send('open-settings'));
-      document.querySelector('.notif-see-all').addEventListener('click', () => ipcRenderer.send('open-notifications'));
+      ipcRenderer.send('get-all-apps');
+      ipcRenderer.send('get-notifications');
+      ipcRenderer.send('get-user-name');
 
-      document.getElementById('bl-list').addEventListener('click', e => {
-        const item = e.target.closest('.bl-item');
-        if (item && item.dataset.url) {
-          ipcRenderer.send('open-url-in-home', item.dataset.url);
+      // Status override dropdown
+      const statusOverrideMenu = document.getElementById('statusOverrideMenu');
+      const statusOverrideBtns = document.querySelectorAll('.status-override-btn');
+      const btnOpenDebugLogs = document.getElementById('btnOpenDebugLogs');
+
+      // Toggle dropdown on pill click
+      browserStatusPill.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isVisible = statusOverrideMenu.style.display === 'block';
+        statusOverrideMenu.style.display = isVisible ? 'none' : 'block';
+      });
+
+      // Close dropdown when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!statusOverrideMenu.contains(e.target) && e.target !== browserStatusPill) {
+          statusOverrideMenu.style.display = 'none';
         }
       });
 
-      loadApps();
+      // Handle status override button clicks
+      statusOverrideBtns.forEach(btn => {
+        btn.addEventListener('mouseenter', () => {
+          btn.style.background = '#F4F4F2';
+        });
+        btn.addEventListener('mouseleave', () => {
+          btn.style.background = 'none';
+        });
+        btn.addEventListener('click', () => {
+          const newStatus = btn.dataset.status;
+          console.log('[UI] Manual override to:', newStatus);
+          ipcRenderer.send('manual-status-override', { newStatus });
+          statusOverrideMenu.style.display = 'none';
+        });
+      });
+
+      // Handle debug logs button
+      btnOpenDebugLogs.addEventListener('mouseenter', () => {
+        btnOpenDebugLogs.style.background = '#F4F4F2';
+      });
+      btnOpenDebugLogs.addEventListener('mouseleave', () => {
+        btnOpenDebugLogs.style.background = 'none';
+      });
+      btnOpenDebugLogs.addEventListener('click', () => {
+        ipcRenderer.send('open-debug-log-folder');
+        statusOverrideMenu.style.display = 'none';
+      });
+
+      // Listen for manual override results
+      ipcRenderer.on('manual-override-result', (_e, result) => {
+        if (result.success) {
+          console.log('[UI] Manual override successful:', result.newStatus);
+        } else {
+          console.error('[UI] Manual override failed:', result.reason);
+          alert('Failed to override status: ' + (result.reason || 'unknown error'));
+        }
+      });
+
+      setTimeout(() => {
+        const tblBody = document.getElementById('tblBody');
+        if (tblBody && tblBody.textContent.includes('Loading')) renderApps([]);
+        const notifScroll = document.getElementById('notifScroll');
+        if (notifScroll && notifScroll.textContent.includes('Loading')) renderNotifications([]);
+      }, 4000);
 
     } catch (e) {
+      console.error('IPC setup error:', e);
       renderApps([]);
       renderNotifications([]);
     }

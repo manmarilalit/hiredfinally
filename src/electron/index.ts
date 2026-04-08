@@ -17,6 +17,7 @@ const {
   detectApplicationStatus,
   isDefiniteApplicationPage,
 } = require("./status");
+const { debugLogger } = require("./debug-logger");
 const storage = require("./storage");
 const {
   addInProgress,
@@ -149,6 +150,7 @@ let sync: any = null;
 let updateDownloaded = false;
 
 function sendNativeNotification(title: string, body: string): void {
+  debugLogger.logNotification(title, body);
   if (!Notification.isSupported()) return;
   const n = new Notification({ title, body, silent: false });
   n.on("click", () => mainWindow?.show?.());
@@ -329,31 +331,26 @@ app.on("ready", async () => {
   mainWindow.setMenuBarVisibility(false);
   mainWindow.once("ready-to-show", () => mainWindow.show());
 
-  // -- Auth setup ------------------------------------------------------------
-  auth = new AuthManager(mainWindow);
-  await auth.init();
-
-  sync = new SyncManager(auth, storage);
+  // -- Auth setup (DISABLED - local-only mode) -------------------------------
+  // auth = new AuthManager(mainWindow);
+  // await auth.init();
+  // sync = new SyncManager(auth, storage);
 
   // Handle successful login from the renderer — run sync then go home
   ipcMain.on("auth-login-success", async () => {
-    sync.fullSync().catch(console.error);
-    mainWindow.loadFile(path.join(__dirname, "home.html"));
+    // sync.fullSync().catch(console.error);
+    loadHome();
   });
 
   // Navigate to login page after sign-out (auth-sign-out IPC is handled inside AuthManager)
   // Listen for the renderer to tell us sign-out completed
   ipcMain.on("auth-signed-out", () => {
-    mainWindow.loadFile(path.join(__dirname, "login.html"));
+    // mainWindow.loadFile(path.join(__dirname, "login.html"));
+    loadHome();
   });
 
-  // Navigate to login or home depending on session
-  if (!auth.isLoggedIn()) {
-    mainWindow.loadFile(path.join(__dirname, "login.html"));
-  } else {
-    sync.fullSync().catch(console.error);
-    mainWindow.loadFile(path.join(__dirname, "home.html"));
-  }
+  // NOTE: Skip login in local-only mode - go straight to home
+  const _initiallyLoggedIn = true; // Always true for local-only mode
 
   // -- System tray -----------------------------------------------------------
   tray = new Tray(iconPath);
@@ -430,9 +427,19 @@ app.on("ready", async () => {
       id       INTEGER PRIMARY KEY AUTOINCREMENT,
       name     TEXT    NOT NULL,
       url      TEXT    NOT NULL,
-      position INTEGER DEFAULT 0
+      position INTEGER DEFAULT 0,
+      visit_count INTEGER DEFAULT 0,
+      last_visited INTEGER DEFAULT 0
     )
   `).run();
+
+  // Add visit_count and last_visited columns if they don't exist (migration)
+  try {
+    db.prepare("ALTER TABLE boards ADD COLUMN visit_count INTEGER DEFAULT 0").run();
+  } catch { /* column already exists */ }
+  try {
+    db.prepare("ALTER TABLE boards ADD COLUMN last_visited INTEGER DEFAULT 0").run();
+  } catch { /* column already exists */ }
 
   const boardCount = db.prepare("SELECT COUNT(*) as c FROM boards").get() as any;
   if (boardCount.c === 0) {
@@ -441,17 +448,69 @@ app.on("ready", async () => {
   }
 
   ipcMain.handle("get-boards", () => {
-    try { return db.prepare("SELECT name, url FROM boards ORDER BY position ASC").all() as BoardRow[]; }
+    try {
+      const boards = db.prepare("SELECT name, url, visit_count, last_visited FROM boards ORDER BY position ASC").all() as BoardRow[];
+      console.log('[GET-BOARDS] Returning', boards.length, 'boards');
+      return boards;
+    }
+    catch (err) {
+      console.error('[GET-BOARDS] Error:', err);
+      return [];
+    }
+  });
+
+  ipcMain.handle("get-frequent-boards", () => {
+    try {
+      return db.prepare("SELECT name, url, visit_count, last_visited FROM boards WHERE visit_count > 0 ORDER BY visit_count DESC, last_visited DESC LIMIT 5").all();
+    }
     catch { return []; }
+  });
+
+  ipcMain.handle("track-board-visit", (_e: any, url: string) => {
+    try {
+      const board = db.prepare("SELECT id FROM boards WHERE url = ?").get(url) as any;
+      if (board) {
+        db.prepare("UPDATE boards SET visit_count = visit_count + 1, last_visited = ? WHERE id = ?")
+          .run(Date.now(), board.id);
+      }
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, message: err?.message };
+    }
+  });
+
+  ipcMain.handle("add-board", (_e: any, board: { name: string; url: string }) => {
+    try {
+      console.log('[ADD-BOARD] Adding board:', board);
+      const maxPos = db.prepare("SELECT MAX(position) as max FROM boards").get() as any;
+      const nextPos = (maxPos?.max ?? -1) + 1;
+      console.log('[ADD-BOARD] Next position:', nextPos);
+      db.prepare("INSERT INTO boards (name, url, position) VALUES (?, ?, ?)")
+        .run(board.name, board.url, nextPos);
+      console.log('[ADD-BOARD] Board added successfully');
+      return { success: true };
+    } catch (err: any) {
+      console.error('[ADD-BOARD] Error:', err);
+      return { success: false, message: err?.message };
+    }
+  });
+
+  ipcMain.handle("delete-board", (_e: any, url: string) => {
+    try {
+      db.prepare("DELETE FROM boards WHERE url = ?").run(url);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, message: err?.message };
+    }
   });
 
   ipcMain.handle("save-boards", (_e: any, boards: BoardRow[]) => {
     try {
       const del = db.prepare("DELETE FROM boards");
-      const ins = db.prepare("INSERT INTO boards (name, url, position) VALUES (?, ?, ?)");
+      const ins = db.prepare("INSERT INTO boards (name, url, position, visit_count, last_visited) VALUES (?, ?, ?, ?, ?)");
       const saveAll = db.transaction((rows: BoardRow[]) => {
         del.run();
-        rows.forEach((b, i) => ins.run(b.name, b.url, i));
+        rows.forEach((b, i) => ins.run(b.name, b.url, i, (b as any).visit_count || 0, (b as any).last_visited || 0));
       });
       saveAll(boards || []);
       return { success: true };
@@ -557,6 +616,7 @@ app.on("ready", async () => {
       const resized = image.resize({ width: Math.min(size.width, 1280) });
       previousScreenshot = listingScreenshot;
       listingScreenshot = resized.toJPEG(70);
+      debugLogger.logScreenshot(url, 'captured');
     } catch { /* ignore */ }
   }
 
@@ -587,8 +647,19 @@ app.on("ready", async () => {
 
   app.on("web-contents-created", (_e: any, contents: any) => {
     if (contents.getType() === "webview") {
+      // Block web notifications from job sites
+      contents.session.setPermissionRequestHandler((webContents: any, permission: string, callback: (allow: boolean) => void) => {
+        if (permission === 'notifications') {
+          console.log('[WEBVIEW] Blocked notification permission request');
+          callback(false);
+        } else {
+          callback(true);
+        }
+      });
+
       contents.setWindowOpenHandler(({ url }: { url: string }) => {
         console.log(`[POPUP] intercepted window open: ${url}`);
+        debugLogger.logPopup(url, 'intercepted');
         if (url === 'about:blank') {
           return {
             action: "allow",
@@ -653,6 +724,9 @@ app.on("ready", async () => {
     const url = lastLoggedURL || lastNotStartedURL || startingURL;
     console.log(`[MANUAL OVERRIDE] ${currentStatus} → ${newStatus} | url: ${url}`);
 
+    // Log manual override
+    debugLogger.logManualOverride(currentStatus, newStatus, url || 'unknown', 'User manual override');
+
     if (!url) {
       mainWindow?.webContents.send("manual-override-result", { success: false, reason: "no-url" });
       return;
@@ -668,7 +742,7 @@ app.on("ready", async () => {
         if (hasStartedApplication && urlToRemove) {
           console.log(`[MANUAL OVERRIDE] deleting app record for: ${urlToRemove}`);
           deleteApp(urlToRemove);
-          sync?.deleteRow(urlToRemove);
+          // sync?.deleteRow(urlToRemove); // Disabled for local-only mode
         }
         currentStatus = "NOT_STARTED";
         hasStartedApplication = false;
@@ -696,7 +770,7 @@ app.on("ready", async () => {
         const urlToRecord = lastNotStartedURL || url;
         console.log(`[MANUAL OVERRIDE] upsertInProgress: ${urlToRecord}`);
         upsertInProgress(urlToRecord, screenshotToUse);
-        sync?.pushRow(urlToRecord);
+        // sync?.pushRow(urlToRecord); // Disabled for local-only mode
         startingURL = urlToRecord;
         hasStartedApplication = true;
         currentStatus = "IN_PROGRESS";
@@ -710,7 +784,7 @@ app.on("ready", async () => {
         const urlToComplete = startingURL || lastNotStartedURL || url;
         console.log(`[MANUAL OVERRIDE] upsertCompleted: ${urlToComplete}`);
         upsertCompleted(urlToComplete);
-        sync?.pushRow(urlToComplete);
+        // sync?.pushRow(urlToComplete); // Disabled for local-only mode
         if (currentJobTitle) notificationManager?.onApplicationCompleted(urlToComplete, currentJobTitle);
         hasStartedApplication = false;
         startingURL = "";
@@ -742,7 +816,7 @@ app.on("ready", async () => {
     catch { event.returnValue = app.getVersion(); }
   });
   ipcMain.on("navigate-home", () => {
-    mainWindow?.loadFile(path.join(__dirname, "home.html"));
+    loadHome();
     mainWindow?.webContents.once("did-finish-load", () =>
       mainWindow?.webContents.send("navigate-home")
     );
@@ -764,21 +838,29 @@ app.on("ready", async () => {
     sendNativeNotification("HiredFinally", "All application data cleared.");
   });
   ipcMain.on("get-all-apps", (event: any) => {
-    try { event.sender.send("all-apps-data", getAll()); }
-    catch { event.sender.send("all-apps-data", []); }
+    try {
+      const apps = getAll();
+      console.log('[IPC] get-all-apps: returning', apps.length, 'apps');
+      event.sender.send("all-apps-data", apps);
+    }
+    catch (e) {
+      console.error('[IPC] get-all-apps error:', e);
+      event.sender.send("all-apps-data", []);
+    }
   });
   ipcMain.on("delete-app", (_e: any, url: string) => {
     try {
       db.prepare("DELETE FROM job_apps WHERE url = ?").run(url);
-      sync?.deleteRow(url);
+      // sync?.deleteRow(url); // Disabled for local-only mode
     } catch { /* ignore */ }
   });
   ipcMain.on("open-url-in-home", (_e: any, url: string) => {
-    mainWindow?.loadFile(path.join(__dirname, "home.html"));
+    loadHome();
     mainWindow?.webContents.once("did-finish-load", () =>
       mainWindow?.webContents.send("load-in-webview", url)
     );
   });
+  ipcMain.on("open-boards", () => mainWindow?.loadFile(path.join(__dirname, "boards.html")));
   ipcMain.on("open-pipeline", () => mainWindow?.loadFile(path.join(__dirname, "pipeline.html")));
   ipcMain.on("open-settings", () => mainWindow?.loadFile(path.join(__dirname, "settings.html")));
   ipcMain.on("open-notifications", () => mainWindow?.loadFile(path.join(__dirname, "notifications.html")));
@@ -787,15 +869,6 @@ app.on("ready", async () => {
   ipcMain.on("window-maximize", () => {
     if (mainWindow?.isMaximized()) mainWindow.unmaximize();
     else mainWindow?.maximize();
-  });
-
-  ipcMain.on("get-notifications", (event: any) => {
-    try {
-      const notifications = notifStore?.getAll?.() ?? [];
-      event.sender.send("notifications-data", notifications);
-    } catch {
-      event.sender.send("notifications-data", []);
-    }
   });
 
   ipcMain.on("get-user-name", (event: any) => {
@@ -810,6 +883,17 @@ app.on("ready", async () => {
   // When the user saves their name (e.g. from settings), persist it:
   ipcMain.on("save-user-name", (_e: any, name: string) => {
     try { _store.set("userName", name); } catch { /* ignore */ }
+  });
+
+  // Debug logging handlers
+  ipcMain.on("open-debug-log-folder", () => {
+    try {
+      const logPath = debugLogger.getLogFilePath();
+      const logDir = path.dirname(logPath);
+      require('electron').shell.openPath(logDir);
+    } catch (err) {
+      console.error('[IPC] open-debug-log-folder error:', err);
+    }
   });
 
   function exportApplicationData(): void {
@@ -866,7 +950,12 @@ app.on("ready", async () => {
       /\/login(\?|$|\/)/i.test(u) ||
       /\/signin(\?|$|\/)/i.test(u) ||
       /\/auth(\?|$|\/)/i.test(u) ||
-      /\/sso(\?|$|\/)/i.test(u)
+      /\/sso(\?|$|\/)/i.test(u) ||
+      /github\.com\/SimplifyJobs/i.test(u) ||
+      /github\.com\/ReaVNaiL/i.test(u) ||
+      /github\.com\/pittcsc/i.test(u) ||
+      /simplify\.jobs/i.test(u) ||
+      /levels\.fyi/i.test(u)
     );
   }
 
@@ -921,7 +1010,9 @@ app.on("ready", async () => {
 
   // -- Apply status change ---------------------------------------------------
   async function applyStatusChange(status: Status, url: string): Promise<void> {
+    const oldStatus = currentStatus;
     console.log(`[STATUS CHANGE] ${currentStatus} → ${status} | url: ${url}`);
+    debugLogger.logStatusChange(oldStatus, status, url, 'Automatic detection');
 
     if (status === "NOT_STARTED") {
       if (!screenshotFrozen) lastNotStartedURL = url;
@@ -937,7 +1028,7 @@ app.on("ready", async () => {
         const screenshotUsed = previousScreenshot ?? listingScreenshot;
         console.log(`[STATUS CHANGE] addInProgress: ${urlToRecord} | hasScreenshot: ${!!screenshotUsed}`);
         addInProgress(urlToRecord, screenshotUsed);
-        sync?.pushRow(urlToRecord);
+        // sync?.pushRow(urlToRecord); // Disabled for local-only mode
         startingURL = urlToRecord;
         hasStartedApplication = true;
         // ── Track application started ───────────────────────────────────────
@@ -954,7 +1045,7 @@ app.on("ready", async () => {
       if (urlToComplete) {
         console.log(`[STATUS CHANGE] updateCompleted: ${urlToComplete}`);
         updateCompleted(urlToComplete);
-        sync?.pushRow(urlToComplete);
+        // sync?.pushRow(urlToComplete); // Disabled for local-only mode
         if (currentJobTitle) notificationManager.onApplicationCompleted(urlToComplete, currentJobTitle);
         // ── Track application completed ─────────────────────────────────────
         analytics.capture({ distinctId: anonymousId, event: "application_completed" });
@@ -989,7 +1080,7 @@ app.on("ready", async () => {
         if (meta) {
           console.log(`[EXTRACTION] got meta for ${row.url} — title: "${meta.jobTitle}" company: "${meta.company}"`);
           updateMeta(row.url, meta.jobTitle, meta.company);
-          sync?.pushRow(row.url); // sync meta update
+          // sync?.pushRow(row.url); // Disabled for local-only mode
           clearScreenshot(row.url);
           mainWindow?.webContents.send("app-status-updated");
         } else {
@@ -1042,6 +1133,10 @@ app.on("ready", async () => {
       const urlChanged = previousURL !== "" && previousURL !== url;
       const firstSignalAfterReset = previousURL === "" && url !== "";
 
+      if (urlChanged) {
+        debugLogger.logNavigation(previousURL, url);
+      }
+
       if ((urlChanged || firstSignalAfterReset) && !screenshotFrozen) {
         await captureCurrentPage(url);
         if (isJobDetailUrl(url)) {
@@ -1085,6 +1180,31 @@ app.on("ready", async () => {
       console.log(`  buttons: [${signals.buttonTexts.slice(0, 6).join(" | ")}]`);
       console.log(`  detected: ${detectedStatus} (${confidence}) | currentStatus: ${currentStatus}`);
 
+      // Log to debug file
+      debugLogger.logDetection({
+        url,
+        detectedStatus,
+        confidence,
+        currentStatus,
+        signals: {
+          formCount: signals.formCount,
+          inputCount: signals.inputCount,
+          requiredFieldCount: signals.requiredFieldCount,
+          fileInputCount: signals.fileInputCount,
+          selectCount: signals.selectCount,
+          textareaCount: signals.textareaCount,
+          hasApplyButton: signals.hasApplyButton || false,
+          hasOverlay: signals.hasOverlay || false,
+          hasResumeUpload: signals.hasResumeUpload || false,
+          hasCompletionToast: signals.hasCompletionToast || false,
+          hasProgressIndicator: signals.hasProgressIndicator || false,
+          hasEmbeddedATS: signals.hasEmbeddedATS || false,
+          buttonTexts: signals.buttonTexts.slice(0, 10)
+        },
+        bodyTextSample: signals.bodyText.slice(0, 500),
+        applied: false
+      });
+
       if (effectiveStatus === "IN_PROGRESS" && !screenshotFrozen) {
         screenshotFrozen = true;
         console.log(`  → screenshot frozen (entering IN_PROGRESS)`);
@@ -1100,10 +1220,58 @@ app.on("ready", async () => {
 
         if (confidence === "high" && changed) {
           console.log(`  → APPLYING change (high confidence)`);
+          debugLogger.logDetection({
+            url,
+            detectedStatus: effectiveStatus,
+            confidence,
+            currentStatus,
+            signals: {
+              formCount: signals.formCount,
+              inputCount: signals.inputCount,
+              requiredFieldCount: signals.requiredFieldCount,
+              fileInputCount: signals.fileInputCount,
+              selectCount: signals.selectCount,
+              textareaCount: signals.textareaCount,
+              hasApplyButton: signals.hasApplyButton || false,
+              hasOverlay: signals.hasOverlay || false,
+              hasResumeUpload: signals.hasResumeUpload || false,
+              hasCompletionToast: signals.hasCompletionToast || false,
+              hasProgressIndicator: signals.hasProgressIndicator || false,
+              hasEmbeddedATS: signals.hasEmbeddedATS || false,
+              buttonTexts: signals.buttonTexts.slice(0, 10)
+            },
+            bodyTextSample: signals.bodyText.slice(0, 500),
+            applied: true,
+            reason: 'High confidence detection'
+          });
           await applyStatusChange(effectiveStatus, url);
           mainWindow?.webContents.send("app-status-updated");
         } else if (confidence === "medium" && changed && (effectiveStatus === "IN_PROGRESS" || effectiveStatus === "COMPLETED")) {
           console.log(`  → APPLYING change (medium confidence)`);
+          debugLogger.logDetection({
+            url,
+            detectedStatus: effectiveStatus,
+            confidence,
+            currentStatus,
+            signals: {
+              formCount: signals.formCount,
+              inputCount: signals.inputCount,
+              requiredFieldCount: signals.requiredFieldCount,
+              fileInputCount: signals.fileInputCount,
+              selectCount: signals.selectCount,
+              textareaCount: signals.textareaCount,
+              hasApplyButton: signals.hasApplyButton || false,
+              hasOverlay: signals.hasOverlay || false,
+              hasResumeUpload: signals.hasResumeUpload || false,
+              hasCompletionToast: signals.hasCompletionToast || false,
+              hasProgressIndicator: signals.hasProgressIndicator || false,
+              hasEmbeddedATS: signals.hasEmbeddedATS || false,
+              buttonTexts: signals.buttonTexts.slice(0, 10)
+            },
+            bodyTextSample: signals.bodyText.slice(0, 500),
+            applied: true,
+            reason: 'Medium confidence detection'
+          });
           await applyStatusChange(effectiveStatus, url);
           mainWindow?.webContents.send("app-status-updated");
         } else {
@@ -1118,6 +1286,47 @@ app.on("ready", async () => {
     } catch (err: any) {
       console.log(`[DETECT] error in processPageStatus: ${err?.message || String(err)}`);
     }
+  }
+  // ── loadHome: loads home.html and pushes initial data once the page is ready ─
+  // Called AFTER all ipcMain handlers are registered so the renderer's
+  // get-all-apps / get-notifications requests always find a handler.
+  function loadHome(): void {
+    mainWindow.loadFile(path.join(__dirname, "home.html"));
+    mainWindow.webContents.once("did-finish-load", () => {
+      // Push data proactively so the page doesn't have to race on its IPC send
+      try {
+        const apps = getAll();
+        console.log('[LOAD HOME] Sending apps data:', apps.length, 'apps');
+        mainWindow.webContents.send("all-apps-data", apps);
+      } catch (e) {
+        console.error('[LOAD HOME] Error getting apps:', e);
+        mainWindow.webContents.send("all-apps-data", []);
+      }
+      try {
+        const notifs = notifStore?.getAll() ?? [];
+        console.log('[LOAD HOME] Sending notifications:', notifs.length, 'notifications');
+        mainWindow.webContents.send("notifications-data", notifs);
+      } catch (e) {
+        console.error('[LOAD HOME] Error getting notifications:', e);
+        mainWindow.webContents.send("notifications-data", []);
+      }
+      // Also send user name
+      try {
+        const name = _store.get("userName") as string | undefined;
+        console.log('[LOAD HOME] Sending user name:', name || '(none)');
+        mainWindow.webContents.send("user-name-data", name || "");
+      } catch { /* ignore */ }
+    });
+  }
+
+  // Deferred home load — all IPC handlers are now registered above this point.
+  console.log('[STARTUP] _initiallyLoggedIn:', _initiallyLoggedIn);
+  if (_initiallyLoggedIn) {
+    // sync.fullSync().catch(console.error); // Disabled for local-only mode
+    console.log('[STARTUP] Loading home page...');
+    loadHome();
+  } else {
+    console.log('[STARTUP] Not logged in, should show login (but this should never happen in local mode)');
   }
 });
 
